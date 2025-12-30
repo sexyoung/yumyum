@@ -21,6 +21,12 @@ export default defineConfig({
         target: 'http://localhost:3000',
         changeOrigin: true,
       },
+      '/ws': {
+        target: 'ws://localhost:3002',
+        ws: true, // 啟用 WebSocket 代理
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/ws/, ''), // 移除 /ws 前綴
+      },
     },
   },
 });
