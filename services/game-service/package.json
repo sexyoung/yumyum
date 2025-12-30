@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",
+    "@prisma/client": "^6.19.1",
     "hono": "^4.6.19",
     "ws": "^8.18.3"
   },
