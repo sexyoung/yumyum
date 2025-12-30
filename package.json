@@ -1,0 +1,23 @@
+{
+  "name": "yumyum",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "shared/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w @yumyum/web",
+    "dev:api": "npm run dev -w @yumyum/api-gateway",
+    "dev:game": "npm run dev -w @yumyum/game-service",
+    "dev": "npm run dev:web & npm run dev:api & npm run dev:game",
+    "build": "npm run build --workspaces --if-present",
+    "type-check": "npm run type-check --workspaces --if-present",
+    "clean": "rm -rf node_modules packages/*/node_modules services/*/node_modules shared/*/node_modules"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}
