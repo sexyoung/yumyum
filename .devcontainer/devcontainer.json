@@ -9,7 +9,30 @@
   // "features": {},
 
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
-  // "forwardPorts": [],
+  "forwardPorts": [5173, 3000, 3002],
+  "portsAttributes": {
+    "5173": {
+      "label": "Web Frontend",
+      "onAutoForward": "notify",
+      "protocol": "http",
+      "visibility": "public"
+    },
+    "3000": {
+      "label": "API Gateway",
+      "onAutoForward": "notify",
+      "protocol": "http",
+      "visibility": "public"
+    },
+    "3002": {
+      "label": "Game Service",
+      "onAutoForward": "notify",
+      "protocol": "http",
+      "visibility": "public"
+    }
+  },
+  "otherPortsAttributes": {
+    "onAutoForward": "ignore"
+  },
 
   // Use 'postCreateCommand' to run commands after the container is created.
   "postCreateCommand": "sh ./.devcontainer/postCreateCommand.sh"
