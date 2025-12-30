@@ -217,16 +217,24 @@ WS_HEARTBEAT_INTERVAL=30000
    → Region: Singapore（離台灣最近）
    → 設定密碼（記住！）
 
-2. 執行 SQL schema:
-   → SQL Editor
-   → 貼上 architecture skill 中的 schema
-   → Run
-
-3. 取得連線字串:
+2. 取得連線字串:
    Settings → Database → Connection string
    複製 URI 格式
 
-4. 加到 Railway:
+3. 設定本地環境變數:
+   DATABASE_URL=postgresql://postgres:[PASSWORD]@db.xxx.supabase.co:5432/postgres
+
+4. 使用 Prisma 建立資料庫結構:
+   # 生成 migration 並套用到資料庫
+   npx prisma migrate deploy
+
+   # 或在開發環境
+   npx prisma migrate dev
+
+   # 生成 Prisma Client
+   npx prisma generate
+
+5. 加到 Railway 環境變數:
    DATABASE_URL=postgresql://postgres:[PASSWORD]@db.xxx.supabase.co:5432/postgres
 ```
 

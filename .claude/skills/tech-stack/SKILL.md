@@ -128,6 +128,38 @@ Game Service（512MB）：~$3/月
 - 成本問題：1GB RAM × 24/7 = ~$10/月（超過免費額度）
 - Supabase 免費且專業
 
+### Prisma ORM
+
+**為什麼選 Prisma？**
+- 類型安全的資料庫 client（TypeScript 原生支援）
+- Schema 管理簡潔（declarative schema）
+- 自動生成類型定義
+- Migration 管理方便
+- 優秀的開發體驗（autocomplete、IntelliSense）
+- 支援多種資料庫（PostgreSQL、MySQL、SQLite）
+
+**為什麼不用原生 SQL 或其他 ORM？**
+- 原生 SQL：沒有類型安全，容易出錯
+- TypeORM：配置複雜，decorator 語法不直觀
+- Sequelize：效能較差，TypeScript 支援不佳
+- Prisma：現代、輕量、類型安全
+
+**Prisma 工作流程：**
+```bash
+# 1. 定義 schema
+prisma/schema.prisma
+
+# 2. 生成 migration
+npx prisma migrate dev --name init
+
+# 3. 自動生成 TypeScript client
+npx prisma generate
+
+# 4. 在程式碼中使用
+import { PrismaClient } from '@prisma/client'
+const prisma = new PrismaClient()
+```
+
 ### Redis（Upstash）
 
 **為什麼選 Upstash？**

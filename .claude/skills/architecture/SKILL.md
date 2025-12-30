@@ -130,66 +130,100 @@ type ServerMessage =
 
 ## 資料庫設計
 
-### PostgreSQL Schema（Supabase）
+### Prisma Schema
 
-```sql
--- 玩家表
-CREATE TABLE players (
-  id SERIAL PRIMARY KEY,
-  username VARCHAR(50) UNIQUE NOT NULL,
-  email VARCHAR(100),
-  avatar_url TEXT,
-  elo_rating INT DEFAULT 1200,
-  games_played INT DEFAULT 0,
-  games_won INT DEFAULT 0,
-  games_lost INT DEFAULT 0,
-  games_drawn INT DEFAULT 0,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
+使用 Prisma ORM 來管理資料庫結構和操作。Prisma schema 位於 `prisma/schema.prisma`。
 
--- 遊戲記錄表
-CREATE TABLE games (
-  id SERIAL PRIMARY KEY,
-  room_id VARCHAR(50) UNIQUE NOT NULL,
-  player1_id INT REFERENCES players(id),
-  player2_id INT REFERENCES players(id),
-  winner_id INT REFERENCES players(id),
-  game_mode VARCHAR(20) NOT NULL,
-  moves JSONB NOT NULL,
-  duration_seconds INT,
-  status VARCHAR(20) DEFAULT 'finished',
-  created_at TIMESTAMP DEFAULT NOW(),
-  finished_at TIMESTAMP
-);
+```prisma
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
 
--- 成就表
-CREATE TABLE achievements (
-  id SERIAL PRIMARY KEY,
-  player_id INT REFERENCES players(id) ON DELETE CASCADE,
-  achievement_type VARCHAR(50) NOT NULL,
-  unlocked_at TIMESTAMP DEFAULT NOW(),
-  UNIQUE(player_id, achievement_type)
-);
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 
--- 排行榜視圖
-CREATE VIEW leaderboard AS
-SELECT
-  p.id,
-  p.username,
-  p.elo_rating,
-  p.games_played,
-  p.games_won,
-  ROW_NUMBER() OVER (ORDER BY p.elo_rating DESC) as rank
-FROM players p
-WHERE p.games_played >= 5
-ORDER BY p.elo_rating DESC
-LIMIT 100;
+model Player {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique @db.VarChar(50)
+  email        String?  @db.VarChar(100)
+  avatarUrl    String?  @map("avatar_url")
+  eloRating    Int      @default(1200) @map("elo_rating")
+  gamesPlayed  Int      @default(0) @map("games_played")
+  gamesWon     Int      @default(0) @map("games_won")
+  gamesLost    Int      @default(0) @map("games_lost")
+  gamesDrawn   Int      @default(0) @map("games_drawn")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
--- 索引
-CREATE INDEX idx_games_player1 ON games(player1_id);
-CREATE INDEX idx_games_player2 ON games(player2_id);
-CREATE INDEX idx_players_elo ON players(elo_rating DESC);
+  // Relations
+  gamesAsPlayer1 Game[]        @relation("Player1Games")
+  gamesAsPlayer2 Game[]        @relation("Player2Games")
+  wonGames       Game[]        @relation("WinnerGames")
+  achievements   Achievement[]
+
+  @@index([eloRating(sort: Desc)], name: "idx_players_elo")
+  @@map("players")
+}
+
+model Game {
+  id              Int       @id @default(autoincrement())
+  roomId          String    @unique @map("room_id") @db.VarChar(50)
+  player1Id       Int?      @map("player1_id")
+  player2Id       Int?      @map("player2_id")
+  winnerId        Int?      @map("winner_id")
+  gameMode        String    @map("game_mode") @db.VarChar(20)
+  moves           Json      // JSONB in PostgreSQL
+  durationSeconds Int?      @map("duration_seconds")
+  status          String    @default("finished") @db.VarChar(20)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  finishedAt      DateTime? @map("finished_at")
+
+  // Relations
+  player1 Player? @relation("Player1Games", fields: [player1Id], references: [id])
+  player2 Player? @relation("Player2Games", fields: [player2Id], references: [id])
+  winner  Player? @relation("WinnerGames", fields: [winnerId], references: [id])
+
+  @@index([player1Id], name: "idx_games_player1")
+  @@index([player2Id], name: "idx_games_player2")
+  @@map("games")
+}
+
+model Achievement {
+  id              Int      @id @default(autoincrement())
+  playerId        Int      @map("player_id")
+  achievementType String   @map("achievement_type") @db.VarChar(50)
+  unlockedAt      DateTime @default(now()) @map("unlocked_at")
+
+  // Relations
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, achievementType])
+  @@map("achievements")
+}
+```
+
+**Prisma 常用指令：**
+```bash
+# 生成 migration（根據 schema 變更）
+npx prisma migrate dev --name <migration_name>
+
+# 套用 migration 到資料庫
+npx prisma migrate deploy
+
+# 生成 Prisma Client（TypeScript types）
+npx prisma generate
+
+# 開啟 Prisma Studio（資料庫 GUI）
+npx prisma studio
+
+# 同步 schema 到資料庫（開發用，會清空資料）
+npx prisma db push
+
+# 從現有資料庫生成 schema
+npx prisma db pull
 ```
 
 ## Redis 資料結構
@@ -263,7 +297,83 @@ export class GameWebSocket {
 }
 ```
 
-**範例 3：Redis 房間管理器**
+**範例 3：Prisma Client 使用**
+```typescript
+// services/api-gateway/src/db/prisma.ts
+import { PrismaClient } from '@prisma/client';
+
+// Singleton pattern
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+
+export const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  });
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+
+// 使用範例：創建玩家
+export async function createPlayer(username: string, email?: string) {
+  return await prisma.player.create({
+    data: {
+      username,
+      email,
+    },
+  });
+}
+
+// 使用範例：查詢排行榜（前 10 名）
+export async function getLeaderboard() {
+  return await prisma.player.findMany({
+    where: {
+      gamesPlayed: { gte: 5 },
+    },
+    orderBy: {
+      eloRating: 'desc',
+    },
+    take: 10,
+    select: {
+      id: true,
+      username: true,
+      eloRating: true,
+      gamesPlayed: true,
+      gamesWon: true,
+    },
+  });
+}
+
+// 使用範例：記錄遊戲結果
+export async function recordGame(data: {
+  roomId: string;
+  player1Id: number;
+  player2Id: number;
+  winnerId?: number;
+  moves: any[];
+  durationSeconds: number;
+}) {
+  return await prisma.game.create({
+    data: {
+      roomId: data.roomId,
+      player1Id: data.player1Id,
+      player2Id: data.player2Id,
+      winnerId: data.winnerId,
+      gameMode: 'pvp',
+      moves: data.moves,
+      durationSeconds: data.durationSeconds,
+      status: 'finished',
+      finishedAt: new Date(),
+    },
+    include: {
+      player1: true,
+      player2: true,
+      winner: true,
+    },
+  });
+}
+```
+
+**範例 4：Redis 房間管理器**
 ```typescript
 // services/game-service/src/redis/rooms.ts
 export class RoomManager {
@@ -285,7 +395,7 @@ export class RoomManager {
 }
 ```
 
-**範例 4：本地開發用 Docker Compose**
+**範例 5：本地開發用 Docker Compose**
 ```yaml
 # docker-compose.yml
 services:
