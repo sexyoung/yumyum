@@ -159,3 +159,186 @@ curl http://localhost:3000/api/stats
 - ✅ 連線事件監聽（connect, error, ready）
 
 配置檔案位於：`services/api-gateway/src/lib/redis.ts`
+
+## Railway 部署
+
+### 部署流程
+
+1. **建立專案**
+   - 前往 https://railway.app/
+   - Deploy from GitHub repo
+   - 選擇你的 repository
+
+2. **新增服務**
+   - Add Service → GitHub Repo
+   - 分別新增 api-gateway 和 game-service
+
+3. **設定每個服務**
+   - Settings → Service → Root Directory: 清空（使用 repo 根目錄）
+   - Settings → Build → Builder: **Dockerfile**
+   - Settings → Build → Dockerfile Path:
+     - api-gateway: `services/api-gateway/Dockerfile`
+     - game-service: `services/game-service/Dockerfile`
+   - Settings → Deploy → Custom Start Command: **清空**（使用 Dockerfile 的 CMD）
+   - Settings → Deploy → Healthcheck Path: `/health`
+   - Settings → Deploy → Regions: **asia-southeast1** (Singapore)
+
+4. **設定環境變數**
+   - 在 Variables 頁籤加入：
+     ```bash
+     NODE_ENV=production
+     PORT=3000  # api-gateway 用 3000，game-service 用 3002
+     DATABASE_URL=<Supabase Transaction pooler URL>
+     DIRECT_URL=<Supabase Session pooler URL>
+     REDIS_URL=<Upstash Redis URL>
+     CORS_ORIGIN=https://你的前端域名  # api-gateway 專用
+     WS_HEARTBEAT_INTERVAL=30000  # game-service 專用
+     ```
+
+5. **觸發部署**
+   - Push 到 GitHub 會自動部署
+   - 或手動點擊 Deploy 按鈕
+
+### 部署時遇到的問題與解決方案
+
+#### 問題 1：Dockerfile 找不到 shared/types
+
+**錯誤訊息：**
+```
+ERROR: failed to compute cache key: "/shared/types/package.json": not found
+```
+
+**原因：**
+- 當 Root Directory 設為 `services/api-gateway` 時
+- Railway 只能看到該資料夾內的檔案
+- 無法訪問上層的 `shared/types/`
+
+**解決方案：**
+- Root Directory **清空**（讓 Railway 從 repo 根目錄開始）
+- 設定 Dockerfile Path 為完整路徑：`services/api-gateway/Dockerfile`
+
+#### 問題 2：npm workspaces node_modules 複製失敗
+
+**錯誤訊息：**
+```
+ERROR: "/app/shared/types/node_modules": not found
+```
+
+**原因：**
+- npm workspaces 執行 `npm ci` 時，所有依賴都安裝在 root 的 `node_modules`
+- 各個 workspace 的 `node_modules` 可能不存在或只是符號連結
+- Dockerfile 試圖複製不存在的資料夾
+
+**解決方案：**
+```dockerfile
+# ❌ 錯誤：試圖複製各個 workspace 的 node_modules
+COPY --from=deps /app/services/api-gateway/node_modules ./services/api-gateway/node_modules
+COPY --from=deps /app/shared/types/node_modules ./shared/types/node_modules
+
+# ✅ 正確：只複製 root node_modules（包含所有依賴）
+COPY --from=deps /app/node_modules ./node_modules
+```
+
+#### 問題 3：TypeScript 型別不匹配
+
+**錯誤訊息：**
+```
+error TS2322: Type 'string' is not assignable to type 'number'.
+```
+
+**原因：**
+- `Player` 介面的 `id` 是 `number`（來自資料庫）
+- WebSocket 訊息的 `playerId` 是 `string`
+- 型別不匹配導致編譯失敗
+
+**解決方案：**
+新增 `ConnectedPlayer` 介面（簡化版，id 為 string）：
+```typescript
+// shared/types/src/index.ts
+export interface ConnectedPlayer {
+  id: string;
+  username: string;
+}
+
+export type ServerMessage =
+  | { type: 'player_joined'; player: ConnectedPlayer }  // 使用 ConnectedPlayer
+  // ...
+```
+
+#### 問題 4：ES Module import 路徑錯誤
+
+**錯誤訊息（Runtime）：**
+```
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/app/dist/lib/prisma'
+imported from /app/dist/index.js
+```
+
+**原因：**
+- Node.js ES modules 要求明確的檔案副檔名
+- TypeScript 編譯後不會自動加上 `.js`
+- Runtime 找不到模組
+
+**解決方案：**
+在源碼中使用 `.js` 副檔名（雖然源檔案是 `.ts`）：
+```typescript
+// ❌ 錯誤
+import { prisma } from './lib/prisma';
+
+// ✅ 正確
+import { prisma } from './lib/prisma.js';
+```
+
+TypeScript 編譯器會自動找到對應的 `.ts` 檔案進行型別檢查。
+
+### 常見設定錯誤
+
+#### ❌ 錯誤 1：使用 Railpack builder
+如果選擇 Railpack (Default)，Railway 可能無法正確處理 monorepo 結構。
+**解決：選擇 Dockerfile builder**
+
+#### ❌ 錯誤 2：保留 Custom Start Command
+如果設定了 `npm run start --workspace=@yumyum/api-gateway`，會因為 production image 沒有 workspace 結構而失敗。
+**解決：清空 Custom Start Command，使用 Dockerfile 的 CMD**
+
+#### ❌ 錯誤 3：選擇 US 區域
+選擇美國區域會導致台灣用戶延遲較高（150-200ms）。
+**解決：選擇 asia-southeast1 (Singapore) 區域**
+
+### 部署成功檢查清單
+
+部署完成後，檢查以下項目：
+
+- [ ] Build Logs 沒有錯誤
+- [ ] 服務狀態為 "Active"（綠色）
+- [ ] 可以訪問 `/health` endpoint
+- [ ] 健康檢查回傳正確資料：
+  ```json
+  // api-gateway
+  {
+    "status": "ok",
+    "service": "api-gateway",
+    "redis": "connected"
+  }
+
+  // game-service
+  {
+    "status": "ok",
+    "service": "game-service",
+    "timestamp": "..."
+  }
+  ```
+- [ ] Runtime Logs 沒有錯誤訊息
+- [ ] Redis 連線成功（api-gateway）
+- [ ] Database 連線成功
+
+### 服務 URL
+
+部署成功後，Railway 會提供預設域名：
+- api-gateway: `https://yumyumapi-gateway-production.up.railway.app`
+- game-service: `https://yumyumgame-service-production.up.railway.app`
+
+測試健康檢查：
+```bash
+curl https://yumyumapi-gateway-production.up.railway.app/health
+curl https://yumyumgame-service-production.up.railway.app/health
+```
