@@ -31,7 +31,7 @@ function App() {
   const [isWsConnected, setIsWsConnected] = useState(false);
   const [messages, setMessages] = useState<ServerMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
-  const [playerName, setPlayerName] = useState('Player-' + Math.floor(Math.random() * 1000));
+  const [playerName] = useState('Player-' + Math.floor(Math.random() * 1000));
   const wsRef = useRef<GameWebSocket | null>(null);
 
   useEffect(() => {
