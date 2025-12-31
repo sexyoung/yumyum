@@ -1,3 +1,4 @@
 {
-    "terminal.integrated.macOptionIsMeta": false
+    "terminal.integrated.macOptionIsMeta": false,
+    "prisma.pinToPrisma6": true
 }
