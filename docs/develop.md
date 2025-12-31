@@ -342,3 +342,251 @@ TypeScript 編譯器會自動找到對應的 `.ts` 檔案進行型別檢查。
 curl https://yumyumapi-gateway-production.up.railway.app/health
 curl https://yumyumgame-service-production.up.railway.app/health
 ```
+
+## Vercel 部署
+
+### 部署流程
+
+1. **建立 vercel.json 配置**
+   - 位置：repo 根目錄（不是 packages/web/）
+   - 配置 monorepo 的 build 指令和輸出目錄
+
+2. **在 Vercel 建立專案**
+   - 前往 https://vercel.com/new
+   - Import Git Repository
+   - 選擇你的 repository
+
+3. **專案設定**
+   - Framework Preset: **Vite**
+   - Root Directory: **留空**（使用 repo 根目錄）
+   - Build Command: 自動從 vercel.json 讀取
+   - Output Directory: 自動從 vercel.json 讀取
+   - Install Command: 自動從 vercel.json 讀取
+
+4. **環境變數**
+   - **不需要設定**（使用 Vercel Rewrites，API 是相對路徑）
+
+5. **自訂域名設定**
+   - Settings → Domains
+   - 新增域名（例如：dev-yumyum.sexyoung.tw）
+   - Vercel 會提供 CNAME 記錄資訊
+   - 在 Cloudflare 新增 CNAME 記錄
+   - Proxy status: **DNS only**（關閉橘色雲朵）
+   - 等待驗證（5-30 分鐘）
+   - Vercel 自動配置 SSL 證書
+
+### vercel.json 配置範例
+
+```json
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd packages/web && npm run build",
+  "outputDirectory": "packages/web/dist",
+  "installCommand": "npm install",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://yumyumapi-gateway-production.up.railway.app/api/:path*"
+    },
+    {
+      "source": "/health",
+      "destination": "https://yumyumapi-gateway-production.up.railway.app/health"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### 部署時遇到的問題與解決方案
+
+#### 問題 1：找不到 @yumyum/types 模組
+
+**錯誤訊息：**
+```
+error TS2307: Cannot find module '@yumyum/types' or its corresponding type declarations.
+```
+
+**原因：**
+- vercel.json 放在 `packages/web/` 時，Vercel 只能看到該目錄
+- 無法訪問上層的 `shared/types/` workspace
+- npm install 只安裝了 web 的依賴
+
+**解決方案：**
+1. **vercel.json 移到 repo 根目錄**
+2. **更新配置：**
+   ```json
+   {
+     "buildCommand": "cd packages/web && npm run build",
+     "outputDirectory": "packages/web/dist",
+     "installCommand": "npm install"
+   }
+   ```
+3. **Root Directory 設定為空**（或 `.`）
+
+這樣 Vercel 會：
+- 在根目錄執行 `npm install`（安裝所有 workspace）
+- 切換到 `packages/web` 執行 build
+- 所有 workspace 依賴都可以正確解析
+
+#### 問題 2：TypeScript 編譯錯誤（未使用變數）
+
+**錯誤訊息：**
+```
+error TS6133: 'setPlayerName' is declared but its value is never read.
+```
+
+**原因：**
+- useState 返回 `[state, setState]`
+- setState 被宣告但從未使用
+- TypeScript strict mode 視為錯誤
+
+**解決方案：**
+只解構需要的值，不解構 setter：
+```typescript
+// ❌ 錯誤
+const [playerName, setPlayerName] = useState('...');
+
+// ✅ 正確
+const [playerName] = useState('...');
+```
+
+#### 問題 3：WebSocket 連接失敗
+
+**錯誤訊息：**
+```
+WebSocket connection to 'wss://dev-yumyum.sexyoung.tw/ws/game/test-room' failed
+```
+
+**原因：**
+- **Vercel rewrites 只支援 HTTP/HTTPS**
+- **不支援 WebSocket (WSS) 協定**
+- 嘗試透過 Vercel 轉發 WebSocket 會失敗
+
+**解決方案：**
+WebSocket 必須直接連接到 Railway game-service：
+
+```typescript
+// packages/web/src/lib/websocket.ts
+connect(roomId: string) {
+  let wsUrl: string;
+
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    // 開發環境：透過 Vite proxy
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    wsUrl = `${protocol}//${window.location.host}/ws/game/${roomId}`;
+  } else {
+    // 正式環境：直接連接到 Railway
+    wsUrl = `wss://yumyumgame-service-production.up.railway.app/game/${roomId}`;
+  }
+
+  this.ws = new WebSocket(wsUrl);
+}
+```
+
+**注意事項：**
+1. 移除 vercel.json 中的 `/ws/*` rewrite（無效）
+2. 根據 hostname 判斷環境自動切換連接方式
+3. WebSocket 服務需要支援 CORS（Railway 預設支援）
+
+### 常見設定錯誤
+
+#### ❌ 錯誤 1：Root Directory 設定錯誤
+如果設定 Root Directory 為 `packages/web`，會導致：
+- 找不到其他 workspace 依賴
+- monorepo 結構無法正常運作
+
+**解決：Root Directory 必須留空或設為 `.`**
+
+#### ❌ 錯誤 2：使用環境變數配置 API URL
+不需要設定 `VITE_API_URL` 等環境變數，因為：
+- 使用 Vercel Rewrites，前端呼叫相對路徑 `/api/*`
+- Vercel 自動轉發到 Railway
+- 前後端同域名，不需要處理 CORS
+
+**解決：刪除所有 API URL 相關環境變數**
+
+#### ❌ 錯誤 3：嘗試透過 Vercel 轉發 WebSocket
+Vercel rewrites **不支援 WebSocket**。
+
+**解決：WebSocket 必須直接連接到後端服務**
+
+#### ❌ 錯誤 4：Cloudflare Proxy 啟用
+在 Cloudflare 設定 CNAME 時，如果啟用 Proxy（橘色雲朵）：
+- Vercel 無法驗證域名
+- SSL 證書配置失敗
+
+**解決：Proxy status 設為 "DNS only"（灰色雲朵）**
+
+### 部署成功檢查清單
+
+部署完成後，檢查以下項目：
+
+- [ ] Build Logs 沒有錯誤
+- [ ] 部署狀態為 "Ready"
+- [ ] 可以訪問主網站
+- [ ] API rewrites 正常運作：
+  ```bash
+  curl https://你的域名/health
+  curl https://你的域名/api/stats
+  ```
+- [ ] WebSocket 連接成功（開啟瀏覽器 Console 查看）
+- [ ] SSL 證書已配置（瀏覽器顯示鎖頭圖示）
+- [ ] 自訂域名可以訪問
+- [ ] Railway CORS_ORIGIN 已更新
+
+### 部署架構
+
+```
+前端（Vercel）
+https://dev-yumyum.sexyoung.tw
+├── SSL 證書（自動配置）
+├── 全球 CDN（自動分發）
+└── API Rewrites
+    ├── /api/* → Railway api-gateway
+    └── /health → Railway api-gateway
+
+WebSocket（直接連接 Railway）
+wss://yumyumgame-service-production.up.railway.app/game/:roomId
+└── 前端根據環境自動切換連接方式
+```
+
+### Cloudflare DNS 設定
+
+```
+Type:    CNAME
+Name:    dev-yumyum
+Target:  a576903b0e2a3bbb.vercel-dns-017.com
+Proxy:   DNS only（灰色雲朵）
+TTL:     Auto
+```
+
+**注意：**
+- Target 值由 Vercel 提供，每個專案不同
+- 必須關閉 Cloudflare Proxy
+- DNS 傳播需要 5-30 分鐘
+
+### 更新 Railway CORS
+
+域名設定完成後，更新 api-gateway 的環境變數：
+
+```bash
+CORS_ORIGIN=https://dev-yumyum.sexyoung.tw
+```
+
+或允許多個域名：
+
+```bash
+CORS_ORIGIN=https://dev-yumyum.sexyoung.tw,https://yumyum-web.vercel.app
+```
+
+Railway 會自動重新部署。
