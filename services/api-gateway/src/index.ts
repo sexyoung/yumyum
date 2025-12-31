@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { serve } from '@hono/node-server';
-import { prisma } from './lib/prisma';
-import { redis } from './lib/redis';
+import { prisma } from './lib/prisma.js';
+import { redis } from './lib/redis.js';
 import type { Player } from '@yumyum/types';
 
 const app = new Hono();
