@@ -11,10 +11,6 @@
     {
       "source": "/health",
       "destination": "https://yumyumapi-gateway-production.up.railway.app/health"
-    },
-    {
-      "source": "/ws/:path*",
-      "destination": "https://yumyumgame-service-production.up.railway.app/ws/:path*"
     }
   ],
   "headers": [
