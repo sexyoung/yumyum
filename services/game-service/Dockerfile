@@ -17,10 +17,8 @@ RUN npm ci
 FROM base AS builder
 WORKDIR /app
 
-# Copy dependencies from deps stage
+# Copy dependencies from deps stage (npm workspaces 會把所有依賴放在 root node_modules)
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/services/game-service/node_modules ./services/game-service/node_modules
-COPY --from=deps /app/shared/types/node_modules ./shared/types/node_modules
 
 # Copy source code
 COPY . .
