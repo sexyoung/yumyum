@@ -24,6 +24,12 @@ export interface GameState {
   board: unknown; // 待實作
 }
 
+// WebSocket 連線中的玩家（簡化版，不包含資料庫欄位）
+export interface ConnectedPlayer {
+  id: string;
+  username: string;
+}
+
 // WebSocket 訊息類型
 export type ClientMessage =
   | { type: 'join'; playerId: string; playerName: string }
@@ -32,7 +38,7 @@ export type ClientMessage =
 
 export type ServerMessage =
   | { type: 'connected'; playerId: string; roomId: string }
-  | { type: 'player_joined'; player: Player }
+  | { type: 'player_joined'; player: ConnectedPlayer }
   | { type: 'player_left'; playerId: string }
   | { type: 'error'; message: string }
   | { type: 'chat'; playerId: string; playerName: string; message: string };

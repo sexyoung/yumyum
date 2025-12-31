@@ -1,5 +1,5 @@
 import { WebSocket } from 'ws';
-import type { ClientMessage, ServerMessage, Player } from '@yumyum/types';
+import type { ClientMessage, ServerMessage, ConnectedPlayer } from '@yumyum/types';
 
 // 儲存房間內的連線
 const rooms = new Map<string, Set<WebSocket>>();
@@ -78,7 +78,7 @@ function handleClientMessage(ws: WebSocket, roomId: string, message: ClientMessa
       ws.send(JSON.stringify(connectedMsg));
 
       // 通知其他玩家
-      const player: Player = {
+      const player: ConnectedPlayer = {
         id: message.playerId,
         username: message.playerName,
       };
