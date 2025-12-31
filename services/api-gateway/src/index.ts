@@ -7,9 +7,13 @@ import type { Player } from '@yumyum/types';
 
 const app = new Hono();
 
-// CORS 配置
+// CORS 配置 - 從環境變數讀取允許的來源
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',')
+  : ['http://localhost:5173'];
+
 app.use('*', cors({
-  origin: ['http://localhost:5173'], // 開發環境
+  origin: allowedOrigins,
   credentials: true,
 }));
 
