@@ -1,8 +1,14 @@
-// 初始範例類型
+// 玩家類型（對應 Prisma Player model）
 export interface Player {
-  id: string;
+  id: number;
   username: string;
-  avatarUrl?: string;
+  email: string | null;
+  avatarUrl: string | null;
+  eloRating: number;
+  gamesPlayed: number;
+  gamesWon: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Room {

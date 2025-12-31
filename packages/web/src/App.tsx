@@ -16,6 +16,11 @@ function App() {
     queryFn: api.getRooms,
   });
 
+  const { data: playersData, isLoading: playersLoading } = useQuery({
+    queryKey: ['players'],
+    queryFn: api.getPlayers,
+  });
+
   // WebSocket 狀態
   const [isWsConnected, setIsWsConnected] = useState(false);
   const [messages, setMessages] = useState<ServerMessage[]>([]);
@@ -107,6 +112,36 @@ function App() {
                     📋 目前房間數量: {roomsData.length} 個
                     {roomsData.length === 0 && ' (尚無房間)'}
                   </p>
+                )}
+              </div>
+
+              {/* 玩家列表 */}
+              <div className="bg-white/5 rounded p-4">
+                <h3 className="font-semibold mb-2">🎮 玩家列表</h3>
+                {playersLoading && <p className="text-sm">載入中...</p>}
+                {playersData && playersData.length > 0 && (
+                  <div className="space-y-2">
+                    {playersData.map((player) => (
+                      <div key={player.id} className="flex items-center gap-3 bg-white/5 rounded p-2">
+                        {player.avatarUrl && (
+                          <img
+                            src={player.avatarUrl}
+                            alt={player.username}
+                            className="w-8 h-8 rounded-full"
+                          />
+                        )}
+                        <div className="flex-1 text-left">
+                          <p className="text-sm font-semibold">{player.username}</p>
+                          <p className="text-xs text-white/60">
+                            ELO: {player.eloRating} | 勝場: {player.gamesWon}/{player.gamesPlayed}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {playersData && playersData.length === 0 && (
+                  <p className="text-sm text-white/60">目前沒有玩家</p>
                 )}
               </div>
             </div>

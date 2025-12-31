@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { Player } from '@yumyum/types';
 
 // 建立 axios instance
 // 開發環境使用 Vite proxy，生產環境使用 Vercel rewrites
@@ -18,6 +19,11 @@ export const api = {
 
   getRooms: async () => {
     const { data } = await apiClient.get('/api/rooms');
+    return data;
+  },
+
+  getPlayers: async (): Promise<Player[]> => {
+    const { data } = await apiClient.get<Player[]>('/api/players');
     return data;
   },
 };
