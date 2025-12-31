@@ -101,3 +101,61 @@ datasource db {
   directUrl = env("DIRECT_URL")         // Session pooler (5432)
 }
 ```
+
+## Upstash Redis 設定
+
+### 創建 Redis 資料庫
+
+1. **註冊帳號**
+   - 前往 https://console.upstash.com/
+   - 使用 GitHub 或 Email 註冊
+
+2. **創建資料庫**
+   - 點擊 "Create Database"
+   - 填寫設定：
+     - Name: `yumyum-redis-staging`（測站）
+     - Type: Regional
+     - Region: **ap-southeast-1 (Singapore)**（離台灣最近）
+     - Eviction: ✅ **啟用**（建議開啟，避免容量滿時無法寫入）
+
+3. **取得連線字串**
+   - 進入資料庫 Details 頁面
+   - 複製 **Redis URL**（格式：`rediss://default:xxx@xxx.upstash.io:6379`）
+   - 注意：使用 `rediss://`（雙 s）表示 TLS/SSL 加密連線
+
+### 環境變數設定
+
+將取得的 Redis URL 加入環境檔案：
+
+```bash
+# .env.staging
+REDIS_URL="rediss://default:AR-xxx@amazing-duck-8085.upstash.io:6379"
+```
+
+### 測試連線
+
+啟動開發服務後，應該會看到：
+
+```bash
+✅ Redis connected
+🚀 Redis ready
+```
+
+測試 API endpoint：
+
+```bash
+curl http://localhost:3000/api/stats
+# 回應：{"totalVisits":1,"onlinePlayers":0,"activeRooms":0,"timestamp":"..."}
+```
+
+每次呼叫 `totalVisits` 會自動遞增，表示 Redis 讀寫正常。
+
+### ioredis 客戶端
+
+專案使用 `ioredis` 作為 Redis 客戶端，支援：
+- ✅ 自動處理 `rediss://` TLS/SSL 連線
+- ✅ 連線重試機制（最多 3 次）
+- ✅ Singleton pattern 避免重複連線
+- ✅ 連線事件監聽（connect, error, ready）
+
+配置檔案位於：`services/api-gateway/src/lib/redis.ts`
