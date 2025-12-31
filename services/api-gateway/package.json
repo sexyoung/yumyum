@@ -12,7 +12,8 @@
   "dependencies": {
     "@hono/node-server": "^1.14.0",
     "@prisma/client": "^6.19.1",
-    "hono": "^4.7.10"
+    "hono": "^4.7.10",
+    "ioredis": "^5.8.2"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",

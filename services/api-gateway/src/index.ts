@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { serve } from '@hono/node-server';
 import { prisma } from './lib/prisma';
+import { redis } from './lib/redis';
 import type { Player } from '@yumyum/types';
 
 const app = new Hono();
@@ -13,7 +14,47 @@ app.use('*', cors({
 }));
 
 // 健康檢查
-app.get('/health', (c) => c.json({ status: 'ok', service: 'api-gateway' }));
+app.get('/health', async (c) => {
+  try {
+    // 檢查 Redis 連線
+    const redisPing = await redis.ping();
+    return c.json({
+      status: 'ok',
+      service: 'api-gateway',
+      redis: redisPing === 'PONG' ? 'connected' : 'disconnected'
+    });
+  } catch (error) {
+    return c.json({
+      status: 'ok',
+      service: 'api-gateway',
+      redis: 'error'
+    });
+  }
+});
+
+// Redis 測試端點 - 訪問計數器
+app.get('/api/stats', async (c) => {
+  try {
+    // 增加訪問計數
+    const visits = await redis.incr('api:visits');
+
+    // 獲取線上玩家數（示意）
+    const onlinePlayers = await redis.scard('online-players') || 0;
+
+    // 獲取活躍房間數（示意）
+    const activeRooms = await redis.scard('active-rooms') || 0;
+
+    return c.json({
+      totalVisits: visits,
+      onlinePlayers,
+      activeRooms,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Redis stats error:', error);
+    return c.json({ error: 'Failed to fetch stats' }, 500);
+  }
+});
 
 // 玩家相關 API
 app.get('/api/players', async (c) => {

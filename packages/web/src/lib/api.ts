@@ -26,4 +26,9 @@ export const api = {
     const { data } = await apiClient.get<Player[]>('/api/players');
     return data;
   },
+
+  getStats: async () => {
+    const { data } = await apiClient.get('/api/stats');
+    return data;
+  },
 };

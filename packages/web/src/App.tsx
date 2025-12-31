@@ -21,6 +21,12 @@ function App() {
     queryFn: api.getPlayers,
   });
 
+  const { data: statsData, isLoading: statsLoading } = useQuery({
+    queryKey: ['stats'],
+    queryFn: api.getStats,
+    refetchInterval: 3000, // 每 3 秒更新一次
+  });
+
   // WebSocket 狀態
   const [isWsConnected, setIsWsConnected] = useState(false);
   const [messages, setMessages] = useState<ServerMessage[]>([]);
@@ -97,9 +103,28 @@ function App() {
                 {healthLoading && <p className="text-sm">載入中...</p>}
                 {healthError && <p className="text-red-300 text-sm">❌ 連線失敗</p>}
                 {healthData && (
-                  <p className="text-sm">
-                    ✅ {healthData.service} - {healthData.status}
-                  </p>
+                  <div className="text-sm space-y-1">
+                    <p>✅ {healthData.service} - {healthData.status}</p>
+                    <p>
+                      {healthData.redis === 'connected' && '🟢 Redis 已連線'}
+                      {healthData.redis === 'error' && '🔴 Redis 錯誤'}
+                      {healthData.redis === 'disconnected' && '⚪ Redis 未連線'}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Redis 統計 */}
+              <div className="bg-white/5 rounded p-4">
+                <h3 className="font-semibold mb-2">📊 Redis 即時統計</h3>
+                {statsLoading && <p className="text-sm">載入中...</p>}
+                {statsData && (
+                  <div className="text-sm space-y-1">
+                    <p>🔢 總訪問次數: <span className="font-mono text-green-300">{statsData.totalVisits}</span></p>
+                    <p>👥 線上玩家: <span className="font-mono text-blue-300">{statsData.onlinePlayers}</span></p>
+                    <p>🏠 活躍房間: <span className="font-mono text-yellow-300">{statsData.activeRooms}</span></p>
+                    <p className="text-xs text-white/40 mt-2">每 3 秒自動更新</p>
+                  </div>
                 )}
               </div>
 
@@ -232,7 +257,8 @@ function App() {
         {/* 技術棧說明 */}
         <div className="text-sm text-white/80 space-y-1 mt-6">
           <p>前端: <code className="bg-white/20 px-2 py-1 rounded">React + Vite + TanStack Query + Axios + WebSocket</code></p>
-          <p>後端: <code className="bg-white/20 px-2 py-1 rounded">Hono.js + ws + TypeScript</code></p>
+          <p>後端: <code className="bg-white/20 px-2 py-1 rounded">Hono.js + Prisma + ioredis + ws + TypeScript</code></p>
+          <p>資料: <code className="bg-white/20 px-2 py-1 rounded">PostgreSQL (Docker) + Redis (Docker)</code></p>
           <p className="text-xs mt-2">
             前端: localhost:5173 | API: localhost:3000 | Game: localhost:3002
           </p>
