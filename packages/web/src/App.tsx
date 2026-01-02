@@ -1,10 +1,17 @@
-import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useRef } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+
 import { api } from './lib/api';
 import { GameWebSocket } from './lib/websocket';
 import type { ServerMessage } from '@yumyum/types';
 
-function App() {
+import Home from './pages/Home';
+import LocalGame from './pages/LocalGame';
+import AIGame from './pages/AIGame';
+import OnlineGame from './pages/OnlineGame';
+
+const HomePageContent: React.FC = () => {
   // 使用 React Query 呼叫 API
   const { data: healthData, isLoading: healthLoading, error: healthError } = useQuery({
     queryKey: ['health'],
@@ -265,6 +272,21 @@ function App() {
         </div>
       </div>
     </div>
+  );
+};
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/local" element={<LocalGame />} />
+        <Route path="/ai" element={<AIGame />} />
+        <Route path="/online" element={<OnlineGame />} />
+        {/* 新增 /dev 路徑用於顯示 HomePageContent */}
+        <Route path="/dev" element={<HomePageContent />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

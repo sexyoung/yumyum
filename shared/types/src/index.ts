@@ -18,11 +18,9 @@ export interface Room {
   status: 'waiting' | 'playing' | 'finished';
 }
 
-export interface GameState {
-  roomId: string;
-  currentPlayer: string;
-  board: unknown; // 待實作
-}
+import { PieceSize, PieceColor, Position, Piece, Cell, GameState } from './game';
+
+export type { PieceSize, PieceColor, Position, Piece, Cell, GameState };
 
 // WebSocket 連線中的玩家（簡化版，不包含資料庫欄位）
 export interface ConnectedPlayer {
