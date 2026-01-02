@@ -6,10 +6,7 @@ import { api } from './lib/api';
 import { GameWebSocket } from './lib/websocket';
 import type { ServerMessage } from '@yumyum/types';
 
-import Home from './pages/Home';
-import LocalGame from './pages/LocalGame';
-import AIGame from './pages/AIGame';
-import OnlineGame from './pages/OnlineGame';
+import AppRoutes from './AppRoutes';
 
 const HomePageContent: React.FC = () => {
   // 使用 React Query 呼叫 API
@@ -277,13 +274,16 @@ const HomePageContent: React.FC = () => {
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/local" element={<LocalGame />} />
-        <Route path="/ai" element={<AIGame />} />
-        <Route path="/online" element={<OnlineGame />} />
-        {/* 新增 /dev 路徑用於顯示 HomePageContent */}
+        {/* 主要遊戲路由 */}
+        <Route path="/*" element={<AppRoutes />} />
+        {/* 開發測試路徑 */}
         <Route path="/dev" element={<HomePageContent />} />
       </Routes>
     </BrowserRouter>
