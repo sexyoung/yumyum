@@ -1,5 +1,38 @@
 # 開發筆記
 
+## 部署策略總覽
+
+YumYum 採用**雙分支、雙環境**的部署策略：
+
+### 分支與環境對應
+
+```
+dev 分支 → 測站環境（Staging）
+  ├── Vercel Preview: dev-yumyum.sexyoung.tw
+  ├── Railway Staging: api-gateway + game-service
+  ├── Supabase Staging
+  └── Upstash Staging
+
+main 分支 → 正站環境（Production）
+  ├── Vercel Production: yumyum.sexyoung.tw
+  ├── Railway Production: api-gateway + game-service
+  ├── Supabase Production
+  └── Upstash Production
+```
+
+### 部署觸發方式
+
+- **測站（dev 分支）**: Push 後自動部署
+- **正站（main 分支）**: Push 後自動部署
+
+### 動態 API 路由
+
+- 前端使用 `middleware.ts` 根據 `VERCEL_ENV` 自動切換 API endpoint
+- 測站前端 → Railway Staging API
+- 正站前端 → Railway Production API
+
+---
+
 ## 如何在本機啟用服務後，用手機連線？
 1. 打開 macOS 設定 > 共享 > 遠端登入 > 打開
 2. 查詢你的區網 IP (通常是 192.168.x.x)
@@ -46,9 +79,9 @@ Supabase 提供三種連線模式：
 
 ### 環境檔案說明
 
-- `.env` - 本地開發（Docker PostgreSQL）
-- `.env.staging` - 測站環境（Supabase staging）
-- `.env.production` - 正式環境（未來建立）
+- `.env` / `.env.local` - 本地開發（Docker PostgreSQL + Redis）
+- `.env.staging` - 測站環境（Supabase Staging + Upstash Staging）
+- `.env.production` - 正站環境（Supabase Production + Upstash Production）
 
 ### ⚠️ 重要發現：Supabase 連線字串配置
 
@@ -106,30 +139,40 @@ datasource db {
 
 ### 創建 Redis 資料庫
 
+YumYum 需要建立**兩個獨立的 Redis 資料庫**（測站和正站, 因為每個 team 免費版只能建立1個Redis故建立2個team）：
+
 1. **註冊帳號**
    - 前往 https://console.upstash.com/
    - 使用 GitHub 或 Email 註冊
 
-2. **創建資料庫**
+2. **創建測站資料庫**
    - 點擊 "Create Database"
    - 填寫設定：
-     - Name: `yumyum-redis-staging`（測站）
+     - Name: `yumyum-redis-staging`
      - Type: Regional
      - Region: **ap-southeast-1 (Singapore)**（離台灣最近）
      - Eviction: ✅ **啟用**（建議開啟，避免容量滿時無法寫入）
 
-3. **取得連線字串**
-   - 進入資料庫 Details 頁面
+3. **創建正站資料庫**
+   - 重複步驟 2
+   - Name: `yumyum-redis-production`
+   - 其他設定相同
+
+4. **取得連線字串**
+   - 進入各資料庫 Details 頁面
    - 複製 **Redis URL**（格式：`rediss://default:xxx@xxx.upstash.io:6379`）
    - 注意：使用 `rediss://`（雙 s）表示 TLS/SSL 加密連線
 
 ### 環境變數設定
 
-將取得的 Redis URL 加入環境檔案：
+將取得的 Redis URL 加入對應的環境檔案：
 
 ```bash
 # .env.staging
-REDIS_URL="rediss://default:AR-xxx@amazing-duck-8085.upstash.io:6379"
+REDIS_URL="rediss://default:AR-xxx@staging-redis.upstash.io:6379"
+
+# .env.production
+REDIS_URL="rediss://default:AR-yyy@production-redis.upstash.io:6379"
 ```
 
 ### 測試連線
@@ -162,6 +205,23 @@ curl http://localhost:3000/api/stats
 
 ## Railway 部署
 
+### 部署架構
+
+YumYum 使用 Railway 的**多環境功能**部署後端服務：
+
+```
+Railway Project: yumyum
+├── Environment: staging
+│   ├── api-gateway (連 dev 分支)
+│   ├── game-service (連 dev 分支)
+│   └── 連接: Supabase Staging + Upstash Staging
+│
+└── Environment: production
+    ├── api-gateway (連 main 分支)
+    ├── game-service (連 main 分支)
+    └── 連接: Supabase Production + Upstash Production
+```
+
 ### 部署流程
 
 1. **建立專案**
@@ -169,12 +229,19 @@ curl http://localhost:3000/api/stats
    - Deploy from GitHub repo
    - 選擇你的 repository
 
-2. **新增服務**
+2. **建立環境**
+   - Project Settings → Environments → Create Environment
+   - 創建兩個環境：`staging` 和 `production`
+
+3. **新增服務**（每個環境都要設定）
    - Add Service → GitHub Repo
    - 分別新增 api-gateway 和 game-service
 
-3. **設定每個服務**
-   - Settings → Service → Root Directory: 清空（使用 repo 根目錄）
+4. **設定每個服務**
+   - Settings → Source → Branch:
+     - **Staging 環境**: `dev`
+     - **Production 環境**: `main`
+   - Settings → Source → Root Directory: 清空（使用 repo 根目錄）
    - Settings → Build → Builder: **Dockerfile**
    - Settings → Build → Dockerfile Path:
      - api-gateway: `services/api-gateway/Dockerfile`
@@ -182,22 +249,37 @@ curl http://localhost:3000/api/stats
    - Settings → Deploy → Custom Start Command: **清空**（使用 Dockerfile 的 CMD）
    - Settings → Deploy → Healthcheck Path: `/health`
    - Settings → Deploy → Regions: **asia-southeast1** (Singapore)
+   - Settings → Deploys → Automatic Deployments:
+     - **Staging**: ON（自動部署 dev 分支）
+     - **Production**: ON（自動部署 main 分支）
 
-4. **設定環境變數**
-   - 在 Variables 頁籤加入：
-     ```bash
-     NODE_ENV=production
-     PORT=3000  # api-gateway 用 3000，game-service 用 3002
-     DATABASE_URL=<Supabase Transaction pooler URL>
-     DIRECT_URL=<Supabase Session pooler URL>
-     REDIS_URL=<Upstash Redis URL>
-     CORS_ORIGIN=https://你的前端域名  # api-gateway 專用
-     WS_HEARTBEAT_INTERVAL=30000  # game-service 專用
-     ```
+5. **設定環境變數**（分別在 Staging 和 Production 設定）
 
-5. **觸發部署**
-   - Push 到 GitHub 會自動部署
-   - 或手動點擊 Deploy 按鈕
+   **Staging Environment:**
+   ```bash
+   NODE_ENV=staging
+   PORT=3000  # api-gateway 用 3000，game-service 用 3002
+   DATABASE_URL=<Supabase Staging Transaction pooler URL>
+   DIRECT_URL=<Supabase Staging Session pooler URL>
+   REDIS_URL=<Upstash Staging Redis URL>
+   CORS_ORIGIN=https://dev-yumyum.sexyoung.tw  # api-gateway 專用
+   WS_HEARTBEAT_INTERVAL=30000  # game-service 專用
+   ```
+
+   **Production Environment:**
+   ```bash
+   NODE_ENV=production
+   PORT=3000  # api-gateway 用 3000，game-service 用 3002
+   DATABASE_URL=<Supabase Production Transaction pooler URL>
+   DIRECT_URL=<Supabase Production Session pooler URL>
+   REDIS_URL=<Upstash Production Redis URL>
+   CORS_ORIGIN=https://yumyum.sexyoung.tw  # api-gateway 專用
+   WS_HEARTBEAT_INTERVAL=30000  # game-service 專用
+   ```
+
+6. **自動部署**
+   - Push 到 `dev` 分支 → 自動部署到 Staging
+   - Push 到 `main` 分支 → 自動部署到 Production
 
 ### 部署時遇到的問題與解決方案
 
@@ -272,67 +354,87 @@ curl https://yumyumgame-service-production.up.railway.app/health
 
 ## Vercel 部署
 
+### 部署架構
+
+YumYum 使用 Vercel 的**多環境功能**部署前端：
+
+```
+Vercel Project: yumyum
+├── Environment: Preview (測站)
+│   ├── 分支: dev
+│   ├── 域名: dev-yumyum.sexyoung.tw
+│   └── API: Railway Staging (透過 middleware.ts 動態 rewrite)
+│
+└── Environment: Production (正站)
+    ├── 分支: main
+    ├── 域名: yumyum.sexyoung.tw
+    └── API: Railway Production (透過 middleware.ts 動態 rewrite)
+```
+
 ### 部署流程
 
-1. **建立 vercel.json 配置**
-   - 位置：repo 根目錄（不是 packages/web/）
-   - 配置 monorepo 的 build 指令和輸出目錄
-
-2. **在 Vercel 建立專案**
+1. **在 Vercel 建立專案**
    - 前往 https://vercel.com/new
    - Import Git Repository
    - 選擇你的 repository
 
-3. **專案設定**
+2. **專案設定**
    - Framework Preset: **Vite**
    - Root Directory: **留空**（使用 repo 根目錄）
-   - Build Command: 自動從 vercel.json 讀取
-   - Output Directory: 自動從 vercel.json 讀取
-   - Install Command: 自動從 vercel.json 讀取
+   - Build Command: 使用預設或自訂
+   - Output Directory: `packages/web/dist`
+   - Install Command: `npm install`
 
-4. **環境變數**
-   - **不需要設定**（使用 Vercel Rewrites，API 是相對路徑）
+3. **環境設定**
+   - Environments → Production → Branch Tracking
+   - Production Branch: `main`（自動部署）
+   - Preview Deployments: 啟用 `dev` 分支
+
+4. **環境變數設定**
+
+   **Preview Environment (測站):**
+   GATEWAY_URL=https://yumyumapi-gateway-staging.up.railway.app
+
+   **Production Environment (正站):**
+   GATEWAY_URL=https://yumyumapi-gateway-production.up.railway.app
 
 5. **自訂域名設定**
    - Settings → Domains
-   - 新增域名（例如：dev-yumyum.sexyoung.tw）
+   - Preview 域名: `dev-yumyum.sexyoung.tw`（綁定到 dev 分支）
+   - Production 域名: `yumyum.sexyoung.tw`
    - Vercel 會提供 CNAME 記錄資訊
    - 在 Cloudflare 新增 CNAME 記錄
    - Proxy status: **DNS only**（關閉橘色雲朵）
    - 等待驗證（5-30 分鐘）
    - Vercel 自動配置 SSL 證書
 
-### vercel.json 配置範例
+6. **自動部署**
+   - Push 到 `dev` 分支 → 自動部署到 Preview (dev-yumyum.sexyoung.tw)
+   - Push 到 `main` 分支 → 自動部署到 Production (yumyum.sexyoung.tw)
 
-```json
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd packages/web && npm run build",
-  "outputDirectory": "packages/web/dist",
-  "installCommand": "npm install",
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "https://yumyumapi-gateway-production.up.railway.app/api/:path*"
-    },
-    {
-      "source": "/health",
-      "destination": "https://yumyumapi-gateway-production.up.railway.app/health"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        }
-      ]
-    }
-  ]
+### 動態 API Rewrites
+
+使用 `middleware.ts` 根據環境動態轉發 API 請求：
+
+```typescript
+// packages/web/middleware.ts
+export function middleware(request: NextRequest) {
+  const isProduction = process.env.VERCEL_ENV === 'production';
+  const apiBase = isProduction
+    ? process.env.NEXT_PUBLIC_RAILWAY_API_PRODUCTION
+    : process.env.NEXT_PUBLIC_RAILWAY_API_STAGING;
+
+  // 動態 rewrite /api/* 到對應的 Railway 環境
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    return NextResponse.rewrite(new URL(request.nextUrl.pathname, apiBase));
+  }
 }
 ```
+
+**優點：**
+- ✅ 不需要為每個環境維護不同的 vercel.json
+- ✅ 根據 `VERCEL_ENV` 自動切換 API endpoint
+- ✅ 測站和正站完全隔離
 
 ### 部署時遇到的問題與解決方案
 
