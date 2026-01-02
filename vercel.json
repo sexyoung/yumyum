@@ -1,4 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "outputDirectory": "packages/web/dist"
+  "outputDirectory": "packages/web/dist",
+  "rewrites": [
+    {
+      "source": "/((?!api/|ws/|health|favicon.ico).*)",
+      "destination": "/index.html"
+    }
+  ]
 }
+
