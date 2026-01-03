@@ -6,6 +6,7 @@ interface CellProps {
   row: number;
   col: number;
   onClick?: () => void;
+  selected?: boolean; // 格子上的棋子是否被選中
 }
 
 /**
@@ -13,22 +14,22 @@ interface CellProps {
  * 可以堆疊多個棋子，顯示最上層的棋子
  * 功能優先：簡單邊框區分格子，最小 44x44px（手機友善）
  */
-export default function Cell({ cell, row, col, onClick }: CellProps) {
+export default function Cell({ cell, row, col, onClick, selected = false }: CellProps) {
   // 取得最上層的棋子（如果有）
   const topPiece = cell.pieces.length > 0 ? cell.pieces[cell.pieces.length - 1] : null;
 
   return (
     <div
-      className="
+      className={`
         w-full aspect-square md:w-24 md:h-24
         border-2 border-gray-400
-        bg-gray-100
+        ${selected ? 'bg-yellow-100' : 'bg-gray-100'}
         flex items-center justify-center
         cursor-pointer
         hover:bg-gray-200
         transition-colors
         relative
-      "
+      `}
       onClick={onClick}
       data-testid={`cell-${row}-${col}`}
     >
@@ -36,6 +37,7 @@ export default function Cell({ cell, row, col, onClick }: CellProps) {
         <Piece
           size={topPiece.size}
           color={topPiece.color}
+          selected={selected}
         />
       )}
 

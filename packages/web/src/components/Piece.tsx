@@ -5,6 +5,7 @@ interface PieceProps {
   color: PieceColor;
   onClick?: () => void;
   label?: string | number; // 自訂顯示內容
+  selected?: boolean; // 是否被選中
 }
 
 const sizeClasses = {
@@ -22,7 +23,7 @@ const colorClasses = {
  * Piece 組件 - 顯示一個棋子
  * 功能優先：簡單圓形，純色背景，不做陰影和漸層
  */
-export default function Piece({ size, color, onClick, label }: PieceProps) {
+export default function Piece({ size, color, onClick, label, selected = false }: PieceProps) {
   // 如果有自訂 label 就顯示 label，否則顯示尺寸標記
   const displayText = label !== undefined
     ? String(label)
@@ -34,9 +35,10 @@ export default function Piece({ size, color, onClick, label }: PieceProps) {
         ${sizeClasses[size]}
         ${colorClasses[color]}
         rounded-full
-        border-2 border-gray-700
+        ${selected ? 'border-4 border-yellow-400 ring-2 ring-yellow-300' : 'border-2 border-gray-700'}
         cursor-pointer
         flex items-center justify-center
+        transition-all
       `}
       onClick={onClick}
     >
