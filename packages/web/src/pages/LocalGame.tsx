@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { GameState, PieceSize, PieceColor } from '@yumyum/types';
 import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
+import {
+  canPlacePieceFromReserve,
+  canMovePieceOnBoard,
+  placePieceFromReserve as executePlacePiece,
+  movePieceOnBoard as executeMovePiece,
+} from '../lib/gameLogic';
 
 // 選擇狀態類型
 type SelectedPiece = {
@@ -32,9 +38,15 @@ const initialGameState: GameState = {
 export default function LocalGame() {
   const [gameState, setGameState] = useState<GameState>(initialGameState);
   const [selectedPiece, setSelectedPiece] = useState<SelectedPiece>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // 點擊儲備區棋子
   const handlePieceClick = (color: PieceColor, size: PieceSize) => {
+    // 遊戲已結束，不允許操作
+    if (gameState.winner) {
+      return;
+    }
+
     // 只能選擇當前玩家的棋子
     if (color !== gameState.currentPlayer) {
       return;
@@ -65,6 +77,11 @@ export default function LocalGame() {
 
   // 點擊棋盤格子
   const handleCellClick = (row: number, col: number) => {
+    // 遊戲已結束，不允許操作
+    if (gameState.winner) {
+      return;
+    }
+
     if (!selectedPiece) {
       // 沒有選中棋子，嘗試選中格子上的棋子
       const cell = gameState.board[row][col];
@@ -94,45 +111,40 @@ export default function LocalGame() {
 
   // 從儲備區放置棋子到棋盤
   const placePieceFromReserve = (row: number, col: number, color: PieceColor, size: PieceSize) => {
-    const newGameState = { ...gameState };
+    // 驗證移動是否合法
+    const validation = canPlacePieceFromReserve(gameState, row, col, color, size);
 
-    // 放置棋子到格子
-    newGameState.board[row][col].pieces.push({ color, size });
+    if (!validation.valid) {
+      // 顯示錯誤訊息
+      setErrorMessage(validation.error || '無法放置');
+      setTimeout(() => setErrorMessage(null), 2000);
+      return;
+    }
 
-    // 減少儲備區數量
-    newGameState.reserves[color][size] -= 1;
-
-    // 切換玩家
-    newGameState.currentPlayer = color === 'red' ? 'blue' : 'red';
-
+    // 執行放置
+    const newGameState = executePlacePiece(gameState, row, col, color, size);
     setGameState(newGameState);
     setSelectedPiece(null);
+    setErrorMessage(null);
   };
 
   // 在棋盤上移動棋子
   const movePieceOnBoard = (fromRow: number, fromCol: number, toRow: number, toCol: number) => {
-    // 不能移動到同一個格子
-    if (fromRow === toRow && fromCol === toCol) {
-      setSelectedPiece(null);
+    // 驗證移動是否合法
+    const validation = canMovePieceOnBoard(gameState, fromRow, fromCol, toRow, toCol);
+
+    if (!validation.valid) {
+      // 顯示錯誤訊息
+      setErrorMessage(validation.error || '無法移動');
+      setTimeout(() => setErrorMessage(null), 2000);
       return;
     }
 
-    const newGameState = { ...gameState };
-
-    // 取出來源格子的最上層棋子
-    const piece = newGameState.board[fromRow][fromCol].pieces.pop();
-
-    if (piece) {
-      // 放到目標格子
-      newGameState.board[toRow][toCol].pieces.push(piece);
-
-      // 切換玩家
-      newGameState.currentPlayer = piece.color === 'red' ? 'blue' : 'red';
-
-      setGameState(newGameState);
-    }
-
+    // 執行移動
+    const newGameState = executeMovePiece(gameState, fromRow, fromCol, toRow, toCol);
+    setGameState(newGameState);
     setSelectedPiece(null);
+    setErrorMessage(null);
   };
 
   return (
@@ -140,12 +152,29 @@ export default function LocalGame() {
       {/* 標題 - 不使用 fixed，改用 flex-none */}
       <div className="flex-none p-2 md:p-4 bg-white shadow">
         <h1 className="text-lg md:text-2xl font-bold text-center">本機雙人遊戲</h1>
-        <p className="text-center text-sm md:text-base text-gray-600 mt-0.5 md:mt-1">
-          當前回合：
-          <span className={`font-bold ${gameState.currentPlayer === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
-            {gameState.currentPlayer === 'red' ? '紅方' : '藍方'}
-          </span>
-        </p>
+
+        {/* 勝利訊息 */}
+        {gameState.winner ? (
+          <p className="text-center text-base md:text-xl font-bold mt-1 md:mt-2">
+            <span className={gameState.winner === 'red' ? 'text-red-600' : 'text-blue-600'}>
+              {gameState.winner === 'red' ? '🎉 紅方獲勝！' : '🎉 藍方獲勝！'}
+            </span>
+          </p>
+        ) : (
+          <p className="text-center text-sm md:text-base text-gray-600 mt-0.5 md:mt-1">
+            當前回合：
+            <span className={`font-bold ${gameState.currentPlayer === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
+              {gameState.currentPlayer === 'red' ? '紅方' : '藍方'}
+            </span>
+          </p>
+        )}
+
+        {/* 錯誤訊息 */}
+        {errorMessage && (
+          <p className="text-center text-sm text-red-600 mt-1 font-semibold">
+            ⚠️ {errorMessage}
+          </p>
+        )}
       </div>
 
       {/* 遊戲區域 - 使用 flex-1 佔滿剩餘空間 */}
