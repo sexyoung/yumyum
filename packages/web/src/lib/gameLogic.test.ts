@@ -58,40 +58,58 @@ describe('遊戲規則引擎', () => {
       expect(result.error).toBe('該尺寸的棋子已用完');
     });
 
-    it('應該允許大棋子覆蓋小棋子', () => {
+    it('應該允許大棋子覆蓋對手的小棋子', () => {
       const gameState = createEmptyGameState();
-      // 先放一個小棋子
+      // 先放對手的小棋子
       gameState.board[0][0].pieces.push({ color: 'blue', size: 'small' });
 
-      // 嘗試用大棋子覆蓋
+      // 紅方用大棋子覆蓋對手
       const result = canPlacePieceFromReserve(gameState, 0, 0, 'red', 'large');
 
       expect(result.valid).toBe(true);
     });
 
-    it('應該允許中棋子覆蓋小棋子', () => {
+    it('應該允許中棋子覆蓋對手的小棋子', () => {
       const gameState = createEmptyGameState();
+      // 先放對手的小棋子
       gameState.board[0][0].pieces.push({ color: 'blue', size: 'small' });
 
+      // 紅方用中棋子覆蓋對手
       const result = canPlacePieceFromReserve(gameState, 0, 0, 'red', 'medium');
 
       expect(result.valid).toBe(true);
     });
 
-    it('應該拒絕同尺寸棋子覆蓋', () => {
+    it('應該拒絕覆蓋自己的棋子', () => {
       const gameState = createEmptyGameState();
+      // 紅方先放一個小棋子
+      gameState.board[0][0].pieces.push({ color: 'red', size: 'small' });
+
+      // 紅方嘗試用大棋子覆蓋自己的小棋子
+      const result = canPlacePieceFromReserve(gameState, 0, 0, 'red', 'large');
+
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('不能覆蓋自己的棋子');
+    });
+
+    it('應該拒絕同尺寸棋子覆蓋對手', () => {
+      const gameState = createEmptyGameState();
+      // 對手的中棋子
       gameState.board[0][0].pieces.push({ color: 'blue', size: 'medium' });
 
+      // 紅方嘗試用同尺寸覆蓋
       const result = canPlacePieceFromReserve(gameState, 0, 0, 'red', 'medium');
 
       expect(result.valid).toBe(false);
       expect(result.error).toBe('不能用同尺寸的棋子覆蓋');
     });
 
-    it('應該拒絕小棋子覆蓋大棋子', () => {
+    it('應該拒絕小棋子覆蓋對手的大棋子', () => {
       const gameState = createEmptyGameState();
+      // 對手的大棋子
       gameState.board[0][0].pieces.push({ color: 'blue', size: 'large' });
 
+      // 紅方嘗試用小棋子覆蓋
       const result = canPlacePieceFromReserve(gameState, 0, 0, 'red', 'small');
 
       expect(result.valid).toBe(false);
@@ -139,9 +157,11 @@ describe('遊戲規則引擎', () => {
       expect(result.error).toBe('還不是你的回合');
     });
 
-    it('應該允許移動並覆蓋較小的棋子', () => {
+    it('應該允許移動並覆蓋對手較小的棋子', () => {
       const gameState = createEmptyGameState();
+      // 紅方的大棋子
       gameState.board[0][0].pieces.push({ color: 'red', size: 'large' });
+      // 對手的小棋子
       gameState.board[1][1].pieces.push({ color: 'blue', size: 'small' });
 
       const result = canMovePieceOnBoard(gameState, 0, 0, 1, 1);
@@ -149,9 +169,24 @@ describe('遊戲規則引擎', () => {
       expect(result.valid).toBe(true);
     });
 
-    it('應該拒絕移動並覆蓋同尺寸棋子', () => {
+    it('應該拒絕移動並覆蓋自己的棋子', () => {
       const gameState = createEmptyGameState();
+      // 紅方的大棋子
+      gameState.board[0][0].pieces.push({ color: 'red', size: 'large' });
+      // 紅方的小棋子
+      gameState.board[1][1].pieces.push({ color: 'red', size: 'small' });
+
+      const result = canMovePieceOnBoard(gameState, 0, 0, 1, 1);
+
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('不能覆蓋自己的棋子');
+    });
+
+    it('應該拒絕移動並覆蓋對手同尺寸棋子', () => {
+      const gameState = createEmptyGameState();
+      // 紅方的中棋子
       gameState.board[0][0].pieces.push({ color: 'red', size: 'medium' });
+      // 對手的中棋子
       gameState.board[1][1].pieces.push({ color: 'blue', size: 'medium' });
 
       const result = canMovePieceOnBoard(gameState, 0, 0, 1, 1);

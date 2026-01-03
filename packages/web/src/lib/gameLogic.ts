@@ -44,8 +44,15 @@ export function canPlacePieceFromReserve(
     return { valid: true };
   }
 
-  // 如果格子有棋子，檢查是否可以覆蓋（大棋子蓋小棋子）
+  // 如果格子有棋子，檢查是否可以覆蓋
   const topPiece = cell.pieces[cell.pieces.length - 1];
+
+  // 不能覆蓋自己的棋子
+  if (topPiece.color === color) {
+    return { valid: false, error: '不能覆蓋自己的棋子' };
+  }
+
+  // 可以覆蓋對手的棋子（大棋子蓋小棋子）
   if (SIZE_ORDER[size] > SIZE_ORDER[topPiece.size]) {
     return { valid: true };
   }
@@ -103,6 +110,13 @@ export function canMovePieceOnBoard(
 
   // 如果目標格子有棋子，檢查是否可以覆蓋
   const topPiece = toCell.pieces[toCell.pieces.length - 1];
+
+  // 不能覆蓋自己的棋子
+  if (topPiece.color === movingPiece.color) {
+    return { valid: false, error: '不能覆蓋自己的棋子' };
+  }
+
+  // 可以覆蓋對手的棋子（大棋子蓋小棋子）
   if (SIZE_ORDER[movingPiece.size] > SIZE_ORDER[topPiece.size]) {
     return { valid: true };
   }
