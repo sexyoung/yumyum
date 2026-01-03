@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { GameState, PieceSize, PieceColor } from '@yumyum/types';
 import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
@@ -8,6 +8,10 @@ import {
   placePieceFromReserve as executePlacePiece,
   movePieceOnBoard as executeMovePiece,
 } from '../lib/gameLogic';
+import {
+  saveLocalGameState,
+  loadLocalGameState,
+} from '../lib/storage';
 
 // 選擇狀態類型
 type SelectedPiece = {
@@ -36,9 +40,17 @@ const initialGameState: GameState = {
 };
 
 export default function LocalGame() {
-  const [gameState, setGameState] = useState<GameState>(initialGameState);
+  const [gameState, setGameState] = useState<GameState>(() => {
+    // 初始化時嘗試載入保存的狀態
+    return loadLocalGameState() || initialGameState;
+  });
   const [selectedPiece, setSelectedPiece] = useState<SelectedPiece>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // 每次遊戲狀態更新時自動保存到 localStorage
+  useEffect(() => {
+    saveLocalGameState(gameState);
+  }, [gameState]);
 
   // 點擊儲備區棋子
   const handlePieceClick = (color: PieceColor, size: PieceSize) => {
@@ -147,11 +159,27 @@ export default function LocalGame() {
     setErrorMessage(null);
   };
 
+  // 重新開始遊戲
+  const handleRestart = () => {
+    setGameState(initialGameState);
+    setSelectedPiece(null);
+    setErrorMessage(null);
+  };
+
   return (
     <div className="h-[100dvh] bg-gray-50 flex flex-col overflow-hidden">
       {/* 標題 - 不使用 fixed，改用 flex-none */}
       <div className="flex-none p-2 md:p-4 bg-white shadow">
-        <h1 className="text-lg md:text-2xl font-bold text-center">本機雙人遊戲</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg md:text-2xl font-bold flex-1 text-center">本機雙人遊戲</h1>
+          <button
+            onClick={handleRestart}
+            className="px-3 py-1 md:px-4 md:py-2 text-sm md:text-base bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors"
+            data-testid="restart-button"
+          >
+            重新開始
+          </button>
+        </div>
 
         {/* 勝利訊息 */}
         {gameState.winner ? (
