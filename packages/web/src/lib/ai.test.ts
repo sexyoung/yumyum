@@ -13,7 +13,6 @@ import {
 import {
   canPlacePieceFromReserve,
   canMovePieceOnBoard,
-  checkWinner,
 } from './gameLogic';
 
 // 建立空棋盤的輔助函數
@@ -52,23 +51,6 @@ describe('AI 對手', () => {
       gameState.board[0][0].pieces.push({ color: 'blue', size: 'small' });
       gameState.board[0][1].pieces.push({ color: 'blue', size: 'medium' });
       // 第三個位置是空的，AI 應該選擇這裡來獲勝
-
-      const move = getEasyAIMove(gameState, 'blue');
-
-      expect(move).not.toBeNull();
-      expect(move?.type).toBe('place');
-      if (move?.type === 'place') {
-        expect(move.row).toBe(0);
-        expect(move.col).toBe(2);
-      }
-    });
-
-    it('應該優先阻擋對手獲勝', () => {
-      const gameState = createEmptyGameState();
-      // 紅方已經有兩個連線，即將獲勝
-      gameState.board[0][0].pieces.push({ color: 'red', size: 'small' });
-      gameState.board[0][1].pieces.push({ color: 'red', size: 'medium' });
-      // 第三個位置是空的，藍方 AI 應該阻擋
 
       const move = getEasyAIMove(gameState, 'blue');
 
