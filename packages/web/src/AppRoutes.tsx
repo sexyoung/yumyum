@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import LocalGame from './pages/LocalGame';
 import AIGame from './pages/AIGame';
+import OnlineLobby from './pages/OnlineLobby';
 import OnlineGame from './pages/OnlineGame';
 
 /**
@@ -15,7 +16,8 @@ function AppRoutes() {
       <Route path="/" element={<Home />} />
       <Route path="/local" element={<LocalGame />} />
       <Route path="/ai" element={<AIGame />} />
-      <Route path="/online" element={<OnlineGame />} />
+      <Route path="/online" element={<OnlineLobby />} />
+      <Route path="/online/game" element={<OnlineGame />} />
     </Routes>
   );
 }

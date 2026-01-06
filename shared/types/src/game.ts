@@ -23,3 +23,19 @@ export interface GameState {
   currentPlayer: PieceColor;
   winner: PieceColor | null;
 }
+
+// 遊戲移動類型（用於線上對戰）
+export type GameMove =
+  | {
+      type: 'place';
+      row: number;
+      col: number;
+      size: PieceSize;
+    }
+  | {
+      type: 'move';
+      fromRow: number;
+      fromCol: number;
+      toRow: number;
+      toCol: number;
+    };
