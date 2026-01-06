@@ -66,10 +66,10 @@ async function handleGameClientMessage(
   switch (message.type) {
     case 'create_room': {
       try {
-        const roomData = await roomManager.createRoom(
-          generatePlayerId(),
-          message.playerName
-        );
+        console.log(`🏠 創建房間請求: 玩家 ${message.playerName}`);
+        const playerId = generatePlayerId();
+        const roomData = await roomManager.createRoom(playerId, message.playerName);
+        console.log(`✅ 房間創建成功: ${roomData.roomId}, 玩家ID: ${playerId}`);
 
         // 加入房間
         joinGameRoom(ws, roomData.roomId, roomData.players.red!.playerId, message.playerName, 'red');
@@ -95,10 +95,14 @@ async function handleGameClientMessage(
 
     case 'join_room': {
       try {
+        console.log(`🚪 嘗試加入房間: ${message.roomId}, 玩家: ${message.playerName}`);
         const playerId = generatePlayerId();
         const result = await roomManager.joinRoom(message.roomId, playerId, message.playerName);
 
+        console.log(`📊 加入房間結果:`, result);
+
         if (!result.success || !result.room || !result.color) {
+          console.error(`❌ 加入房間失敗:`, result.error);
           sendError(ws, result.error || '加入房間失敗');
           return;
         }
