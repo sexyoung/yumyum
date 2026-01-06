@@ -27,7 +27,7 @@ app.get('/health', async (c) => {
       service: 'api-gateway',
       redis: redisPing === 'PONG' ? 'connected' : 'disconnected'
     });
-  } catch (error) {
+  } catch (_error) {
     return c.json({
       status: 'ok',
       service: 'api-gateway',
@@ -54,8 +54,8 @@ app.get('/api/stats', async (c) => {
       activeRooms,
       timestamp: new Date().toISOString(),
     });
-  } catch (error) {
-    console.error('Redis stats error:', error);
+  } catch (_error) {
+    console.error('Redis stats error:', _error);
     return c.json({ error: 'Failed to fetch stats' }, 500);
   }
 });

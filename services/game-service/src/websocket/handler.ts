@@ -19,7 +19,7 @@ export function handleWebSocketConnection(ws: WebSocket, roomId: string) {
     try {
       const message: ClientMessage = JSON.parse(data.toString());
       handleClientMessage(ws, roomId, message);
-    } catch (error) {
+    } catch (_error) {
       const errorMsg: ServerMessage = {
         type: 'error',
         message: '無效的訊息格式',

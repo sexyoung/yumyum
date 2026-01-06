@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import { handleWebSocketConnection, getRoomStats } from './websocket/handler.js';
+import { handleGameWebSocketConnection, getGameStats } from './websocket/gameHandler.js';
 
 const app = new Hono();
 
@@ -14,9 +15,14 @@ app.get('/health', (c) => {
   });
 });
 
-// WebSocket 房間統計
+// WebSocket 房間統計（聊天室）
 app.get('/stats', (c) => {
   return c.json(getRoomStats());
+});
+
+// 遊戲房間統計
+app.get('/stats/game', (c) => {
+  return c.json(getGameStats());
 });
 
 // 遊戲狀態路由
@@ -73,21 +79,25 @@ const server = createServer(async (req, res) => {
 const wss = new WebSocketServer({ server });
 
 wss.on('connection', (ws, req) => {
-  // 從 URL 取得 roomId: /game/:roomId
   const url = new URL(req.url || '', `http://${req.headers.host}`);
   const pathname = url.pathname;
 
-  // 驗證路徑格式：/game/:roomId
-  if (!pathname.startsWith('/game/')) {
+  // 區分聊天室和遊戲房間
+  // /chat/:roomId -> 聊天室 WebSocket
+  // /game/:roomId -> 遊戲房間 WebSocket
+
+  if (pathname.startsWith('/chat/')) {
+    const roomId = pathname.split('/')[2] || 'default';
+    console.log(`💬 聊天室 WebSocket 連線: roomId=${roomId}`);
+    handleWebSocketConnection(ws, roomId);
+  } else if (pathname.startsWith('/game/')) {
+    const roomId = pathname.split('/')[2] || 'default';
+    console.log(`🎮 遊戲 WebSocket 連線: roomId=${roomId}`);
+    handleGameWebSocketConnection(ws, roomId);
+  } else {
     console.log(`❌ 無效的 WebSocket 路徑: ${pathname}`);
-    ws.close(1008, 'Invalid path. Expected /game/:roomId');
-    return;
+    ws.close(1008, 'Invalid path. Expected /chat/:roomId or /game/:roomId');
   }
-
-  const roomId = pathname.split('/')[2] || 'default';
-  console.log(`✅ WebSocket 連線: roomId=${roomId}`);
-
-  handleWebSocketConnection(ws, roomId);
 });
 
 // 啟動 server
