@@ -13,8 +13,8 @@ interface BoardProps {
  */
 export default function Board({ board, onCellClick, selectedCell }: BoardProps) {
   return (
-    <div className="flex flex-col items-center justify-center w-full md:w-auto px-2 md:px-4 py-1 md:py-4">
-      <div className="grid grid-cols-3 gap-0 bg-gray-400 w-full md:w-auto max-w-sm md:max-w-none">
+    <div className="flex flex-col items-center justify-center">
+      <div className="grid grid-cols-3 gap-0 bg-gray-400">
         {board.map((row, rowIndex) =>
           row.map((cell, colIndex) => {
             const isSelected = selectedCell?.row === rowIndex && selectedCell?.col === colIndex;

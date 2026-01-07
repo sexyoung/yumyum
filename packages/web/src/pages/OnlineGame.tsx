@@ -248,7 +248,6 @@ const OnlineGame: React.FC = () => {
 
   if (phase === 'playing' && gameState && myColor) {
     const isMyTurn = gameState.currentPlayer === myColor;
-    const opponentColor: PieceColor = myColor === 'red' ? 'blue' : 'red';
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-400 to-blue-500 p-4">
@@ -270,50 +269,20 @@ const OnlineGame: React.FC = () => {
           {/* 頂部資訊 */}
           <div className="bg-white rounded-lg shadow-lg p-4 mb-4">
             <div className="flex justify-between items-center">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm text-gray-600">房間 ID: {roomId}</p>
-                  {/* 連線狀態指示器 */}
-                  <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${
-                    isConnected
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-red-100 text-red-700'
-                  }`}>
-                    <span className={`w-2 h-2 rounded-full ${
-                      isConnected ? 'bg-green-500' : 'bg-red-500'
-                    }`}></span>
-                    {isConnected ? '已連線' : '已斷線'}
-                  </span>
-                </div>
-                <p className="text-lg font-bold text-gray-800">
-                  你的顏色: <span className={myColor === 'red' ? 'text-red-600' : 'text-blue-600'}>
-                    {myColor === 'red' ? '紅色' : '藍色'}
-                  </span>
-                </p>
-              </div>
-              <div className="text-right">
-                <p className={`text-xl font-bold ${isMyTurn ? 'text-green-600' : 'text-gray-400'}`}>
-                  {isMyTurn ? '你的回合' : '對手回合'}
-                </p>
-              </div>
+              <button
+                onClick={handleBackToLobby}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
+              >
+                離開
+              </button>
+              <p className={`text-xl font-bold ${isMyTurn ? 'text-green-600' : 'text-gray-400'}`}>
+                {isMyTurn ? '你的回合' : '對手回合'}
+              </p>
             </div>
           </div>
 
           {/* 遊戲區域 */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* 對手儲備區 */}
-            <div className="bg-white rounded-lg shadow-lg p-4">
-              <h3 className="text-lg font-bold mb-2 text-center text-gray-700">
-                對手棋子 ({opponentColor === 'red' ? '紅' : '藍'})
-              </h3>
-              <PlayerReserve
-                color={opponentColor}
-                reserves={gameState.reserves[opponentColor]}
-                onPieceClick={() => {}}
-                selectedSize={null}
-              />
-            </div>
-
+          <div className="flex flex-col items-center gap-4">
             {/* 棋盤 */}
             <div className="bg-white rounded-lg shadow-lg p-4">
               <Board
@@ -325,9 +294,6 @@ const OnlineGame: React.FC = () => {
 
             {/* 我的儲備區 */}
             <div className="bg-white rounded-lg shadow-lg p-4">
-              <h3 className="text-lg font-bold mb-2 text-center text-gray-700">
-                你的棋子 ({myColor === 'red' ? '紅' : '藍'})
-              </h3>
               <PlayerReserve
                 color={myColor}
                 reserves={gameState.reserves[myColor]}
@@ -335,16 +301,6 @@ const OnlineGame: React.FC = () => {
                 selectedSize={selectedReserveSize}
               />
             </div>
-          </div>
-
-          {/* 底部按鈕 */}
-          <div className="mt-4 text-center">
-            <button
-              onClick={handleBackToLobby}
-              className="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition"
-            >
-              離開遊戲
-            </button>
           </div>
         </div>
       </div>

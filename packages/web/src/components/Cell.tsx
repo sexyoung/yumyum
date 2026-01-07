@@ -21,7 +21,7 @@ export default function Cell({ cell, row, col, onClick, selected = false }: Cell
   return (
     <div
       className={`
-        w-full aspect-square md:w-24 md:h-24
+        w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32
         border-2 border-gray-400
         ${selected ? 'bg-yellow-100' : 'bg-gray-100'}
         flex items-center justify-center
