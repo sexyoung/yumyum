@@ -53,11 +53,11 @@ describe('App 路由測試', () => {
     expect(await screen.findByText('本機雙人遊戲')).toBeInTheDocument();
   });
 
-  it('點擊線上雙人連結應該導航到線上雙人遊戲頁面', async () => {
+  it('點擊線上雙人連結應該導航到線上雙人對戰頁面', async () => {
     renderWithProviders(<AppRoutes />);
 
     fireEvent.click(screen.getByRole('link', { name: /線上雙人/i }));
 
-    expect(await screen.findByText('線上雙人遊戲')).toBeInTheDocument();
+    expect(await screen.findByText('線上雙人對戰')).toBeInTheDocument();
   });
 });

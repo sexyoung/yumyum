@@ -71,6 +71,31 @@ export default function AIGame() {
     }
   }, [gameState, difficulty]);
 
+  // 離開頁面時清空遊戲狀態（但重新整理時不清空）
+  useEffect(() => {
+    const REFRESH_KEY = 'yumyum:ai:isRefreshing';
+
+    // 檢查是否是重新整理（如果有標記，清除它）
+    if (sessionStorage.getItem(REFRESH_KEY)) {
+      sessionStorage.removeItem(REFRESH_KEY);
+    }
+
+    // 重新整理時設置標記
+    const handleBeforeUnload = () => {
+      sessionStorage.setItem(REFRESH_KEY, 'true');
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // 組件卸載時，如果不是重新整理就清空遊戲狀態
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      if (!sessionStorage.getItem(REFRESH_KEY)) {
+        clearAIGameState();
+      }
+    };
+  }, []);
+
   // AI 自動下棋
   useEffect(() => {
     if (

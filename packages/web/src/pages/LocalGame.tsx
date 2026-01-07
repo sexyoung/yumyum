@@ -11,6 +11,7 @@ import {
 import {
   saveLocalGameState,
   loadLocalGameState,
+  clearLocalGameState,
 } from '../lib/storage';
 
 // 選擇狀態類型
@@ -51,6 +52,31 @@ export default function LocalGame() {
   useEffect(() => {
     saveLocalGameState(gameState);
   }, [gameState]);
+
+  // 離開頁面時清空遊戲狀態（但重新整理時不清空）
+  useEffect(() => {
+    const REFRESH_KEY = 'yumyum:local:isRefreshing';
+
+    // 檢查是否是重新整理（如果有標記，清除它）
+    if (sessionStorage.getItem(REFRESH_KEY)) {
+      sessionStorage.removeItem(REFRESH_KEY);
+    }
+
+    // 重新整理時設置標記
+    const handleBeforeUnload = () => {
+      sessionStorage.setItem(REFRESH_KEY, 'true');
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // 組件卸載時，如果不是重新整理就清空遊戲狀態
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      if (!sessionStorage.getItem(REFRESH_KEY)) {
+        clearLocalGameState();
+      }
+    };
+  }, []);
 
   // 點擊儲備區棋子
   const handlePieceClick = (color: PieceColor, size: PieceSize) => {
