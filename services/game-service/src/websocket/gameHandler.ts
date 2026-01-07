@@ -131,12 +131,13 @@ async function handleGameClientMessage(
           broadcastToRoom(result.room.roomId, opponentJoinedMsg, ws);
 
           // 發送遊戲開始給所有玩家（根據各自的顏色）
-          const roomConnections = gameRooms.get(result.room.roomId);
+          const room = result.room;
+          const roomConnections = gameRooms.get(room.roomId);
           if (roomConnections) {
             roomConnections.forEach((clientWs, clientColor) => {
               const gameStartMsg: GameServerMessage = {
                 type: 'game_start',
-                gameState: result.room.gameState,
+                gameState: room.gameState,
                 yourColor: clientColor,
               };
               clientWs.send(JSON.stringify(gameStartMsg));

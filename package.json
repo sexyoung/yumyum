@@ -14,14 +14,16 @@
     "dev": "npm run dev:web & npm run dev:game",
     "build": "npm run build --workspaces --if-present",
     "type-check": "npm run type-check --workspaces --if-present",
-    "lint": "eslint .",
+    "lint": "eslint . && npm run type-check",
     "lint:fix": "eslint . --fix",
-    "clean": "rm -rf node_modules packages/*/node_modules services/*/node_modules shared/*/node_modules"
+    "clean": "rm -rf node_modules packages/*/node_modules services/*/node_modules shared/*/node_modules",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.52.0",
     "@typescript-eslint/parser": "^8.52.0",
     "eslint": "^9.39.2",
+    "husky": "^9.1.7",
     "prisma": "^6.19.1",
     "typescript": "^5.7.2"
   },
