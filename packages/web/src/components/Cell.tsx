@@ -40,13 +40,6 @@ export default function Cell({ cell, row, col, onClick, selected = false }: Cell
           selected={selected}
         />
       )}
-
-      {/* 顯示堆疊數量（如果有多個棋子） */}
-      {cell.pieces.length > 1 && (
-        <div className="absolute top-1 right-1 bg-black/50 text-white text-xs px-1 rounded">
-          {cell.pieces.length}
-        </div>
-      )}
     </div>
   );
 }
