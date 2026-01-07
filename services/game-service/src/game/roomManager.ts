@@ -134,6 +134,13 @@ export async function leaveRoom(
 
   // 還有玩家，將狀態改回 waiting
   roomData.status = 'waiting';
+
+  // 如果遊戲已結束，重置棋盤狀態
+  if (roomData.gameState.winner !== null) {
+    roomData.gameState = createInitialGameState();
+    console.log(`🔄 棋盤已重置: ${roomId}`);
+  }
+
   await saveRoom(roomData);
   return false; // 房間仍存在
 }
