@@ -28,7 +28,8 @@ const OnlineGame: React.FC = () => {
   // 再戰狀態
   const [rematchRequested, setRematchRequested] = useState(false); // 我是否已請求
   const [opponentRequestedRematch, setOpponentRequestedRematch] = useState(false); // 對方是否請求
-  const [rematchDeclined, setRematchDeclined] = useState(false); // 是否被拒絕
+  const [rematchDeclined, setRematchDeclined] = useState(false); // 對方拒絕我
+  const [iDeclinedRematch, setIDeclinedRematch] = useState(false); // 我拒絕對方
   const [loserStartsColor, setLoserStartsColor] = useState<PieceColor | null>(null); // 下局先手
 
   // WebSocket
@@ -114,6 +115,7 @@ const OnlineGame: React.FC = () => {
       setRematchRequested(false);
       setOpponentRequestedRematch(false);
       setRematchDeclined(false);
+      setIDeclinedRematch(false);
       setLoserStartsColor(null);
       setSelectedReserveSize(null);
       setSelectedBoardPos(null);
@@ -354,6 +356,7 @@ const OnlineGame: React.FC = () => {
     const handleRematchDecline = () => {
       sendMessage({ type: 'rematch_decline' });
       setOpponentRequestedRematch(false);
+      setIDeclinedRematch(true);
     };
 
     return (
@@ -403,8 +406,13 @@ const OnlineGame: React.FC = () => {
                   </p>
                 )}
               </div>
+            ) : iDeclinedRematch ? (
+              // 我拒絕了對方
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                <p className="text-gray-600">已拒絕對方的再戰請求</p>
+              </div>
             ) : rematchDeclined ? (
-              // 被拒絕
+              // 對方拒絕我
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
                 <p className="text-gray-600">對方拒絕了再戰請求</p>
               </div>
