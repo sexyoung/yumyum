@@ -292,7 +292,7 @@ const OnlineGame: React.FC = () => {
 
   if (phase === 'error') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-500 to-pink-600">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-500 to-pink-600 p-4">
         <div className="bg-white rounded-lg shadow-2xl p-8 text-center max-w-lg">
           <div className="text-6xl mb-4">:(</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-4">發生錯誤</h2>
@@ -327,7 +327,7 @@ const OnlineGame: React.FC = () => {
 
   if (phase === 'waiting') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500 p-4">
         <div className="bg-white rounded-lg shadow-2xl p-8 text-center max-w-md">
           <div className="text-6xl mb-4 animate-bounce">...</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-4">等待對手加入</h2>
@@ -349,7 +349,7 @@ const OnlineGame: React.FC = () => {
 
   if (phase === 'opponent_left') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500 p-4">
         <div className="bg-white rounded-lg shadow-2xl p-8 text-center max-w-md">
           <div className="text-6xl mb-4">...</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-4">對手已離開</h2>
