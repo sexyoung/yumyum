@@ -1,5 +1,5 @@
 // packages/web/src/pages/OnlineGame.tsx
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import type { GameState, PieceColor, GameMove } from '@yumyum/types';
@@ -33,6 +33,10 @@ const OnlineGame: React.FC = () => {
   const [rematchDeclined, setRematchDeclined] = useState(false); // 對方拒絕我
   const [iDeclinedRematch, setIDeclinedRematch] = useState(false); // 我拒絕對方
   const [loserStartsColor, setLoserStartsColor] = useState<PieceColor | null>(null); // 下局先手
+
+  // Emoji 狀態
+  const [receivedEmoji, setReceivedEmoji] = useState<{ emoji: string; key: number; x: number } | null>(null);
+  const emojiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // WebSocket
   const { connect, sendMessage, isReconnecting, reconnectAttempt, isConnected } = useGameWebSocket({
@@ -119,6 +123,19 @@ const OnlineGame: React.FC = () => {
       setLoserStartsColor(null);
       setSelectedReserveSize(null);
       setSelectedBoardPos(null);
+    },
+    onEmoji: (emoji) => {
+      console.log('收到 emoji:', emoji);
+      // 清除前一個 timeout
+      if (emojiTimeoutRef.current) {
+        clearTimeout(emojiTimeoutRef.current);
+      }
+      // 用 Date.now() 作為 key，強制重新播放動畫
+      // x: 隨機水平位置 (20% ~ 80%)
+      const x = 20 + Math.random() * 60;
+      setReceivedEmoji({ emoji, key: Date.now(), x });
+      // 2 秒後清除
+      emojiTimeoutRef.current = setTimeout(() => setReceivedEmoji(null), 2000);
     },
   });
 
@@ -344,7 +361,6 @@ const OnlineGame: React.FC = () => {
     const isGameOver = phase === 'finished' || !!gameState.winner;
     const winner = gameState.winner;
     const isWinner = winner === myColor;
-    const opponentColor: PieceColor = myColor === 'red' ? 'blue' : 'red';
 
     const handleRematchRequest = () => {
       sendMessage({ type: 'rematch_request' });
@@ -441,6 +457,20 @@ const OnlineGame: React.FC = () => {
             </div>
           )}
 
+          {/* 收到對手 Emoji 的浮動顯示 */}
+          {receivedEmoji && (
+            <div
+              key={receivedEmoji.key}
+              className="fixed top-[12%] -translate-x-1/2 pointer-events-none z-50"
+              style={{
+                left: `${receivedEmoji.x}%`,
+                animation: 'emoji-float 2s ease-out forwards',
+              }}
+            >
+              <span className="text-7xl drop-shadow-lg">{receivedEmoji.emoji}</span>
+            </div>
+          )}
+
           {/* 頂部資訊 */}
           <div className="flex-none px-3 pt-3">
             <div className="bg-white rounded-lg shadow-lg p-3">
@@ -475,18 +505,6 @@ const OnlineGame: React.FC = () => {
             </div>
           </div>
 
-          {/* 對手儲備區 - 頂部 */}
-          <div className="flex-none p-3 flex justify-center">
-            <div className="bg-white rounded-lg shadow-lg p-3">
-              <PlayerReserve
-                color={opponentColor}
-                reserves={gameState.reserves[opponentColor]}
-                selectedSize={null}
-                disabled={true}
-              />
-            </div>
-          </div>
-
           {/* 棋盤區域 - 置中 */}
           <div className="flex-1 flex items-center justify-center">
             <div className="bg-white rounded-lg shadow-lg p-3">
@@ -498,6 +516,33 @@ const OnlineGame: React.FC = () => {
                 currentPlayer={myColor}
                 winningCells={getWinningLine(gameState)?.cells}
               />
+            </div>
+          </div>
+
+          {/* Emoji 反應按鈕 */}
+          <div className="flex-none px-3 flex justify-center">
+            <div className="flex gap-2">
+              <button
+                onClick={() => sendMessage({ type: 'emoji', emoji: '👍' })}
+                className="w-12 h-12 bg-white rounded-full shadow-lg text-2xl hover:scale-110 active:scale-95 transition-transform"
+                title="讚"
+              >
+                👍
+              </button>
+              <button
+                onClick={() => sendMessage({ type: 'emoji', emoji: '❤️' })}
+                className="w-12 h-12 bg-white rounded-full shadow-lg text-2xl hover:scale-110 active:scale-95 transition-transform"
+                title="愛心"
+              >
+                ❤️
+              </button>
+              <button
+                onClick={() => sendMessage({ type: 'emoji', emoji: '👎' })}
+                className="w-12 h-12 bg-white rounded-full shadow-lg text-2xl hover:scale-110 active:scale-95 transition-transform"
+                title="倒讚"
+              >
+                👎
+              </button>
             </div>
           </div>
 

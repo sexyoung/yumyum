@@ -16,6 +16,7 @@ export interface UseGameWebSocketOptions {
   onRematchRequested?: (by: PieceColor, loserStarts: PieceColor | null) => void;
   onRematchDeclined?: () => void;
   onRematchStart?: (gameState: GameState, yourColor: PieceColor) => void;
+  onEmoji?: (emoji: string, from: PieceColor) => void;
 }
 
 export function useGameWebSocket(options: UseGameWebSocketOptions = {}) {
@@ -112,6 +113,9 @@ export function useGameWebSocket(options: UseGameWebSocketOptions = {}) {
             break;
           case 'rematch_start':
             optionsRef.current.onRematchStart?.(message.gameState, message.yourColor);
+            break;
+          case 'emoji':
+            optionsRef.current.onEmoji?.(message.emoji, message.from);
             break;
         }
       } catch (error) {

@@ -331,6 +331,24 @@ async function handleGameClientMessage(
       }
       break;
     }
+
+    case 'emoji': {
+      const playerInfo = gamePlayers.get(ws);
+      if (!playerInfo) {
+        return;
+      }
+
+      const { roomId, color } = playerInfo;
+      const emojiMsg: GameServerMessage = {
+        type: 'emoji',
+        emoji: message.emoji,
+        from: color,
+      };
+      // 只發給對手（排除自己）
+      broadcastToRoom(roomId, emojiMsg, ws);
+      console.log(`😀 Emoji: ${roomId} ${color} → ${message.emoji}`);
+      break;
+    }
   }
 }
 

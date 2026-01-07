@@ -48,7 +48,8 @@ export type GameClientMessage =
   | { type: 'leave_room' }
   | { type: 'rematch_request' }
   | { type: 'rematch_accept' }
-  | { type: 'rematch_decline' };
+  | { type: 'rematch_decline' }
+  | { type: 'emoji'; emoji: string };
 
 export type GameServerMessage =
   | { type: 'room_joined'; roomId: string; color: PieceColor }
@@ -62,7 +63,8 @@ export type GameServerMessage =
   | { type: 'error'; message: string }
   | { type: 'rematch_requested'; by: PieceColor; loserStarts: PieceColor | null }
   | { type: 'rematch_declined' }
-  | { type: 'rematch_start'; gameState: GameState; yourColor: PieceColor };
+  | { type: 'rematch_start'; gameState: GameState; yourColor: PieceColor }
+  | { type: 'emoji'; emoji: string; from: PieceColor };
 
 // 保持向後相容的別名
 export type ClientMessage = ChatClientMessage | GameClientMessage;
