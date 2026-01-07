@@ -134,43 +134,40 @@ export function canMovePieceOnBoard(
  * @returns 獲勝的玩家顏色，若無則返回 null
  */
 export function checkWinner(gameState: GameState): PieceColor | null {
+  const result = getWinningLine(gameState);
+  return result ? result.winner : null;
+}
+
+/**
+ * 取得獲勝的連線資訊
+ * @param gameState 當前遊戲狀態
+ * @returns 獲勝者和獲勝格子位置，若無則返回 null
+ */
+export function getWinningLine(gameState: GameState): { winner: PieceColor; cells: Array<{ row: number; col: number }> } | null {
   const board = gameState.board;
 
-  // 檢查橫向連線（3行）
-  for (let row = 0; row < 3; row++) {
-    const color = checkLine([
-      board[row][0],
-      board[row][1],
-      board[row][2],
-    ]);
-    if (color) return color;
+  // 所有可能的連線
+  const lines: Array<Array<{ row: number; col: number }>> = [
+    // 橫向
+    [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }],
+    [{ row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }],
+    [{ row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }],
+    // 縱向
+    [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }],
+    [{ row: 0, col: 1 }, { row: 1, col: 1 }, { row: 2, col: 1 }],
+    [{ row: 0, col: 2 }, { row: 1, col: 2 }, { row: 2, col: 2 }],
+    // 對角線
+    [{ row: 0, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 2 }],
+    [{ row: 0, col: 2 }, { row: 1, col: 1 }, { row: 2, col: 0 }],
+  ];
+
+  for (const line of lines) {
+    const cells = line.map(pos => board[pos.row][pos.col]);
+    const color = checkLine(cells);
+    if (color) {
+      return { winner: color, cells: line };
+    }
   }
-
-  // 檢查縱向連線（3列）
-  for (let col = 0; col < 3; col++) {
-    const color = checkLine([
-      board[0][col],
-      board[1][col],
-      board[2][col],
-    ]);
-    if (color) return color;
-  }
-
-  // 檢查對角線（左上到右下）
-  const diagonal1 = checkLine([
-    board[0][0],
-    board[1][1],
-    board[2][2],
-  ]);
-  if (diagonal1) return diagonal1;
-
-  // 檢查對角線（右上到左下）
-  const diagonal2 = checkLine([
-    board[0][2],
-    board[1][1],
-    board[2][0],
-  ]);
-  if (diagonal2) return diagonal2;
 
   return null;
 }

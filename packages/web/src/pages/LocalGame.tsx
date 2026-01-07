@@ -10,6 +10,7 @@ import {
   canMovePieceOnBoard,
   placePieceFromReserve as executePlacePiece,
   movePieceOnBoard as executeMovePiece,
+  getWinningLine,
 } from '../lib/gameLogic';
 import {
   saveLocalGameState,
@@ -287,6 +288,7 @@ export default function LocalGame() {
               }
               canDrag={!gameState.winner}
               currentPlayer={gameState.currentPlayer}
+              winningCells={getWinningLine(gameState)?.cells}
             />
           </div>
         </div>

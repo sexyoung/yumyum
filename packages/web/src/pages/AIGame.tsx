@@ -10,6 +10,7 @@ import {
   canMovePieceOnBoard,
   placePieceFromReserve as executePlacePiece,
   movePieceOnBoard as executeMovePiece,
+  getWinningLine,
 } from '../lib/gameLogic';
 import {
   getAIMove,
@@ -380,6 +381,7 @@ export default function AIGame() {
               }
               canDrag={!gameState.winner && !aiThinking && gameState.currentPlayer === playerColor}
               currentPlayer={playerColor}
+              winningCells={getWinningLine(gameState)?.cells}
             />
           </div>
         </div>

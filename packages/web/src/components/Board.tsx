@@ -7,19 +7,21 @@ interface BoardProps {
   selectedCell?: { row: number; col: number } | null; // 選中的格子
   canDrag?: boolean; // 是否允許拖曳棋盤上的棋子
   currentPlayer?: PieceColor; // 當前玩家
+  winningCells?: Array<{ row: number; col: number }> | null; // 獲勝的格子
 }
 
 /**
  * Board 組件 - 3x3 棋盤
  * 功能優先：簡單的 grid 佈局，格子用邊框區分
  */
-export default function Board({ board, onCellClick, selectedCell, canDrag, currentPlayer }: BoardProps) {
+export default function Board({ board, onCellClick, selectedCell, canDrag, currentPlayer, winningCells }: BoardProps) {
   return (
     <div className="flex flex-col items-center justify-center">
       <div className="grid grid-cols-3 gap-0 bg-gray-400">
         {board.map((row, rowIndex) =>
           row.map((cell, colIndex) => {
             const isSelected = selectedCell?.row === rowIndex && selectedCell?.col === colIndex;
+            const isWinning = winningCells?.some(c => c.row === rowIndex && c.col === colIndex) ?? false;
             return (
               <Cell
                 key={`${rowIndex}-${colIndex}`}
@@ -30,6 +32,7 @@ export default function Board({ board, onCellClick, selectedCell, canDrag, curre
                 selected={isSelected}
                 canDrag={canDrag}
                 currentPlayer={currentPlayer}
+                isWinning={isWinning}
               />
             );
           })

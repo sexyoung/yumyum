@@ -17,6 +17,7 @@ interface CellProps {
   selected?: boolean; // 格子上的棋子是否被選中
   canDrag?: boolean; // 是否允許拖曳此格上的棋子
   currentPlayer?: PieceColor; // 當前玩家，用於判斷是否可拖曳
+  isWinning?: boolean; // 是否為獲勝連線的格子
 }
 
 /**
@@ -25,7 +26,7 @@ interface CellProps {
  * 功能優先：簡單邊框區分格子，最小 44x44px（手機友善）
  * 使用 @dnd-kit 支援拖曳放置功能
  */
-export default function Cell({ cell, row, col, onClick, selected = false, canDrag = false, currentPlayer }: CellProps) {
+export default function Cell({ cell, row, col, onClick, selected = false, canDrag = false, currentPlayer, isWinning = false }: CellProps) {
   // 取得最上層的棋子（如果有）
   const topPiece = cell.pieces.length > 0 ? cell.pieces[cell.pieces.length - 1] : null;
 
@@ -51,6 +52,10 @@ export default function Cell({ cell, row, col, onClick, selected = false, canDra
 
   // 決定背景顏色
   const getBgClass = () => {
+    // 獲勝的格子顯示金黃色
+    if (isWinning) {
+      return 'bg-yellow-300 border-yellow-500';
+    }
     if (!isOver) {
       return selected ? 'bg-yellow-100' : 'bg-gray-100';
     }
