@@ -1,6 +1,7 @@
 // packages/web/src/hooks/useGameWebSocket.ts
 import { useEffect, useRef, useCallback, useState } from 'react';
 import type { GameClientMessage, GameServerMessage, PieceColor, GameState } from '@yumyum/types';
+import { getWsUrl } from '../lib/env';
 
 export interface UseGameWebSocketOptions {
   onRoomJoined?: (roomId: string, color: PieceColor) => void;
@@ -55,9 +56,7 @@ export function useGameWebSocket(options: UseGameWebSocketOptions = {}) {
 
     setRoomId(targetRoomId);
 
-    // WebSocket URL - 從環境變數讀取基礎 URL 並拼接路徑和房間 ID
-    const baseWsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3002';
-    const wsUrl = `${baseWsUrl}/game/${targetRoomId}`;
+    const wsUrl = `${getWsUrl()}/game/${targetRoomId}`;
 
     const ws = new WebSocket(wsUrl);
 

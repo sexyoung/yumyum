@@ -133,7 +133,7 @@ app.post('/game/:roomId/move', async (c) => {
   });
 });
 
-const port = parseInt(process.env.PORT || '3002', 10);
+const port = parseInt(process.env.PORT || '3000', 10);
 
 // 建立 HTTP server
 const server = createServer(async (req, res) => {
@@ -189,5 +189,5 @@ wss.on('connection', (ws, req) => {
 // 啟動 server
 server.listen(port, '0.0.0.0', () => {
   console.log(`Game Service running on http://0.0.0.0:${port}`);
-  console.log(`WebSocket endpoint: ws://0.0.0.0:${port}/game/:roomId`);
+  console.log(`WebSocket: ws://0.0.0.0:${port}/chat/:roomId | ws://0.0.0.0:${port}/game/:roomId`);
 });

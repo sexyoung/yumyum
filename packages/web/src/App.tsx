@@ -264,7 +264,7 @@ const HomePageContent: React.FC = () => {
           <p>後端: <code className="bg-white/20 px-2 py-1 rounded">Hono.js + Prisma + ioredis + ws + TypeScript</code></p>
           <p>資料: <code className="bg-white/20 px-2 py-1 rounded">PostgreSQL (Docker) + Redis (Docker)</code></p>
           <p className="text-xs mt-2">
-            前端: localhost:5173 | API: localhost:3002
+            前端: localhost:5173 | API: localhost:3000
           </p>
         </div>
       </div>

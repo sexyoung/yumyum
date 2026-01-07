@@ -42,7 +42,6 @@ description: 涵蓋 Vercel（前端）、Railway（後端）、Supabase（資料
 # .env.local（前端）
 NODE_ENV=development
 VITE_API_URL=http://localhost:3000
-VITE_WS_URL=ws://localhost:3002
 
 # .env（後端 - api-gateway）
 NODE_ENV=development

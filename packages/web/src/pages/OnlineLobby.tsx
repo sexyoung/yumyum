@@ -1,6 +1,7 @@
 // packages/web/src/pages/OnlineLobby.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getApiUrl } from '../lib/env';
 
 const OnlineLobby: React.FC = () => {
   const navigate = useNavigate();
@@ -13,10 +14,7 @@ const OnlineLobby: React.FC = () => {
     setError(null);
 
     try {
-      console.log('!!!', import.meta.env.VITE_API_URL);
-      // 使用環境變數或預設 URL
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002';
-      const response = await fetch(`${apiUrl}/api/rooms`, {
+      const response = await fetch(`${getApiUrl()}/api/rooms`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
