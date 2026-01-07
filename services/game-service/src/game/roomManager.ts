@@ -186,3 +186,20 @@ export async function deleteRoom(roomId: string): Promise<void> {
   await redis.del(`${ROOM_PREFIX}${roomId}`);
   console.log(`🗑️ 房間已刪除: ${roomId}`);
 }
+
+// 重置遊戲狀態（再來一局）
+export async function resetGameForRematch(roomId: string): Promise<RoomData | null> {
+  const roomData = await getRoom(roomId);
+  if (!roomData) {
+    return null;
+  }
+
+  // 重置遊戲狀態
+  roomData.gameState = createInitialGameState();
+  roomData.status = 'playing';
+  roomData.lastActivity = Date.now();
+
+  await saveRoom(roomData);
+  console.log(`🔄 房間重置（再來一局）: ${roomId}`);
+  return roomData;
+}

@@ -25,6 +25,11 @@ const OnlineGame: React.FC = () => {
   const [selectedReserveSize, setSelectedReserveSize] = useState<'small' | 'medium' | 'large' | null>(null);
   const [selectedBoardPos, setSelectedBoardPos] = useState<{ row: number; col: number } | null>(null);
 
+  // 再戰狀態
+  const [rematchRequested, setRematchRequested] = useState(false); // 我是否已請求
+  const [opponentRequestedRematch, setOpponentRequestedRematch] = useState(false); // 對方是否請求
+  const [rematchDeclined, setRematchDeclined] = useState(false); // 是否被拒絕
+
   // WebSocket
   const { connect, sendMessage, isReconnecting, reconnectAttempt, isConnected } = useGameWebSocket({
     onRoomJoined: (joinedRoomId, color) => {
@@ -86,6 +91,29 @@ const OnlineGame: React.FC = () => {
     },
     onReconnecting: (attempt) => {
       console.log('正在重連:', attempt);
+    },
+    onRematchRequested: (by) => {
+      console.log('對方請求再戰:', by);
+      if (by !== myColor) {
+        setOpponentRequestedRematch(true);
+      }
+    },
+    onRematchDeclined: () => {
+      console.log('再戰被拒絕');
+      setRematchDeclined(true);
+      setRematchRequested(false);
+    },
+    onRematchStart: (newGameState, yourColor) => {
+      console.log('再戰開始:', yourColor);
+      setGameState(newGameState);
+      setMyColor(yourColor);
+      setPhase('playing');
+      // 重置所有再戰狀態
+      setRematchRequested(false);
+      setOpponentRequestedRematch(false);
+      setRematchDeclined(false);
+      setSelectedReserveSize(null);
+      setSelectedBoardPos(null);
     },
   });
 
@@ -311,6 +339,20 @@ const OnlineGame: React.FC = () => {
     const winner = gameState.winner;
     const isWinner = winner === myColor;
 
+    const handleRematchRequest = () => {
+      sendMessage({ type: 'rematch_request' });
+      setRematchRequested(true);
+    };
+
+    const handleRematchAccept = () => {
+      sendMessage({ type: 'rematch_accept' });
+    };
+
+    const handleRematchDecline = () => {
+      sendMessage({ type: 'rematch_decline' });
+      setOpponentRequestedRematch(false);
+    };
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-600">
         <div className="bg-white rounded-lg shadow-2xl p-8 text-center max-w-md">
@@ -318,12 +360,55 @@ const OnlineGame: React.FC = () => {
           <h2 className="text-3xl font-bold text-gray-800 mb-4">
             {isWinner ? '恭喜獲勝！' : '遊戲結束'}
           </h2>
-          <p className="text-xl text-gray-600 mb-8">
+          <p className="text-xl text-gray-600 mb-6">
             {winner ? `${winner === 'red' ? '紅方' : '藍方'}獲勝！` : '平局'}
           </p>
+
+          {/* 再戰區塊 */}
+          <div className="mb-6">
+            {opponentRequestedRematch && !rematchDeclined ? (
+              // 對方已請求再戰
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <p className="text-yellow-800 font-semibold mb-3">對方想要再來一局！</p>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={handleRematchAccept}
+                    className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition"
+                  >
+                    接受
+                  </button>
+                  <button
+                    onClick={handleRematchDecline}
+                    className="px-6 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-lg font-semibold transition"
+                  >
+                    拒絕
+                  </button>
+                </div>
+              </div>
+            ) : rematchRequested && !rematchDeclined ? (
+              // 我已請求，等待對方
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <p className="text-blue-800 font-semibold">已發送再戰請求，等待對方回應...</p>
+              </div>
+            ) : rematchDeclined ? (
+              // 被拒絕
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                <p className="text-gray-600">對方拒絕了再戰請求</p>
+              </div>
+            ) : (
+              // 初始狀態，可以請求再戰
+              <button
+                onClick={handleRematchRequest}
+                className="px-8 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold text-lg transition w-full"
+              >
+                再來一局
+              </button>
+            )}
+          </div>
+
           <button
             onClick={handleBackToLobby}
-            className="px-8 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-semibold text-lg transition"
+            className="px-8 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold text-lg transition w-full"
           >
             返回大廳
           </button>

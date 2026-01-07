@@ -13,6 +13,9 @@ const gamePlayers = new Map<
   { playerName: string; roomId: string; color: PieceColor }
 >();
 
+// 儲存 rematch 請求（roomId -> 提出請求的顏色）
+const rematchRequests = new Map<string, PieceColor>();
+
 export function handleGameWebSocketConnection(ws: WebSocket, roomId: string) {
   console.log(`WebSocket connection: roomId=${roomId}`);
 
@@ -36,6 +39,9 @@ export function handleGameWebSocketConnection(ws: WebSocket, roomId: string) {
     const playerInfo = gamePlayers.get(ws);
     if (playerInfo) {
       console.log(`Player left: ${playerInfo.playerName} (${playerInfo.roomId})`);
+
+      // 清除 rematch 請求
+      rematchRequests.delete(playerInfo.roomId);
 
       // 從房間移除 WebSocket
       const roomConnections = gameRooms.get(playerInfo.roomId);
@@ -206,6 +212,110 @@ async function handleGameClientMessage(
 
     case 'leave_room': {
       ws.close();
+      break;
+    }
+
+    case 'rematch_request': {
+      const playerInfo = gamePlayers.get(ws);
+      if (!playerInfo) {
+        sendError(ws, '請先加入房間');
+        return;
+      }
+
+      const { roomId, color } = playerInfo;
+
+      // 檢查是否已經有人提出 rematch
+      const existingRequest = rematchRequests.get(roomId);
+
+      if (existingRequest) {
+        // 對方已經提出請求，這是接受
+        if (existingRequest !== color) {
+          // 雙方都同意，開始新遊戲
+          rematchRequests.delete(roomId);
+
+          const newRoom = await roomManager.resetGameForRematch(roomId);
+          if (newRoom) {
+            // 通知雙方遊戲重新開始
+            const roomConnections = gameRooms.get(roomId);
+            if (roomConnections) {
+              roomConnections.forEach((clientWs, clientColor) => {
+                const msg: GameServerMessage = {
+                  type: 'rematch_start',
+                  gameState: newRoom.gameState,
+                  yourColor: clientColor,
+                };
+                clientWs.send(JSON.stringify(msg));
+              });
+            }
+            console.log(`🔄 Rematch 開始: ${roomId}`);
+          }
+        }
+        // 如果是同一人再次請求，忽略
+      } else {
+        // 記錄請求並通知對方
+        rematchRequests.set(roomId, color);
+        const requestMsg: GameServerMessage = {
+          type: 'rematch_requested',
+          by: color,
+        };
+        broadcastToRoom(roomId, requestMsg);
+        console.log(`🔄 Rematch 請求: ${roomId} by ${color}`);
+      }
+      break;
+    }
+
+    case 'rematch_accept': {
+      const playerInfo = gamePlayers.get(ws);
+      if (!playerInfo) {
+        sendError(ws, '請先加入房間');
+        return;
+      }
+
+      const { roomId, color } = playerInfo;
+      const existingRequest = rematchRequests.get(roomId);
+
+      // 只有對方提出請求時才能接受
+      if (existingRequest && existingRequest !== color) {
+        rematchRequests.delete(roomId);
+
+        const newRoom = await roomManager.resetGameForRematch(roomId);
+        if (newRoom) {
+          const roomConnections = gameRooms.get(roomId);
+          if (roomConnections) {
+            roomConnections.forEach((clientWs, clientColor) => {
+              const msg: GameServerMessage = {
+                type: 'rematch_start',
+                gameState: newRoom.gameState,
+                yourColor: clientColor,
+              };
+              clientWs.send(JSON.stringify(msg));
+            });
+          }
+          console.log(`🔄 Rematch 開始: ${roomId}`);
+        }
+      }
+      break;
+    }
+
+    case 'rematch_decline': {
+      const playerInfo = gamePlayers.get(ws);
+      if (!playerInfo) {
+        sendError(ws, '請先加入房間');
+        return;
+      }
+
+      const { roomId, color } = playerInfo;
+      const existingRequest = rematchRequests.get(roomId);
+
+      // 只有對方提出請求時才能拒絕
+      if (existingRequest && existingRequest !== color) {
+        rematchRequests.delete(roomId);
+        const declineMsg: GameServerMessage = {
+          type: 'rematch_declined',
+        };
+        broadcastToRoom(roomId, declineMsg);
+        console.log(`❌ Rematch 被拒絕: ${roomId}`);
+      }
       break;
     }
   }

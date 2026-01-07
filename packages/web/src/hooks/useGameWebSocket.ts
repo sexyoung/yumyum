@@ -13,6 +13,9 @@ export interface UseGameWebSocketOptions {
   onOpponentLeft?: () => void;
   onError?: (message: string) => void;
   onReconnecting?: (attempt: number) => void;
+  onRematchRequested?: (by: PieceColor) => void;
+  onRematchDeclined?: () => void;
+  onRematchStart?: (gameState: GameState, yourColor: PieceColor) => void;
 }
 
 export function useGameWebSocket(options: UseGameWebSocketOptions = {}) {
@@ -100,6 +103,15 @@ export function useGameWebSocket(options: UseGameWebSocketOptions = {}) {
             break;
           case 'invalid_move':
             optionsRef.current.onError?.(message.reason);
+            break;
+          case 'rematch_requested':
+            optionsRef.current.onRematchRequested?.(message.by);
+            break;
+          case 'rematch_declined':
+            optionsRef.current.onRematchDeclined?.();
+            break;
+          case 'rematch_start':
+            optionsRef.current.onRematchStart?.(message.gameState, message.yourColor);
             break;
         }
       } catch (error) {
