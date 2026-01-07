@@ -1,7 +1,6 @@
 // packages/web/src/pages/OnlineLobby.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getApiUrl } from '../lib/env';
 
 const OnlineLobby: React.FC = () => {
   const navigate = useNavigate();
@@ -14,7 +13,7 @@ const OnlineLobby: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch(`${getApiUrl()}/api/rooms`, {
+      const response = await fetch('/api/rooms', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

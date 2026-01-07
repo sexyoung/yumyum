@@ -1,10 +1,5 @@
-// 從 VITE_API_URL 取得 base URL，並提供 http/ws 轉換
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-export function getApiUrl(): string {
-  return API_URL;
-}
-
+// WebSocket 需要完整 URL，從 VITE_API_URL 轉換 http → ws
 export function getWsUrl(): string {
-  return API_URL.replace(/^http/, 'ws');
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  return apiUrl.replace(/^http/, 'ws');
 }
