@@ -16,7 +16,7 @@ export interface RoomData {
 }
 
 const ROOM_PREFIX = 'room:';
-const ROOM_TTL = 3600 * 24; // 24小時過期
+const ROOM_TTL = 3600; // 1小時過期
 
 // 創建初始遊戲狀態
 function createInitialGameState(): GameState {
