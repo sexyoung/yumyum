@@ -33,11 +33,11 @@ function createInitialGameState(): GameState {
   };
 }
 
-// 生成房間 ID（8位隨機字符）
-export function generateRoomId(): string {
+// 生成房間 ID（4位隨機字符）
+function generateRoomId(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 排除易混淆字符
   let result = '';
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 4; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
@@ -45,7 +45,22 @@ export function generateRoomId(): string {
 
 // 創建空房間（HTTP API 使用）
 export async function createEmptyRoom(): Promise<string> {
-  const roomId = generateRoomId();
+  // 生成不重複的房間 ID
+  let roomId: string;
+  let attempts = 0;
+  const maxAttempts = 10;
+
+  do {
+    roomId = generateRoomId();
+    const exists = await redis.exists(`${ROOM_PREFIX}${roomId}`);
+    if (!exists) break;
+    attempts++;
+  } while (attempts < maxAttempts);
+
+  if (attempts >= maxAttempts) {
+    throw new Error('無法生成唯一的房間 ID，請稍後再試');
+  }
+
   const now = Date.now();
 
   const roomData: RoomData = {
