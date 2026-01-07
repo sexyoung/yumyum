@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { GameState, PieceSize, PieceColor } from '@yumyum/types';
 import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
+import { DragData } from '../components/Piece';
 import {
   canPlacePieceFromReserve,
   canMovePieceOnBoard,
@@ -49,6 +50,8 @@ export default function LocalGame() {
   });
   const [selectedPiece, setSelectedPiece] = useState<SelectedPiece>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // 觸控拖曳狀態（從儲備區開始的拖曳）
+  const [touchDragData, setTouchDragData] = useState<DragData | null>(null);
 
   // 每次遊戲狀態更新時自動保存到 localStorage
   useEffect(() => {
@@ -187,6 +190,27 @@ export default function LocalGame() {
     setErrorMessage(null);
   };
 
+  // 處理拖曳放置
+  const handleDrop = (row: number, col: number, data: DragData) => {
+    // 遊戲已結束，不允許操作
+    if (gameState.winner) {
+      return;
+    }
+
+    // 檢查是否是當前玩家的棋子
+    if (data.color !== gameState.currentPlayer) {
+      return;
+    }
+
+    if (data.type === 'reserve') {
+      // 從儲備區放置
+      placePieceFromReserve(row, col, data.color, data.size);
+    } else if (data.fromRow !== undefined && data.fromCol !== undefined) {
+      // 從棋盤移動
+      movePieceOnBoard(data.fromRow, data.fromCol, row, col);
+    }
+  };
+
   // 重新開始遊戲
   const handleRestart = () => {
     setGameState(initialGameState);
@@ -244,6 +268,8 @@ export default function LocalGame() {
                 ? selectedPiece.size
                 : null
             }
+            canDrag={!gameState.winner && gameState.currentPlayer === 'red'}
+            onTouchDragStart={setTouchDragData}
           />
         </div>
       </div>
@@ -259,6 +285,11 @@ export default function LocalGame() {
                 ? { row: selectedPiece.row, col: selectedPiece.col }
                 : null
             }
+            onDrop={handleDrop}
+            canDrag={!gameState.winner}
+            currentPlayer={gameState.currentPlayer}
+            externalTouchDragData={touchDragData}
+            onTouchDragEnd={() => setTouchDragData(null)}
           />
         </div>
       </div>
@@ -275,6 +306,8 @@ export default function LocalGame() {
                 ? selectedPiece.size
                 : null
             }
+            canDrag={!gameState.winner && gameState.currentPlayer === 'blue'}
+            onTouchDragStart={setTouchDragData}
           />
         </div>
       </div>

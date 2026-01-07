@@ -5,6 +5,7 @@ import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import type { GameState, PieceColor, GameMove } from '@yumyum/types';
 import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
+import { DragData } from '../components/Piece';
 import { placePieceFromReserve, movePieceOnBoard } from '../lib/gameLogic';
 
 type GamePhase = 'connecting' | 'waiting' | 'playing' | 'finished' | 'opponent_left' | 'error';
@@ -24,6 +25,8 @@ const OnlineGame: React.FC = () => {
   // 選擇狀態（用於下棋）
   const [selectedReserveSize, setSelectedReserveSize] = useState<'small' | 'medium' | 'large' | null>(null);
   const [selectedBoardPos, setSelectedBoardPos] = useState<{ row: number; col: number } | null>(null);
+  // 觸控拖曳狀態
+  const [touchDragData, setTouchDragData] = useState<DragData | null>(null);
 
   // 再戰狀態
   const [rematchRequested, setRematchRequested] = useState(false); // 我是否已請求
@@ -203,6 +206,42 @@ const OnlineGame: React.FC = () => {
     }
   }, [phase, gameState, myColor, selectedReserveSize, selectedBoardPos, sendMessage]);
 
+  // 處理拖曳放置
+  const handleDrop = useCallback((row: number, col: number, data: DragData) => {
+    if (phase !== 'playing' || !gameState || !myColor) return;
+    if (gameState.currentPlayer !== myColor) return;
+
+    // 只能操作自己的棋子
+    if (data.color !== myColor) return;
+
+    if (data.type === 'reserve') {
+      // 從儲備區放置
+      const newState = placePieceFromReserve(gameState, row, col, myColor, data.size);
+      if (newState !== gameState) {
+        const move: GameMove = {
+          type: 'place',
+          row,
+          col,
+          size: data.size,
+        };
+        sendMessage({ type: 'make_move', move });
+      }
+    } else if (data.fromRow !== undefined && data.fromCol !== undefined) {
+      // 從棋盤移動
+      const newState = movePieceOnBoard(gameState, data.fromRow, data.fromCol, row, col);
+      if (newState !== gameState) {
+        const move: GameMove = {
+          type: 'move',
+          fromRow: data.fromRow,
+          fromCol: data.fromCol,
+          toRow: row,
+          toCol: col,
+        };
+        sendMessage({ type: 'make_move', move });
+      }
+    }
+  }, [phase, gameState, myColor, sendMessage]);
+
   // 返回大廳
   const handleBackToLobby = () => {
     navigate('/online');
@@ -344,6 +383,11 @@ const OnlineGame: React.FC = () => {
               board={gameState.board}
               onCellClick={handleBoardClick}
               selectedCell={selectedBoardPos}
+              onDrop={handleDrop}
+              canDrag={isMyTurn}
+              currentPlayer={myColor}
+              externalTouchDragData={touchDragData}
+              onTouchDragEnd={() => setTouchDragData(null)}
             />
           </div>
         </div>
@@ -356,6 +400,8 @@ const OnlineGame: React.FC = () => {
               reserves={gameState.reserves[myColor]}
               onPieceClick={handleReserveClick}
               selectedSize={selectedReserveSize}
+              canDrag={isMyTurn}
+              onTouchDragStart={setTouchDragData}
             />
           </div>
         </div>

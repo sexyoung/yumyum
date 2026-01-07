@@ -1,5 +1,5 @@
 import { PieceColor, PieceSize } from '@yumyum/types';
-import Piece from './Piece';
+import Piece, { DragData } from './Piece';
 
 interface PlayerReserveProps {
   color: PieceColor;
@@ -10,6 +10,8 @@ interface PlayerReserveProps {
   };
   onPieceClick?: (size: PieceSize) => void;
   selectedSize?: PieceSize | null; // 選中的棋子尺寸
+  canDrag?: boolean; // 是否允許拖曳棋子
+  onTouchDragStart?: (data: DragData) => void; // 觸控拖曳開始
 }
 
 /**
@@ -18,23 +20,38 @@ interface PlayerReserveProps {
  * 手機版：水平排列節省空間
  * 桌機版：垂直排列更清楚
  */
-export default function PlayerReserve({ color, reserves, onPieceClick, selectedSize }: PlayerReserveProps) {
+export default function PlayerReserve({ color, reserves, onPieceClick, selectedSize, canDrag = false, onTouchDragStart }: PlayerReserveProps) {
   const sizes: PieceSize[] = ['small', 'medium', 'large'];
 
   return (
     <div className="flex flex-row md:flex-col gap-3 md:gap-4">
       {sizes.map((size) => {
         const isSelected = selectedSize === size;
+        const hasPieces = reserves[size] > 0;
+        const isDraggable = canDrag && hasPieces;
+        const dragData: DragData | undefined = isDraggable ? {
+          type: 'reserve',
+          color,
+          size,
+        } : undefined;
         return (
           <button
             key={size}
             onClick={() => onPieceClick?.(size)}
-            disabled={reserves[size] === 0}
+            disabled={!hasPieces}
             className="disabled:opacity-30 disabled:cursor-not-allowed"
             data-testid={`reserve-${color}-${size}`}
           >
             {/* 棋子，數量直接顯示在圓圈內 */}
-            <Piece size={size} color={color} label={reserves[size]} selected={isSelected} />
+            <Piece
+              size={size}
+              color={color}
+              label={reserves[size]}
+              selected={isSelected}
+              draggable={isDraggable}
+              dragData={dragData}
+              onTouchDragStart={onTouchDragStart}
+            />
           </button>
         );
       })}

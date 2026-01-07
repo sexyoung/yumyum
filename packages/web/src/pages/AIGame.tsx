@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { GameState, PieceSize, PieceColor } from '@yumyum/types';
 import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
+import { DragData } from '../components/Piece';
 import {
   canPlacePieceFromReserve,
   canMovePieceOnBoard,
@@ -52,6 +53,8 @@ export default function AIGame() {
   const [selectedPiece, setSelectedPiece] = useState<SelectedPiece>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [aiThinking, setAiThinking] = useState(false);
+  // 觸控拖曳狀態
+  const [touchDragData, setTouchDragData] = useState<DragData | null>(null);
 
   // 玩家顏色固定為紅色，AI 為藍色
   const playerColor: PieceColor = 'red';
@@ -228,6 +231,27 @@ export default function AIGame() {
     setErrorMessage(null);
   };
 
+  // 處理拖曳放置
+  const handleDrop = (row: number, col: number, data: DragData) => {
+    // 遊戲已結束或 AI 正在思考，不允許操作
+    if (gameState.winner || aiThinking) {
+      return;
+    }
+
+    // 只能操作玩家的棋子
+    if (data.color !== playerColor) {
+      return;
+    }
+
+    if (data.type === 'reserve') {
+      // 從儲備區放置
+      placePieceFromReserve(row, col, data.color, data.size);
+    } else if (data.fromRow !== undefined && data.fromCol !== undefined) {
+      // 從棋盤移動
+      movePieceOnBoard(data.fromRow, data.fromCol, row, col);
+    }
+  };
+
   // 開始新遊戲
   const handleNewGame = (selectedDifficulty: AIDifficulty) => {
     setDifficulty(selectedDifficulty);
@@ -353,6 +377,11 @@ export default function AIGame() {
                 ? { row: selectedPiece.row, col: selectedPiece.col }
                 : null
             }
+            onDrop={handleDrop}
+            canDrag={!gameState.winner && !aiThinking && gameState.currentPlayer === playerColor}
+            currentPlayer={playerColor}
+            externalTouchDragData={touchDragData}
+            onTouchDragEnd={() => setTouchDragData(null)}
           />
         </div>
       </div>
@@ -369,6 +398,8 @@ export default function AIGame() {
                 ? selectedPiece.size
                 : null
             }
+            canDrag={!gameState.winner && !aiThinking && gameState.currentPlayer === playerColor}
+            onTouchDragStart={setTouchDragData}
           />
         </div>
       </div>
