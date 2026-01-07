@@ -22,6 +22,11 @@ export const api = {
     return data;
   },
 
+  createRoom: async (): Promise<{ roomId: string }> => {
+    const { data } = await apiClient.post<{ roomId: string }>('/api/rooms');
+    return data;
+  },
+
   getPlayers: async (): Promise<Player[]> => {
     const { data } = await apiClient.get<Player[]>('/api/players');
     return data;
