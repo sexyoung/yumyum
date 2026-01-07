@@ -129,20 +129,23 @@ const OnlineGame: React.FC = () => {
 
     // 連接 WebSocket
     connect(roomId);
+  }, [action, urlRoomId, connect]);
 
-    // 延遲發送訊息，等待 WebSocket 連線建立
-    const timer = setTimeout(() => {
-      if (action === 'create') {
-        sendMessage({ type: 'create_room', playerName });
-      } else if (action === 'join' && urlRoomId) {
-        sendMessage({ type: 'join_room', roomId: urlRoomId, playerName });
-      } else if (action === 'rejoin' && urlRoomId && urlPlayerId) {
-        sendMessage({ type: 'rejoin_room', roomId: urlRoomId, playerId: urlPlayerId });
-      }
-    }, 500);
+  // 等待 WebSocket 連線成功後發送初始訊息
+  useEffect(() => {
+    if (!isConnected || !action) return;
 
-    return () => clearTimeout(timer);
-  }, [action, urlRoomId, urlPlayerId, connect, sendMessage, playerName]);
+    // 只在第一次連線成功時發送，避免重連時重複發送
+    if (currentRoomId) return;
+
+    if (action === 'create') {
+      sendMessage({ type: 'create_room', playerName });
+    } else if (action === 'join' && urlRoomId) {
+      sendMessage({ type: 'join_room', roomId: urlRoomId, playerName });
+    } else if (action === 'rejoin' && urlRoomId && urlPlayerId) {
+      sendMessage({ type: 'rejoin_room', roomId: urlRoomId, playerId: urlPlayerId });
+    }
+  }, [isConnected, action, urlRoomId, urlPlayerId, currentRoomId, sendMessage, playerName]);
 
   // 處理棋子選擇
   const handleReserveClick = useCallback((size: 'small' | 'medium' | 'large') => {
