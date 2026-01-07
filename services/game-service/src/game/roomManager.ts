@@ -108,30 +108,34 @@ export async function joinRoom(
   return { success: true, room: roomData, color };
 }
 
-// 離開房間（將玩家設為 null）
+// 離開房間（將玩家設為 null，若房間空了則刪除）
 export async function leaveRoom(
   roomId: string,
   color: PieceColor
-): Promise<void> {
+): Promise<boolean> {
   const roomData = await getRoom(roomId);
 
   if (!roomData) {
     console.log(`⚠️ 房間不存在: ${roomId}`);
-    return;
+    return true; // 房間不存在視為已刪除
   }
 
   // 將該玩家設為 null
   roomData.players[color] = null;
   roomData.lastActivity = Date.now();
 
-  // 如果房間變空了，可以選擇刪除或保留
-  // 這裡選擇保留，讓它自然過期
+  console.log(`🚪 玩家離開房間: ${roomId} (${color})`);
+
+  // 如果房間變空了，直接刪除
   if (!roomData.players.red && !roomData.players.blue) {
-    roomData.status = 'waiting';
+    await deleteRoom(roomId);
+    return true; // 房間已刪除
   }
 
+  // 還有玩家，將狀態改回 waiting
+  roomData.status = 'waiting';
   await saveRoom(roomData);
-  console.log(`🚪 玩家離開房間: ${roomId} (${color})`);
+  return false; // 房間仍存在
 }
 
 // 獲取房間資料
