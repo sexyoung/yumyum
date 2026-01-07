@@ -130,21 +130,18 @@ async function handleGameClientMessage(
           };
           broadcastToRoom(result.room.roomId, opponentJoinedMsg, ws);
 
-          // 發送遊戲開始給新加入的玩家
-          const gameStartMsg: GameServerMessage = {
-            type: 'game_start',
-            gameState: result.room.gameState,
-            yourColor: result.color,
-          };
-          ws.send(JSON.stringify(gameStartMsg));
-
-          // 發送遊戲開始給房主（第一個玩家）
-          const hostStartMsg: GameServerMessage = {
-            type: 'game_start',
-            gameState: result.room.gameState,
-            yourColor: 'red',
-          };
-          broadcastToRoom(result.room.roomId, hostStartMsg, ws);
+          // 發送遊戲開始給所有玩家（根據各自的顏色）
+          const roomConnections = gameRooms.get(result.room.roomId);
+          if (roomConnections) {
+            roomConnections.forEach((clientWs, clientColor) => {
+              const gameStartMsg: GameServerMessage = {
+                type: 'game_start',
+                gameState: result.room.gameState,
+                yourColor: clientColor,
+              };
+              clientWs.send(JSON.stringify(gameStartMsg));
+            });
+          }
 
           console.log(`Game started: ${result.room.roomId}`);
         }

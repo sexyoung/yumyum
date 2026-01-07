@@ -7,7 +7,7 @@ import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
 import { placePieceFromReserve, movePieceOnBoard } from '../lib/gameLogic';
 
-type GamePhase = 'connecting' | 'waiting' | 'playing' | 'finished' | 'error';
+type GamePhase = 'connecting' | 'waiting' | 'playing' | 'finished' | 'opponent_left' | 'error';
 
 const OnlineGame: React.FC = () => {
   const navigate = useNavigate();
@@ -65,9 +65,7 @@ const OnlineGame: React.FC = () => {
       setPhase('finished');
     },
     onOpponentLeft: () => {
-      setErrorMessage('對手已離開遊戲');
-      setErrorDetails('你的對手已經離線，遊戲無法繼續。你可以返回大廳開始新的遊戲。');
-      setPhase('error');
+      setPhase('opponent_left');
     },
     onError: (message) => {
       console.error('錯誤:', message);
@@ -273,6 +271,30 @@ const OnlineGame: React.FC = () => {
             className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition"
           >
             取消並返回
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'opponent_left') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500">
+        <div className="bg-white rounded-lg shadow-2xl p-8 text-center max-w-md">
+          <div className="text-6xl mb-4">...</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">對手已離開</h2>
+          <p className="text-gray-600 mb-6">
+            你可以在這裡等待對手重新加入，或是返回大廳開始新遊戲。
+          </p>
+          <div className="bg-gray-100 rounded-lg p-4 mb-6">
+            <p className="text-sm text-gray-500 mb-1">房間 ID</p>
+            <p className="text-2xl font-mono font-bold text-indigo-600">{roomId}</p>
+          </div>
+          <button
+            onClick={handleBackToLobby}
+            className="px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-semibold transition w-full"
+          >
+            返回大廳
           </button>
         </div>
       </div>
