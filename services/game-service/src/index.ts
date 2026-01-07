@@ -5,23 +5,42 @@ import { cors } from 'hono/cors';
 import { handleWebSocketConnection, getRoomStats } from './websocket/handler.js';
 import { handleGameWebSocketConnection, getGameStats } from './websocket/gameHandler.js';
 import * as roomManager from './game/roomManager.js';
+import { prisma } from './lib/prisma.js';
+import { redis } from './redis/client.js';
+import type { Player } from '@yumyum/types';
 
 const app = new Hono();
 
-// CORS 設定
+// CORS 設定 - 從環境變數讀取允許的來源
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',')
+  : ['http://localhost:5173', 'http://127.0.0.1:5173'];
+
 app.use('/*', cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: allowedOrigins,
+  credentials: true,
   allowMethods: ['GET', 'POST', 'OPTIONS'],
   allowHeaders: ['Content-Type'],
 }));
 
 // 健康檢查
-app.get('/health', (c) => {
-  return c.json({
-    status: 'ok',
-    service: 'game-service',
-    timestamp: new Date().toISOString(),
-  });
+app.get('/health', async (c) => {
+  try {
+    const redisPing = await redis.ping();
+    return c.json({
+      status: 'ok',
+      service: 'game-service',
+      redis: redisPing === 'PONG' ? 'connected' : 'disconnected',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (_error) {
+    return c.json({
+      status: 'ok',
+      service: 'game-service',
+      redis: 'error',
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 // WebSocket 房間統計（聊天室）
@@ -32,6 +51,44 @@ app.get('/stats', (c) => {
 // 遊戲房間統計
 app.get('/stats/game', (c) => {
   return c.json(getGameStats());
+});
+
+// Redis 統計端點 - 訪問計數器
+app.get('/api/stats', async (c) => {
+  try {
+    const visits = await redis.incr('api:visits');
+    const onlinePlayers = await redis.scard('online-players') || 0;
+    const activeRooms = await redis.scard('active-rooms') || 0;
+
+    return c.json({
+      totalVisits: visits,
+      onlinePlayers,
+      activeRooms,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (_error) {
+    console.error('Redis stats error:', _error);
+    return c.json({ error: 'Failed to fetch stats' }, 500);
+  }
+});
+
+// 玩家列表 API
+app.get('/api/players', async (c) => {
+  try {
+    const players = await prisma.player.findMany({
+      orderBy: { eloRating: 'desc' },
+      take: 10,
+    });
+    const playersResponse: Player[] = players.map(p => ({
+      ...p,
+      createdAt: p.createdAt.toISOString(),
+      updatedAt: p.updatedAt.toISOString(),
+    }));
+    return c.json(playersResponse);
+  } catch (error) {
+    console.error('獲取玩家列表失敗:', error);
+    return c.json({ error: 'Failed to fetch players' }, 500);
+  }
 });
 
 // 創建新房間 (HTTP API)

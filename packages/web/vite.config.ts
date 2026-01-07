@@ -15,14 +15,13 @@ export default defineConfig({
     host: true, // 重要！允許 devcontainer 訪問
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3002',
         changeOrigin: true,
       },
       '/health': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3002',
         changeOrigin: true,
       },
-      // WebSocket 直連 game-service，不需要 proxy
     },
   },
 });

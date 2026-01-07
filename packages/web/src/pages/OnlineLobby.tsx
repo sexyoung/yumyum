@@ -13,6 +13,7 @@ const OnlineLobby: React.FC = () => {
     setError(null);
 
     try {
+      console.log('!!!', import.meta.env.VITE_API_URL);
       // 使用環境變數或預設 URL
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002';
       const response = await fetch(`${apiUrl}/api/rooms`, {
