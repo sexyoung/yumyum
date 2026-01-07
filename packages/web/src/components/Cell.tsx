@@ -17,7 +17,7 @@ interface CellProps {
   selected?: boolean; // 格子上的棋子是否被選中
   canDrag?: boolean; // 是否允許拖曳此格上的棋子
   currentPlayer?: PieceColor; // 當前玩家，用於判斷是否可拖曳
-  isWinning?: boolean; // 是否為獲勝連線的格子
+  winningIndex?: number; // 在獲勝連線中的順序（-1 表示不是獲勝格子）
 }
 
 /**
@@ -26,7 +26,8 @@ interface CellProps {
  * 功能優先：簡單邊框區分格子，最小 44x44px（手機友善）
  * 使用 @dnd-kit 支援拖曳放置功能
  */
-export default function Cell({ cell, row, col, onClick, selected = false, canDrag = false, currentPlayer, isWinning = false }: CellProps) {
+export default function Cell({ cell, row, col, onClick, selected = false, canDrag = false, currentPlayer, winningIndex = -1 }: CellProps) {
+  const isWinning = winningIndex >= 0;
   // 取得最上層的棋子（如果有）
   const topPiece = cell.pieces.length > 0 ? cell.pieces[cell.pieces.length - 1] : null;
 
@@ -62,6 +63,14 @@ export default function Cell({ cell, row, col, onClick, selected = false, canDra
     return canPlace ? 'bg-green-100 border-green-400' : 'bg-red-100 border-red-400';
   };
 
+  // 動畫延遲（每格間隔 200ms）
+  const animationStyle = isWinning ? {
+    animation: 'winning-pulse 0.3s ease-in-out',
+    animationDelay: `${winningIndex * 150}ms`,
+    animationFillMode: 'both' as const,
+    zIndex: 10,
+  } : undefined;
+
   return (
     <div
       ref={setNodeRef}
@@ -74,6 +83,7 @@ export default function Cell({ cell, row, col, onClick, selected = false, canDra
         hover:bg-gray-200
         relative
       `}
+      style={animationStyle}
       onClick={onClick}
       data-testid={`cell-${row}-${col}`}
     >

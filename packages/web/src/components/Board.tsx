@@ -21,7 +21,7 @@ export default function Board({ board, onCellClick, selectedCell, canDrag, curre
         {board.map((row, rowIndex) =>
           row.map((cell, colIndex) => {
             const isSelected = selectedCell?.row === rowIndex && selectedCell?.col === colIndex;
-            const isWinning = winningCells?.some(c => c.row === rowIndex && c.col === colIndex) ?? false;
+            const winningIndex = winningCells?.findIndex(c => c.row === rowIndex && c.col === colIndex) ?? -1;
             return (
               <Cell
                 key={`${rowIndex}-${colIndex}`}
@@ -32,7 +32,7 @@ export default function Board({ board, onCellClick, selectedCell, canDrag, curre
                 selected={isSelected}
                 canDrag={canDrag}
                 currentPlayer={currentPlayer}
-                isWinning={isWinning}
+                winningIndex={winningIndex}
               />
             );
           })
