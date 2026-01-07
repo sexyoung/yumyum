@@ -1,21 +1,17 @@
 // packages/web/src/hooks/useGameWebSocket.ts
 import { useEffect, useRef, useCallback, useState } from 'react';
 import type { GameClientMessage, GameServerMessage, PieceColor, GameState } from '@yumyum/types';
-import { loadOnlineRoomInfo } from '../lib/storage';
 
 export interface UseGameWebSocketOptions {
-  onRoomCreated?: (roomId: string, playerId: string) => void;
-  onRoomJoined?: (roomId: string, playerId: string, color: PieceColor) => void;
+  onRoomJoined?: (roomId: string, color: PieceColor) => void;
   onWaitingForOpponent?: () => void;
   onOpponentJoined?: (opponentName: string) => void;
   onGameStart?: (gameState: GameState, yourColor: PieceColor) => void;
   onMoveMade?: (gameState: GameState) => void;
   onGameOver?: (winner: PieceColor | 'draw', gameState: GameState) => void;
-  onReconnected?: (gameState: GameState, yourColor: PieceColor) => void;
   onOpponentLeft?: () => void;
   onError?: (message: string) => void;
   onReconnecting?: (attempt: number) => void;
-  enableAutoReconnect?: boolean; // 是否啟用自動重連後的 rejoin
 }
 
 export function useGameWebSocket(options: UseGameWebSocketOptions = {}) {
@@ -29,7 +25,6 @@ export function useGameWebSocket(options: UseGameWebSocketOptions = {}) {
   const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
   const maxReconnectAttempts = useRef(5);
   const shouldReconnectRef = useRef(true);
-  const hasReconnectedRef = useRef(false); // 追蹤是否為重連
 
   // 儲存 options 的 ref，避免每次 render 都重新訂閱
   const optionsRef = useRef(options);
@@ -46,7 +41,7 @@ export function useGameWebSocket(options: UseGameWebSocketOptions = {}) {
   }, []);
 
   // 連線到房間
-  const connect = useCallback((targetRoomId: string, isReconnect = false) => {
+  const connect = useCallback((targetRoomId: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       console.log('Already connected');
       return;
@@ -67,50 +62,21 @@ export function useGameWebSocket(options: UseGameWebSocketOptions = {}) {
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-      console.log('🎮 WebSocket connected to room:', targetRoomId);
+      console.log('WebSocket connected to room:', targetRoomId);
       setIsConnected(true);
       setIsReconnecting(false);
       setReconnectAttempt(0);
       clearReconnectTimer();
-
-      // 如果是重連且啟用自動重連
-      if (isReconnect && optionsRef.current.enableAutoReconnect) {
-        console.log('✅ 重連成功，嘗試自動 rejoin...');
-        hasReconnectedRef.current = true;
-
-        // 從 localStorage 讀取房間資訊
-        const savedInfo = loadOnlineRoomInfo();
-        if (savedInfo) {
-          console.log('📝 使用已儲存的房間資訊進行 rejoin:', savedInfo);
-          // 延遲發送，確保 WebSocket 完全準備好
-          setTimeout(() => {
-            if (ws.readyState === WebSocket.OPEN) {
-              const rejoinMsg: GameClientMessage = {
-                type: 'rejoin_room',
-                roomId: savedInfo.roomId,
-                playerId: savedInfo.playerId,
-              };
-              ws.send(JSON.stringify(rejoinMsg));
-              console.log('📤 已發送 rejoin_room 訊息');
-            }
-          }, 100);
-        } else {
-          console.warn('⚠️ 無法找到已儲存的房間資訊，無法自動 rejoin');
-        }
-      }
     };
 
     ws.onmessage = (event) => {
       try {
         const message: GameServerMessage = JSON.parse(event.data);
-        console.log('📨 Received:', message);
+        console.log('Received:', message);
 
         switch (message.type) {
-          case 'room_created':
-            optionsRef.current.onRoomCreated?.(message.roomId, message.playerId);
-            break;
           case 'room_joined':
-            optionsRef.current.onRoomJoined?.(message.roomId, message.playerId, message.color);
+            optionsRef.current.onRoomJoined?.(message.roomId, message.color);
             break;
           case 'waiting_for_opponent':
             optionsRef.current.onWaitingForOpponent?.();
@@ -126,9 +92,6 @@ export function useGameWebSocket(options: UseGameWebSocketOptions = {}) {
             break;
           case 'game_over':
             optionsRef.current.onGameOver?.(message.winner, message.gameState);
-            break;
-          case 'reconnected':
-            optionsRef.current.onReconnected?.(message.gameState, message.yourColor);
             break;
           case 'opponent_left':
             optionsRef.current.onOpponentLeft?.();
@@ -146,20 +109,20 @@ export function useGameWebSocket(options: UseGameWebSocketOptions = {}) {
     };
 
     ws.onclose = () => {
-      console.log('🔌 WebSocket disconnected');
+      console.log('WebSocket disconnected');
       setIsConnected(false);
 
       // 如果需要重連且未超過最大次數
       if (shouldReconnectRef.current && reconnectAttempt < maxReconnectAttempts.current) {
         attemptReconnect();
       } else if (reconnectAttempt >= maxReconnectAttempts.current) {
-        console.error('❌ 達到最大重連次數，停止重連');
+        console.error('Max reconnect attempts reached');
         optionsRef.current.onError?.('連線失敗，請重新整理頁面');
       }
     };
 
     ws.onerror = (error) => {
-      console.error('❌ WebSocket error:', error);
+      console.error('WebSocket error:', error);
       setIsConnected(false);
     };
 
@@ -179,21 +142,36 @@ export function useGameWebSocket(options: UseGameWebSocketOptions = {}) {
 
     // 指數退避：1秒、2秒、4秒、8秒、16秒
     const delay = Math.min(1000 * Math.pow(2, reconnectAttempt), 16000);
-    console.log(`🔄 嘗試重連 (${nextAttempt}/${maxReconnectAttempts.current})，${delay}ms 後重試...`);
+    console.log(`Reconnecting (${nextAttempt}/${maxReconnectAttempts.current}), retrying in ${delay}ms...`);
 
     reconnectTimerRef.current = setTimeout(() => {
-      console.log(`🔄 執行重連 #${nextAttempt}`);
-      connect(roomId, true);
+      console.log(`Executing reconnect #${nextAttempt}`);
+      connect(roomId);
     }, delay);
   }, [roomId, reconnectAttempt, connect]);
 
   // 發送訊息
   const sendMessage = useCallback((message: GameClientMessage) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(message));
-      console.log('📤 Sent:', message);
+      try {
+        wsRef.current.send(JSON.stringify(message));
+        console.log('Sent:', message.type, message);
+      } catch (error) {
+        console.error('Failed to send message:', error);
+        optionsRef.current.onError?.(`發送訊息失敗: ${message.type}`);
+      }
     } else {
-      console.error('WebSocket is not connected');
+      const readyState = wsRef.current?.readyState;
+      const stateText = readyState === WebSocket.CONNECTING ? '正在連線中' :
+                        readyState === WebSocket.CLOSING ? '正在關閉' :
+                        readyState === WebSocket.CLOSED ? '已關閉' : '未連線';
+
+      console.error(`Cannot send message (${message.type}): WebSocket ${stateText} (readyState: ${readyState})`);
+
+      // 如果是關鍵訊息（移動棋子），通知使用者
+      if (message.type === 'make_move') {
+        optionsRef.current.onError?.('網路連線中斷，無法發送移動指令。請等待重連或返回大廳。');
+      }
     }
   }, []);
 

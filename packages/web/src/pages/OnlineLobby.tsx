@@ -1,40 +1,47 @@
 // packages/web/src/pages/OnlineLobby.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loadOnlineRoomInfo } from '../lib/storage';
 
 const OnlineLobby: React.FC = () => {
   const navigate = useNavigate();
-  const [savedRoomInfo, setSavedRoomInfo] = useState<{
-    roomId: string;
-    playerId: string;
-  } | null>(null);
   const [joinRoomId, setJoinRoomId] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // 檢查是否有保存的房間資訊
-    const roomInfo = loadOnlineRoomInfo();
-    if (roomInfo) {
-      setSavedRoomInfo({
-        roomId: roomInfo.roomId,
-        playerId: roomInfo.playerId,
+  const handleCreateRoom = async () => {
+    setIsCreating(true);
+    setError(null);
+
+    try {
+      // 使用環境變數或預設 URL
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+      const response = await fetch(`${apiUrl}/api/rooms`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
-    }
-  }, []);
 
-  const handleCreateRoom = () => {
-    navigate('/online/game?action=create');
+      if (!response.ok) {
+        throw new Error('創建房間失敗');
+      }
+
+      const data = await response.json();
+      console.log('房間已創建:', data.roomId);
+
+      // 導向遊戲頁面
+      navigate(`/online/game/${data.roomId}`);
+    } catch (err) {
+      console.error('創建房間失敗:', err);
+      setError('創建房間失敗，請稍後再試');
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleJoinRoom = () => {
     if (joinRoomId.trim()) {
-      navigate(`/online/game?action=join&roomId=${joinRoomId.trim()}`);
-    }
-  };
-
-  const handleReconnect = () => {
-    if (savedRoomInfo) {
-      navigate(`/online/game?action=rejoin&roomId=${savedRoomInfo.roomId}&playerId=${savedRoomInfo.playerId}`);
+      navigate(`/online/game/${joinRoomId.trim()}`);
     }
   };
 
@@ -49,21 +56,10 @@ const OnlineLobby: React.FC = () => {
           線上雙人對戰
         </h1>
 
-        {/* 重連提示 */}
-        {savedRoomInfo && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800 mb-2">
-              偵測到上次的遊戲記錄
-            </p>
-            <p className="text-xs text-blue-600 mb-3">
-              房間 ID: <code className="bg-blue-100 px-2 py-1 rounded">{savedRoomInfo.roomId}</code>
-            </p>
-            <button
-              onClick={handleReconnect}
-              className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition"
-            >
-              🔄 重新連接到房間
-            </button>
+        {/* 錯誤提示 */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
 
@@ -71,9 +67,17 @@ const OnlineLobby: React.FC = () => {
         <div className="mb-4">
           <button
             onClick={handleCreateRoom}
-            className="w-full px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold text-lg transition"
+            disabled={isCreating}
+            className="w-full px-6 py-3 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white rounded-lg font-semibold text-lg transition flex items-center justify-center gap-2"
           >
-            ➕ 創建新房間
+            {isCreating ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                創建中...
+              </>
+            ) : (
+              '創建新房間'
+            )}
           </button>
           <p className="text-xs text-gray-500 mt-2 text-center">
             創建房間後，分享房間 ID 給朋友加入
@@ -105,7 +109,7 @@ const OnlineLobby: React.FC = () => {
             disabled={!joinRoomId.trim()}
             className="w-full px-6 py-3 bg-indigo-500 hover:bg-indigo-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-semibold text-lg transition"
           >
-            🚪 加入房間
+            加入房間
           </button>
         </div>
 
@@ -114,7 +118,7 @@ const OnlineLobby: React.FC = () => {
           onClick={handleBackHome}
           className="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition"
         >
-          ← 返回首頁
+          返回首頁
         </button>
       </div>
     </div>

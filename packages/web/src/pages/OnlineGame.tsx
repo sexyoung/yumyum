@@ -1,8 +1,7 @@
 // packages/web/src/pages/OnlineGame.tsx
 import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
-import { saveOnlineRoomInfo, clearOnlineRoomInfo } from '../lib/storage';
 import type { GameState, PieceColor, GameMove } from '@yumyum/types';
 import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
@@ -12,23 +11,15 @@ type GamePhase = 'connecting' | 'waiting' | 'playing' | 'finished' | 'error';
 
 const OnlineGame: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-
-  // URL 參數
-  const action = searchParams.get('action'); // create, join, rejoin
-  const urlRoomId = searchParams.get('roomId');
-  const urlPlayerId = searchParams.get('playerId');
+  const { roomId } = useParams<{ roomId: string }>();
   const [playerName] = useState(() => `玩家${Math.floor(Math.random() * 1000)}`);
 
   // 遊戲狀態
   const [phase, setPhase] = useState<GamePhase>('connecting');
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [myColor, setMyColor] = useState<PieceColor | null>(null);
-  const [_myPlayerId, setMyPlayerId] = useState<string | null>(null);
-  const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [errorDetails, setErrorDetails] = useState<string>('');
-  const [_opponentName, setOpponentName] = useState<string>('');
 
   // 選擇狀態（用於下棋）
   const [selectedReserveSize, setSelectedReserveSize] = useState<'small' | 'medium' | 'large' | null>(null);
@@ -36,28 +27,19 @@ const OnlineGame: React.FC = () => {
 
   // WebSocket
   const { connect, sendMessage, isReconnecting, reconnectAttempt, isConnected } = useGameWebSocket({
-    enableAutoReconnect: true, // 啟用自動重連後的 rejoin
-    onRoomCreated: (roomId, playerId) => {
-      console.log('房間已創建:', roomId, playerId);
-      setCurrentRoomId(roomId);
-      setMyPlayerId(playerId);
-      setPhase('waiting');
-      saveOnlineRoomInfo(roomId, playerId, 'red');
-      setMyColor('red');
-    },
-    onRoomJoined: (roomId, playerId, color) => {
-      console.log('已加入房間:', roomId, playerId, color);
-      setCurrentRoomId(roomId);
-      setMyPlayerId(playerId);
+    onRoomJoined: (joinedRoomId, color) => {
+      console.log('已加入房間:', joinedRoomId, color);
       setMyColor(color);
-      saveOnlineRoomInfo(roomId, playerId, color);
+      // 如果是第一個玩家，進入等待狀態
+      if (color === 'red') {
+        setPhase('waiting');
+      }
     },
     onWaitingForOpponent: () => {
       setPhase('waiting');
     },
     onOpponentJoined: (name) => {
       console.log('對手加入:', name);
-      setOpponentName(name);
     },
     onGameStart: (initialGameState, yourColor) => {
       console.log('遊戲開始:', yourColor);
@@ -75,12 +57,6 @@ const OnlineGame: React.FC = () => {
       console.log('遊戲結束:', winner);
       setPhase('finished');
     },
-    onReconnected: (reconnectedGameState, yourColor) => {
-      console.log('重連成功:', yourColor);
-      setGameState(reconnectedGameState);
-      setMyColor(yourColor);
-      setPhase(reconnectedGameState.winner ? 'finished' : 'playing');
-    },
     onOpponentLeft: () => {
       setErrorMessage('對手已離開遊戲');
       setErrorDetails('你的對手已經離線，遊戲無法繼續。你可以返回大廳開始新的遊戲。');
@@ -96,12 +72,10 @@ const OnlineGame: React.FC = () => {
 
       // 根據錯誤訊息提供更詳細的說明
       let details = '';
-      if (message.includes('房間不存在') || message.includes('房間已滿')) {
+      if (message.includes('房間不存在') || message.includes('房間已滿') || message.includes('過期')) {
         details = '這個房間可能已經過期或已滿。請嘗試創建新房間或加入其他房間。';
       } else if (message.includes('連線')) {
         details = '無法連接到遊戲伺服器，請檢查網路連線後重試。';
-      } else if (message.includes('重連失敗') || message.includes('重新整理')) {
-        details = '多次嘗試重新連線失敗。請重新整理頁面或返回大廳重新開始。';
       } else {
         details = '發生了一個未預期的錯誤。請返回大廳重試。';
       }
@@ -117,35 +91,24 @@ const OnlineGame: React.FC = () => {
 
   // 初始化連線
   useEffect(() => {
-    if (!action) {
-      setErrorMessage('缺少操作參數');
+    if (!roomId) {
+      setErrorMessage('缺少房間 ID');
+      setErrorDetails('請從大廳創建或加入房間。');
       setPhase('error');
       return;
     }
 
-    // 生成隨機房間 ID（用於 create）
-    const randomRoomId = Math.random().toString(36).substring(2, 10).toUpperCase();
-    const roomId = urlRoomId || randomRoomId;
-
     // 連接 WebSocket
     connect(roomId);
-  }, [action, urlRoomId, connect]);
+  }, [roomId, connect]);
 
-  // 等待 WebSocket 連線成功後發送初始訊息
+  // 等待 WebSocket 連線成功後發送 join_room
   useEffect(() => {
-    if (!isConnected || !action) return;
+    if (!isConnected || !roomId) return;
 
-    // 只在第一次連線成功時發送，避免重連時重複發送
-    if (currentRoomId) return;
-
-    if (action === 'create') {
-      sendMessage({ type: 'create_room', playerName });
-    } else if (action === 'join' && urlRoomId) {
-      sendMessage({ type: 'join_room', roomId: urlRoomId, playerName });
-    } else if (action === 'rejoin' && urlRoomId && urlPlayerId) {
-      sendMessage({ type: 'rejoin_room', roomId: urlRoomId, playerId: urlPlayerId });
-    }
-  }, [isConnected, action, urlRoomId, urlPlayerId, currentRoomId, sendMessage, playerName]);
+    // 發送 join_room 訊息
+    sendMessage({ type: 'join_room', roomId, playerName });
+  }, [isConnected, roomId, playerName, sendMessage]);
 
   // 處理棋子選擇
   const handleReserveClick = useCallback((size: 'small' | 'medium' | 'large') => {
@@ -211,7 +174,6 @@ const OnlineGame: React.FC = () => {
 
   // 返回大廳
   const handleBackToLobby = () => {
-    clearOnlineRoomInfo();
     navigate('/online');
   };
 
@@ -231,7 +193,7 @@ const OnlineGame: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-500 to-pink-600">
         <div className="bg-white rounded-lg shadow-2xl p-8 text-center max-w-lg">
-          <div className="text-6xl mb-4">❌</div>
+          <div className="text-6xl mb-4">:(</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-4">發生錯誤</h2>
 
           {/* 錯誤訊息 */}
@@ -266,13 +228,13 @@ const OnlineGame: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500">
         <div className="bg-white rounded-lg shadow-2xl p-8 text-center max-w-md">
-          <div className="text-6xl mb-4 animate-bounce">⏳</div>
+          <div className="text-6xl mb-4 animate-bounce">...</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-4">等待對手加入</h2>
           <p className="text-gray-600 mb-2">房間 ID:</p>
           <div className="bg-gray-100 rounded-lg p-4 mb-6">
-            <p className="text-3xl font-mono font-bold text-indigo-600">{currentRoomId}</p>
+            <p className="text-3xl font-mono font-bold text-indigo-600">{roomId}</p>
           </div>
-          <p className="text-sm text-gray-500 mb-6">分享這個 ID 給朋友加入遊戲</p>
+          <p className="text-sm text-gray-500 mb-6">分享這個 ID 或網址給朋友加入遊戲</p>
           <button
             onClick={handleBackToLobby}
             className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition"
@@ -310,7 +272,7 @@ const OnlineGame: React.FC = () => {
             <div className="flex justify-between items-center">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm text-gray-600">房間 ID: {currentRoomId}</p>
+                  <p className="text-sm text-gray-600">房間 ID: {roomId}</p>
                   {/* 連線狀態指示器 */}
                   <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${
                     isConnected
@@ -331,7 +293,7 @@ const OnlineGame: React.FC = () => {
               </div>
               <div className="text-right">
                 <p className={`text-xl font-bold ${isMyTurn ? 'text-green-600' : 'text-gray-400'}`}>
-                  {isMyTurn ? '🟢 你的回合' : '⏳ 對手回合'}
+                  {isMyTurn ? '你的回合' : '對手回合'}
                 </p>
               </div>
             </div>
@@ -396,7 +358,7 @@ const OnlineGame: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-600">
         <div className="bg-white rounded-lg shadow-2xl p-8 text-center max-w-md">
-          <div className="text-8xl mb-4">{isWinner ? '🏆' : '😢'}</div>
+          <div className="text-8xl mb-4">{isWinner ? ':)' : ':('}</div>
           <h2 className="text-3xl font-bold text-gray-800 mb-4">
             {isWinner ? '恭喜獲勝！' : '遊戲結束'}
           </h2>

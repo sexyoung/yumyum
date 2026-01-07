@@ -2,12 +2,12 @@
 import redis from '../redis/client.js';
 import type { GameState, PieceColor } from '@yumyum/types';
 
-// 房間資料結構
+// 房間資料結構（玩家靠 WebSocket 連線識別，不需要 playerId）
 export interface RoomData {
   roomId: string;
   players: {
-    red: { playerId: string; playerName: string } | null;
-    blue: { playerId: string; playerName: string } | null;
+    red: { playerName: string } | null;
+    blue: { playerName: string } | null;
   };
   gameState: GameState;
   status: 'waiting' | 'playing' | 'finished';
@@ -43,18 +43,15 @@ export function generateRoomId(): string {
   return result;
 }
 
-// 創建新房間
-export async function createRoom(
-  playerId: string,
-  playerName: string
-): Promise<RoomData> {
+// 創建空房間（HTTP API 使用）
+export async function createEmptyRoom(): Promise<string> {
   const roomId = generateRoomId();
   const now = Date.now();
 
   const roomData: RoomData = {
     roomId,
     players: {
-      red: { playerId, playerName },
+      red: null,
       blue: null,
     },
     gameState: createInitialGameState(),
@@ -69,70 +66,72 @@ export async function createRoom(
     JSON.stringify(roomData)
   );
 
-  console.log(`🆕 房間已創建: ${roomId} by ${playerName}`);
-  return roomData;
+  console.log(`🆕 空房間已創建: ${roomId}`);
+  return roomId;
 }
 
-// 加入房間
+// 加入房間（自動找空位，紅方優先）
 export async function joinRoom(
   roomId: string,
-  playerId: string,
   playerName: string
 ): Promise<{ success: boolean; room?: RoomData; error?: string; color?: PieceColor }> {
-  const roomData = await getRoom(roomId);
-
-  if (!roomData) {
-    return { success: false, error: '房間不存在' };
-  }
-
-  if (roomData.status !== 'waiting') {
-    return { success: false, error: '房間已開始遊戲' };
-  }
-
-  // 檢查房間是否已滿
-  if (roomData.players.blue !== null) {
-    return { success: false, error: '房間已滿' };
-  }
-
-  // 加入為藍方
-  roomData.players.blue = { playerId, playerName };
-  roomData.status = 'playing';
-  roomData.lastActivity = Date.now();
-
-  await saveRoom(roomData);
-
-  console.log(`👤 玩家加入房間: ${playerName} → ${roomId}`);
-  return { success: true, room: roomData, color: 'blue' };
-}
-
-// 重新連線
-export async function rejoinRoom(
-  roomId: string,
-  playerId: string
-): Promise<{ success: boolean; room?: RoomData; color?: PieceColor; error?: string }> {
   const roomData = await getRoom(roomId);
 
   if (!roomData) {
     return { success: false, error: '房間不存在或已過期' };
   }
 
-  // 檢查玩家是否在房間中
-  let color: PieceColor | undefined;
-  if (roomData.players.red?.playerId === playerId) {
+  // 找到空位（紅方優先）
+  let color: PieceColor | null = null;
+  if (roomData.players.red === null) {
     color = 'red';
-  } else if (roomData.players.blue?.playerId === playerId) {
+  } else if (roomData.players.blue === null) {
     color = 'blue';
   }
 
   if (!color) {
-    return { success: false, error: '你不在此房間中' };
+    return { success: false, error: '房間已滿' };
   }
 
+  // 加入該位置
+  roomData.players[color] = { playerName };
   roomData.lastActivity = Date.now();
+
+  // 如果兩個玩家都加入了，開始遊戲
+  if (roomData.players.red && roomData.players.blue) {
+    roomData.status = 'playing';
+  }
+
   await saveRoom(roomData);
 
-  console.log(`🔄 玩家重連: ${playerId} → ${roomId} (${color})`);
+  console.log(`👤 玩家加入房間: ${playerName} → ${roomId} (${color})`);
   return { success: true, room: roomData, color };
+}
+
+// 離開房間（將玩家設為 null）
+export async function leaveRoom(
+  roomId: string,
+  color: PieceColor
+): Promise<void> {
+  const roomData = await getRoom(roomId);
+
+  if (!roomData) {
+    console.log(`⚠️ 房間不存在: ${roomId}`);
+    return;
+  }
+
+  // 將該玩家設為 null
+  roomData.players[color] = null;
+  roomData.lastActivity = Date.now();
+
+  // 如果房間變空了，可以選擇刪除或保留
+  // 這裡選擇保留，讓它自然過期
+  if (!roomData.players.red && !roomData.players.blue) {
+    roomData.status = 'waiting';
+  }
+
+  await saveRoom(roomData);
+  console.log(`🚪 玩家離開房間: ${roomId} (${color})`);
 }
 
 // 獲取房間資料

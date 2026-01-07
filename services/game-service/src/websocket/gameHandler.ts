@@ -4,17 +4,17 @@ import type { GameClientMessage, GameServerMessage, PieceColor } from '@yumyum/t
 import * as roomManager from '../game/roomManager.js';
 import { validateMove, applyMove } from '../game/gameLogic.js';
 
-// 儲存房間內的 WebSocket 連線（roomId -> Set<WebSocket>）
-const gameRooms = new Map<string, Set<WebSocket>>();
+// 儲存房間內的 WebSocket 連線（roomId -> Map<color, WebSocket>）
+const gameRooms = new Map<string, Map<PieceColor, WebSocket>>();
 
 // 儲存 WebSocket 對應的玩家資訊
 const gamePlayers = new Map<
   WebSocket,
-  { playerId: string; playerName: string; roomId: string; color: PieceColor }
+  { playerName: string; roomId: string; color: PieceColor }
 >();
 
 export function handleGameWebSocketConnection(ws: WebSocket, roomId: string) {
-  console.log(`🎮 遊戲 WebSocket 連線: roomId=${roomId}`);
+  console.log(`WebSocket connection: roomId=${roomId}`);
 
   // 處理客戶端訊息
   ws.on('message', async (data) => {
@@ -22,7 +22,7 @@ export function handleGameWebSocketConnection(ws: WebSocket, roomId: string) {
       const message: GameClientMessage = JSON.parse(data.toString());
       await handleGameClientMessage(ws, message);
     } catch (error) {
-      console.error('處理遊戲訊息錯誤:', error);
+      console.error('Error processing game message:', error);
       const errorMsg: GameServerMessage = {
         type: 'error',
         message: '無效的訊息格式',
@@ -32,13 +32,24 @@ export function handleGameWebSocketConnection(ws: WebSocket, roomId: string) {
   });
 
   // 處理連線關閉
-  ws.on('close', () => {
+  ws.on('close', async () => {
     const playerInfo = gamePlayers.get(ws);
     if (playerInfo) {
-      console.log(`🚪 玩家離開: ${playerInfo.playerName} (${playerInfo.roomId})`);
+      console.log(`Player left: ${playerInfo.playerName} (${playerInfo.roomId})`);
 
-      // 從房間移除
-      gameRooms.get(playerInfo.roomId)?.delete(ws);
+      // 從房間移除 WebSocket
+      const roomConnections = gameRooms.get(playerInfo.roomId);
+      if (roomConnections) {
+        roomConnections.delete(playerInfo.color);
+        if (roomConnections.size === 0) {
+          gameRooms.delete(playerInfo.roomId);
+        }
+      }
+
+      // 從 Redis 移除玩家
+      await roomManager.leaveRoom(playerInfo.roomId, playerInfo.color);
+
+      // 刪除玩家資訊
       gamePlayers.delete(ws);
 
       // 通知對手
@@ -46,16 +57,11 @@ export function handleGameWebSocketConnection(ws: WebSocket, roomId: string) {
         type: 'opponent_left',
       };
       broadcastToRoom(playerInfo.roomId, leaveMsg, ws);
-
-      // 清理空房間
-      if (gameRooms.get(playerInfo.roomId)?.size === 0) {
-        gameRooms.delete(playerInfo.roomId);
-      }
     }
   });
 
   ws.on('error', (error) => {
-    console.error('🔴 WebSocket 錯誤:', error);
+    console.error('WebSocket error:', error);
   });
 }
 
@@ -64,118 +70,77 @@ async function handleGameClientMessage(
   message: GameClientMessage
 ) {
   switch (message.type) {
-    case 'create_room': {
-      try {
-        console.log(`🏠 創建房間請求: 玩家 ${message.playerName}`);
-        const playerId = generatePlayerId();
-        const roomData = await roomManager.createRoom(playerId, message.playerName);
-        console.log(`✅ 房間創建成功: ${roomData.roomId}, 玩家ID: ${playerId}`);
-
-        // 加入房間
-        joinGameRoom(ws, roomData.roomId, roomData.players.red!.playerId, message.playerName, 'red');
-
-        const response: GameServerMessage = {
-          type: 'room_created',
-          roomId: roomData.roomId,
-          playerId: roomData.players.red!.playerId,
-        };
-        ws.send(JSON.stringify(response));
-
-        const waitingMsg: GameServerMessage = {
-          type: 'waiting_for_opponent',
-        };
-        ws.send(JSON.stringify(waitingMsg));
-
-        console.log(`✅ 房間創建成功: ${roomData.roomId}`);
-      } catch (_error) {
-        sendError(ws, '創建房間失敗');
-      }
-      break;
-    }
-
     case 'join_room': {
       try {
-        console.log(`🚪 嘗試加入房間: ${message.roomId}, 玩家: ${message.playerName}`);
-        const playerId = generatePlayerId();
-        const result = await roomManager.joinRoom(message.roomId, playerId, message.playerName);
+        console.log(`Join room request: ${message.roomId}, player: ${message.playerName}`);
 
-        console.log(`📊 加入房間結果:`, result);
+        // 檢查是否已經在某個房間中
+        const existingPlayerInfo = gamePlayers.get(ws);
+        if (existingPlayerInfo) {
+          console.log(`Player already in room ${existingPlayerInfo.roomId}, skipping`);
+          return;
+        }
+
+        const result = await roomManager.joinRoom(message.roomId, message.playerName);
+
+        console.log(`Join room result:`, result);
 
         if (!result.success || !result.room || !result.color) {
-          console.error(`❌ 加入房間失敗:`, result.error);
+          console.error(`Failed to join room:`, result.error);
           sendError(ws, result.error || '加入房間失敗');
           return;
         }
 
         // 加入房間
-        joinGameRoom(ws, result.room.roomId, playerId, message.playerName, result.color);
+        joinGameRoom(ws, result.room.roomId, message.playerName, result.color);
 
         // 通知加入者
         const joinedMsg: GameServerMessage = {
           type: 'room_joined',
           roomId: result.room.roomId,
-          playerId,
           color: result.color,
         };
         ws.send(JSON.stringify(joinedMsg));
 
-        // 通知房主對手已加入
-        const opponentJoinedMsg: GameServerMessage = {
-          type: 'opponent_joined',
-          opponentName: message.playerName,
-        };
-        broadcastToRoom(result.room.roomId, opponentJoinedMsg, ws);
+        // 根據情況處理
+        if (result.room.status === 'waiting') {
+          // 第一個玩家，等待對手
+          const waitingMsg: GameServerMessage = {
+            type: 'waiting_for_opponent',
+          };
+          ws.send(JSON.stringify(waitingMsg));
+          console.log(`Player waiting: ${message.playerName} → ${result.room.roomId}`);
+        } else if (result.room.status === 'playing') {
+          // 第二個玩家加入，開始遊戲
 
-        // 開始遊戲 - 廣播給雙方
-        const gameStartMsg: GameServerMessage = {
-          type: 'game_start',
-          gameState: result.room.gameState,
-          yourColor: result.color,
-        };
-        ws.send(JSON.stringify(gameStartMsg));
+          // 通知房主對手已加入
+          const opponentJoinedMsg: GameServerMessage = {
+            type: 'opponent_joined',
+            opponentName: message.playerName,
+          };
+          broadcastToRoom(result.room.roomId, opponentJoinedMsg, ws);
 
-        const hostStartMsg: GameServerMessage = {
-          type: 'game_start',
-          gameState: result.room.gameState,
-          yourColor: 'red',
-        };
-        broadcastToRoom(result.room.roomId, hostStartMsg, ws);
+          // 發送遊戲開始給新加入的玩家
+          const gameStartMsg: GameServerMessage = {
+            type: 'game_start',
+            gameState: result.room.gameState,
+            yourColor: result.color,
+          };
+          ws.send(JSON.stringify(gameStartMsg));
 
-        console.log(`✅ 玩家加入: ${message.playerName} → ${result.room.roomId}`);
-      } catch (_error) {
-        sendError(ws, '加入房間失敗');
-      }
-      break;
-    }
+          // 發送遊戲開始給房主（第一個玩家）
+          const hostStartMsg: GameServerMessage = {
+            type: 'game_start',
+            gameState: result.room.gameState,
+            yourColor: 'red',
+          };
+          broadcastToRoom(result.room.roomId, hostStartMsg, ws);
 
-    case 'rejoin_room': {
-      try {
-        const result = await roomManager.rejoinRoom(message.roomId, message.playerId);
-
-        if (!result.success || !result.room || !result.color) {
-          sendError(ws, result.error || '重連失敗');
-          return;
+          console.log(`Game started: ${result.room.roomId}`);
         }
-
-        const playerName =
-          result.color === 'red'
-            ? result.room.players.red?.playerName || 'Unknown'
-            : result.room.players.blue?.playerName || 'Unknown';
-
-        // 重新加入房間
-        joinGameRoom(ws, result.room.roomId, message.playerId, playerName, result.color);
-
-        // 發送重連成功訊息
-        const reconnectedMsg: GameServerMessage = {
-          type: 'reconnected',
-          gameState: result.room.gameState,
-          yourColor: result.color,
-        };
-        ws.send(JSON.stringify(reconnectedMsg));
-
-        console.log(`🔄 重連成功: ${message.playerId} → ${result.room.roomId}`);
-      } catch (_error) {
-        sendError(ws, '重連失敗');
+      } catch (error) {
+        console.error('Error joining room:', error);
+        sendError(ws, '加入房間失敗');
       }
       break;
     }
@@ -228,12 +193,12 @@ async function handleGameClientMessage(
             gameState: newGameState,
           };
           broadcastToRoom(playerInfo.roomId, gameOverMsg);
-          console.log(`🏆 遊戲結束: ${playerInfo.roomId}, 勝利者: ${newGameState.winner}`);
+          console.log(`Game over: ${playerInfo.roomId}, winner: ${newGameState.winner}`);
         }
 
-        console.log(`♟️ 移動成功: ${playerInfo.playerName} (${playerInfo.color})`);
+        console.log(`Move made: ${playerInfo.playerName} (${playerInfo.color})`);
       } catch (error) {
-        console.error('執行移動失敗:', error);
+        console.error('Error making move:', error);
         sendError(ws, '執行移動失敗');
       }
       break;
@@ -250,16 +215,15 @@ async function handleGameClientMessage(
 function joinGameRoom(
   ws: WebSocket,
   roomId: string,
-  playerId: string,
   playerName: string,
   color: PieceColor
 ) {
   if (!gameRooms.has(roomId)) {
-    gameRooms.set(roomId, new Set());
+    gameRooms.set(roomId, new Map());
   }
 
-  gameRooms.get(roomId)!.add(ws);
-  gamePlayers.set(ws, { playerId, playerName, roomId, color });
+  gameRooms.get(roomId)!.set(color, ws);
+  gamePlayers.set(ws, { playerName, roomId, color });
 }
 
 // 廣播訊息給房間內的所有人
@@ -282,12 +246,7 @@ function sendError(ws: WebSocket, message: string) {
     message,
   };
   ws.send(JSON.stringify(errorMsg));
-  console.error(`❌ 錯誤: ${message}`);
-}
-
-// 生成玩家 ID
-function generatePlayerId(): string {
-  return `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  console.error(`Error: ${message}`);
 }
 
 // 取得遊戲統計資訊

@@ -17,7 +17,7 @@ function AppRoutes() {
       <Route path="/local" element={<LocalGame />} />
       <Route path="/ai" element={<AIGame />} />
       <Route path="/online" element={<OnlineLobby />} />
-      <Route path="/online/game" element={<OnlineGame />} />
+      <Route path="/online/game/:roomId" element={<OnlineGame />} />
     </Routes>
   );
 }

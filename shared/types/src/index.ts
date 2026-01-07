@@ -43,21 +43,17 @@ export type ChatServerMessage =
 
 // 遊戲房間 WebSocket 訊息類型（線上對戰專用）
 export type GameClientMessage =
-  | { type: 'create_room'; playerName: string }
   | { type: 'join_room'; roomId: string; playerName: string }
-  | { type: 'rejoin_room'; roomId: string; playerId: string }
   | { type: 'make_move'; move: GameMove }
   | { type: 'leave_room' };
 
 export type GameServerMessage =
-  | { type: 'room_created'; roomId: string; playerId: string }
-  | { type: 'room_joined'; roomId: string; playerId: string; color: PieceColor }
+  | { type: 'room_joined'; roomId: string; color: PieceColor }
   | { type: 'waiting_for_opponent' }
   | { type: 'opponent_joined'; opponentName: string }
   | { type: 'game_start'; gameState: GameState; yourColor: PieceColor }
   | { type: 'move_made'; gameState: GameState; lastMove: GameMove; movedBy: PieceColor }
   | { type: 'game_over'; winner: PieceColor | 'draw'; gameState: GameState }
-  | { type: 'reconnected'; gameState: GameState; yourColor: PieceColor }
   | { type: 'opponent_left' }
   | { type: 'invalid_move'; reason: string }
   | { type: 'error'; message: string };
