@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { GameState, PieceSize, PieceColor } from '@yumyum/types';
 import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
+import GameDndContext from '../components/GameDndContext';
 import { DragData } from '../components/Piece';
 import {
   canPlacePieceFromReserve,
@@ -53,8 +54,6 @@ export default function AIGame() {
   const [selectedPiece, setSelectedPiece] = useState<SelectedPiece>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [aiThinking, setAiThinking] = useState(false);
-  // 觸控拖曳狀態
-  const [touchDragData, setTouchDragData] = useState<DragData | null>(null);
 
   // 玩家顏色固定為紅色，AI 為藍色
   const playerColor: PieceColor = 'red';
@@ -314,95 +313,93 @@ export default function AIGame() {
 
   // 遊戲界面
   return (
-    <div className="h-[100dvh] bg-gradient-to-br from-purple-400 to-indigo-600 flex flex-col">
-      {/* 頂部資訊 */}
-      <div className="flex-none px-3 pt-3">
-        <div className="bg-white rounded-lg shadow-lg p-3">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => navigate('/')}
-              className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
-            >
-              離開
-            </button>
-            {gameState.winner ? (
-              <p className={`text-base md:text-xl font-bold ${gameState.winner === playerColor ? 'text-red-600' : 'text-blue-600'}`}>
-                {gameState.winner === playerColor ? '你獲勝了！' : 'AI 獲勝了'}
-              </p>
-            ) : aiThinking ? (
-              <p className="text-base md:text-xl font-bold text-blue-600">
-                AI 思考中...
-              </p>
-            ) : (
-              <p className={`text-base md:text-xl font-bold ${gameState.currentPlayer === playerColor ? 'text-red-600' : 'text-blue-600'}`}>
-                {gameState.currentPlayer === playerColor ? '你的回合' : 'AI 的回合'}
+    <GameDndContext onDrop={handleDrop}>
+      <div className="h-[100dvh] bg-gradient-to-br from-purple-400 to-indigo-600 flex flex-col">
+        {/* 頂部資訊 */}
+        <div className="flex-none px-3 pt-3">
+          <div className="bg-white rounded-lg shadow-lg p-3">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => navigate('/')}
+                className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
+              >
+                離開
+              </button>
+              {gameState.winner ? (
+                <p className={`text-base md:text-xl font-bold ${gameState.winner === playerColor ? 'text-red-600' : 'text-blue-600'}`}>
+                  {gameState.winner === playerColor ? '你獲勝了！' : 'AI 獲勝了'}
+                </p>
+              ) : aiThinking ? (
+                <p className="text-base md:text-xl font-bold text-blue-600">
+                  AI 思考中...
+                </p>
+              ) : (
+                <p className={`text-base md:text-xl font-bold ${gameState.currentPlayer === playerColor ? 'text-red-600' : 'text-blue-600'}`}>
+                  {gameState.currentPlayer === playerColor ? '你的回合' : 'AI 的回合'}
+                </p>
+              )}
+              <button
+                onClick={handleRestart}
+                className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
+                data-testid="restart-button"
+              >
+                重新開始
+              </button>
+            </div>
+            {/* 錯誤訊息 */}
+            {errorMessage && (
+              <p className="text-center text-sm text-red-600 mt-2 font-semibold">
+                {errorMessage}
               </p>
             )}
-            <button
-              onClick={handleRestart}
-              className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
-              data-testid="restart-button"
-            >
-              重新開始
-            </button>
           </div>
-          {/* 錯誤訊息 */}
-          {errorMessage && (
-            <p className="text-center text-sm text-red-600 mt-2 font-semibold">
-              {errorMessage}
-            </p>
-          )}
         </div>
-      </div>
 
-      {/* AI 儲備區 - 頂部 */}
-      <div className="flex-none p-3 flex justify-center">
-        <div className="bg-white rounded-lg shadow-lg p-3">
-          <PlayerReserve
-            color={aiColor}
-            reserves={gameState.reserves[aiColor]}
-            selectedSize={null}
-          />
+        {/* AI 儲備區 - 頂部 */}
+        <div className="flex-none p-3 flex justify-center">
+          <div className="bg-white rounded-lg shadow-lg p-3">
+            <PlayerReserve
+              color={aiColor}
+              reserves={gameState.reserves[aiColor]}
+              selectedSize={null}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* 棋盤 - 中間置中 */}
-      <div className="flex-1 flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-lg p-3">
-          <Board
-            board={gameState.board}
-            onCellClick={handleCellClick}
-            selectedCell={
-              selectedPiece?.type === 'board'
-                ? { row: selectedPiece.row, col: selectedPiece.col }
-                : null
-            }
-            onDrop={handleDrop}
-            canDrag={!gameState.winner && !aiThinking && gameState.currentPlayer === playerColor}
-            currentPlayer={playerColor}
-            externalTouchDragData={touchDragData}
-            onTouchDragEnd={() => setTouchDragData(null)}
-          />
+        {/* 棋盤 - 中間置中 */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-lg p-3">
+            <Board
+              board={gameState.board}
+              onCellClick={handleCellClick}
+              selectedCell={
+                selectedPiece?.type === 'board'
+                  ? { row: selectedPiece.row, col: selectedPiece.col }
+                  : null
+              }
+              canDrag={!gameState.winner && !aiThinking && gameState.currentPlayer === playerColor}
+              currentPlayer={playerColor}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* 玩家儲備區 - 底部 */}
-      <div className="flex-none p-3 flex justify-center">
-        <div className="bg-white rounded-lg shadow-lg p-3">
-          <PlayerReserve
-            color={playerColor}
-            reserves={gameState.reserves[playerColor]}
-            onPieceClick={(size) => handlePieceClick(playerColor, size)}
-            selectedSize={
-              selectedPiece?.type === 'reserve' && selectedPiece.color === playerColor
-                ? selectedPiece.size
-                : null
-            }
-            canDrag={!gameState.winner && !aiThinking && gameState.currentPlayer === playerColor}
-            onTouchDragStart={setTouchDragData}
-          />
+        {/* 玩家儲備區 - 底部 */}
+        <div className="flex-none p-3 flex justify-center">
+          <div className="bg-white rounded-lg shadow-lg p-3">
+            <PlayerReserve
+              color={playerColor}
+              reserves={gameState.reserves[playerColor]}
+              onPieceClick={(size) => handlePieceClick(playerColor, size)}
+              selectedSize={
+                selectedPiece?.type === 'reserve' && selectedPiece.color === playerColor
+                  ? selectedPiece.size
+                  : null
+              }
+              canDrag={!gameState.winner && !aiThinking && gameState.currentPlayer === playerColor}
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </GameDndContext>
   );
 }

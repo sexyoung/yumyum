@@ -11,7 +11,6 @@ interface PlayerReserveProps {
   onPieceClick?: (size: PieceSize) => void;
   selectedSize?: PieceSize | null; // 選中的棋子尺寸
   canDrag?: boolean; // 是否允許拖曳棋子
-  onTouchDragStart?: (data: DragData) => void; // 觸控拖曳開始
 }
 
 /**
@@ -20,7 +19,7 @@ interface PlayerReserveProps {
  * 手機版：水平排列節省空間
  * 桌機版：垂直排列更清楚
  */
-export default function PlayerReserve({ color, reserves, onPieceClick, selectedSize, canDrag = false, onTouchDragStart }: PlayerReserveProps) {
+export default function PlayerReserve({ color, reserves, onPieceClick, selectedSize, canDrag = false }: PlayerReserveProps) {
   const sizes: PieceSize[] = ['small', 'medium', 'large'];
 
   return (
@@ -49,8 +48,8 @@ export default function PlayerReserve({ color, reserves, onPieceClick, selectedS
               label={reserves[size]}
               selected={isSelected}
               draggable={isDraggable}
+              dragId={`reserve-${color}-${size}`}
               dragData={dragData}
-              onTouchDragStart={onTouchDragStart}
             />
           </button>
         );

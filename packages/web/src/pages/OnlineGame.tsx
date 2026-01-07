@@ -5,6 +5,7 @@ import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import type { GameState, PieceColor, GameMove } from '@yumyum/types';
 import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
+import GameDndContext from '../components/GameDndContext';
 import { DragData } from '../components/Piece';
 import { placePieceFromReserve, movePieceOnBoard } from '../lib/gameLogic';
 
@@ -25,8 +26,6 @@ const OnlineGame: React.FC = () => {
   // 選擇狀態（用於下棋）
   const [selectedReserveSize, setSelectedReserveSize] = useState<'small' | 'medium' | 'large' | null>(null);
   const [selectedBoardPos, setSelectedBoardPos] = useState<{ row: number; col: number } | null>(null);
-  // 觸控拖曳狀態
-  const [touchDragData, setTouchDragData] = useState<DragData | null>(null);
 
   // 再戰狀態
   const [rematchRequested, setRematchRequested] = useState(false); // 我是否已請求
@@ -344,68 +343,66 @@ const OnlineGame: React.FC = () => {
     const isMyTurn = gameState.currentPlayer === myColor;
 
     return (
-      <div className="h-[100dvh] bg-gradient-to-br from-green-400 to-blue-500 flex flex-col">
-        {/* 重連提示浮層 */}
-        {isReconnecting && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-2xl p-8 text-center max-w-md">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">正在重連...</h3>
-              <p className="text-gray-600">
-                嘗試次數: {reconnectAttempt} / 5
-              </p>
-              <p className="text-sm text-gray-500 mt-2">請稍候，我們正在嘗試重新連線到遊戲伺服器</p>
+      <GameDndContext onDrop={handleDrop}>
+        <div className="h-[100dvh] bg-gradient-to-br from-green-400 to-blue-500 flex flex-col">
+          {/* 重連提示浮層 */}
+          {isReconnecting && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg shadow-2xl p-8 text-center max-w-md">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">正在重連...</h3>
+                <p className="text-gray-600">
+                  嘗試次數: {reconnectAttempt} / 5
+                </p>
+                <p className="text-sm text-gray-500 mt-2">請稍候，我們正在嘗試重新連線到遊戲伺服器</p>
+              </div>
+            </div>
+          )}
+
+          {/* 頂部資訊 */}
+          <div className="flex-none p-4">
+            <div className="bg-white rounded-lg shadow-lg p-4">
+              <div className="flex justify-between items-center">
+                <button
+                  onClick={handleBackToLobby}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
+                >
+                  離開
+                </button>
+                <p className={`text-xl font-bold ${isMyTurn ? 'text-green-600' : 'text-gray-400'}`}>
+                  {isMyTurn ? '你的回合' : '對手回合'}
+                </p>
+              </div>
             </div>
           </div>
-        )}
 
-        {/* 頂部資訊 */}
-        <div className="flex-none p-4">
-          <div className="bg-white rounded-lg shadow-lg p-4">
-            <div className="flex justify-between items-center">
-              <button
-                onClick={handleBackToLobby}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
-              >
-                離開
-              </button>
-              <p className={`text-xl font-bold ${isMyTurn ? 'text-green-600' : 'text-gray-400'}`}>
-                {isMyTurn ? '你的回合' : '對手回合'}
-              </p>
+          {/* 棋盤區域 - 置中 */}
+          <div className="flex-1 flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow-lg p-4">
+              <Board
+                board={gameState.board}
+                onCellClick={handleBoardClick}
+                selectedCell={selectedBoardPos}
+                canDrag={isMyTurn}
+                currentPlayer={myColor}
+              />
+            </div>
+          </div>
+
+          {/* 我的儲備區 - 底部 */}
+          <div className="flex-none p-4 flex justify-center">
+            <div className="bg-white rounded-lg shadow-lg p-4">
+              <PlayerReserve
+                color={myColor}
+                reserves={gameState.reserves[myColor]}
+                onPieceClick={handleReserveClick}
+                selectedSize={selectedReserveSize}
+                canDrag={isMyTurn}
+              />
             </div>
           </div>
         </div>
-
-        {/* 棋盤區域 - 置中 */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="bg-white rounded-lg shadow-lg p-4">
-            <Board
-              board={gameState.board}
-              onCellClick={handleBoardClick}
-              selectedCell={selectedBoardPos}
-              onDrop={handleDrop}
-              canDrag={isMyTurn}
-              currentPlayer={myColor}
-              externalTouchDragData={touchDragData}
-              onTouchDragEnd={() => setTouchDragData(null)}
-            />
-          </div>
-        </div>
-
-        {/* 我的儲備區 - 底部 */}
-        <div className="flex-none p-4 flex justify-center">
-          <div className="bg-white rounded-lg shadow-lg p-4">
-            <PlayerReserve
-              color={myColor}
-              reserves={gameState.reserves[myColor]}
-              onPieceClick={handleReserveClick}
-              selectedSize={selectedReserveSize}
-              canDrag={isMyTurn}
-              onTouchDragStart={setTouchDragData}
-            />
-          </div>
-        </div>
-      </div>
+      </GameDndContext>
     );
   }
 
