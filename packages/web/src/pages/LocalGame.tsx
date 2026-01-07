@@ -256,20 +256,20 @@ export default function LocalGame() {
           </div>
         </div>
 
-        {/* 紅方儲備區 - 頂部 */}
+        {/* 藍方儲備區 - 頂部 */}
         <div className="flex-none p-3 flex justify-center">
           <div className="bg-white rounded-lg shadow-lg p-3">
             <PlayerReserve
-              color="red"
-              reserves={gameState.reserves.red}
-              onPieceClick={(size) => handlePieceClick('red', size)}
+              color="blue"
+              reserves={gameState.reserves.blue}
+              onPieceClick={(size) => handlePieceClick('blue', size)}
               selectedSize={
-                selectedPiece?.type === 'reserve' && selectedPiece.color === 'red'
+                selectedPiece?.type === 'reserve' && selectedPiece.color === 'blue'
                   ? selectedPiece.size
                   : null
               }
-              canDrag={!gameState.winner && gameState.currentPlayer === 'red'}
-              disabled={!gameState.winner && gameState.currentPlayer !== 'red'}
+              canDrag={!gameState.winner && gameState.currentPlayer === 'blue'}
+              disabled={!gameState.winner && gameState.currentPlayer !== 'blue'}
             />
           </div>
         </div>
@@ -291,20 +291,20 @@ export default function LocalGame() {
           </div>
         </div>
 
-        {/* 藍方儲備區 - 底部 */}
+        {/* 紅方儲備區 - 底部 */}
         <div className="flex-none p-3 flex justify-center">
           <div className="bg-white rounded-lg shadow-lg p-3">
             <PlayerReserve
-              color="blue"
-              reserves={gameState.reserves.blue}
-              onPieceClick={(size) => handlePieceClick('blue', size)}
+              color="red"
+              reserves={gameState.reserves.red}
+              onPieceClick={(size) => handlePieceClick('red', size)}
               selectedSize={
-                selectedPiece?.type === 'reserve' && selectedPiece.color === 'blue'
+                selectedPiece?.type === 'reserve' && selectedPiece.color === 'red'
                   ? selectedPiece.size
                   : null
               }
-              canDrag={!gameState.winner && gameState.currentPlayer === 'blue'}
-              disabled={!gameState.winner && gameState.currentPlayer !== 'blue'}
+              canDrag={!gameState.winner && gameState.currentPlayer === 'red'}
+              disabled={!gameState.winner && gameState.currentPlayer !== 'red'}
             />
           </div>
         </div>
