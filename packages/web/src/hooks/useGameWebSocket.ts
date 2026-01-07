@@ -60,8 +60,8 @@ export function useGameWebSocket(options: UseGameWebSocketOptions = {}) {
 
     setRoomId(targetRoomId);
 
-    // WebSocket URL - 從環境變數讀取基礎 URL
-    const baseWsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5173';
+    // WebSocket URL - 從環境變數讀取基礎 URL 並拼接路徑和房間 ID
+    const baseWsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3002';
     const wsUrl = `${baseWsUrl}/game/${targetRoomId}`;
 
     const ws = new WebSocket(wsUrl);

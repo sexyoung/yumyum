@@ -18,9 +18,9 @@ export class GameWebSocket {
 
     this.roomId = roomId;
 
-    // WebSocket URL - 從環境變數讀取並拼接房間 ID
-    const baseWsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5173';
-    const wsUrl = `${baseWsUrl}/game/${roomId}`;
+    // WebSocket URL - 從環境變數讀取基礎 URL 並拼接路徑和房間 ID
+    const baseWsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3002';
+    const wsUrl = `${baseWsUrl}/chat/${roomId}`;
 
     this.ws = new WebSocket(wsUrl);
 
