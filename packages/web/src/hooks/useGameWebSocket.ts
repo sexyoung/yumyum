@@ -60,14 +60,9 @@ export function useGameWebSocket(options: UseGameWebSocketOptions = {}) {
 
     setRoomId(targetRoomId);
 
-    // WebSocket URL
-    let wsUrl: string;
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      wsUrl = `${protocol}//${window.location.host}/ws/game/${targetRoomId}`;
-    } else {
-      wsUrl = `wss://yumyumgame-service-production.up.railway.app/game/${targetRoomId}`;
-    }
+    // WebSocket URL - 從環境變數讀取基礎 URL
+    const baseWsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5173';
+    const wsUrl = `${baseWsUrl}/game/${targetRoomId}`;
 
     const ws = new WebSocket(wsUrl);
 

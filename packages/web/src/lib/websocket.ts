@@ -18,19 +18,9 @@ export class GameWebSocket {
 
     this.roomId = roomId;
 
-    // WebSocket 連接邏輯
-    // 開發環境: 使用相對路徑透過 Vite proxy
-    // 正式環境: 直接連接 Railway game-service (Vercel rewrites 不支援 WebSocket)
-    let wsUrl: string;
-
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      // 開發環境：透過 Vite proxy
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      wsUrl = `${protocol}//${window.location.host}/ws/game/${roomId}`;
-    } else {
-      // 正式環境：直接連接到 Railway
-      wsUrl = `wss://yumyumgame-service-production.up.railway.app/game/${roomId}`;
-    }
+    // WebSocket URL - 從環境變數讀取並拼接房間 ID
+    const baseWsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5173';
+    const wsUrl = `${baseWsUrl}/game/${roomId}`;
 
     this.ws = new WebSocket(wsUrl);
 
