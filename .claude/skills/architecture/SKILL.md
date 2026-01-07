@@ -25,8 +25,19 @@ yumyum/
 │   └── web/                    # 前端（Vercel）
 │       ├── src/
 │       │   ├── components/     # React 組件
+│       │   │   ├── Board.tsx          # 3x3 棋盤
+│       │   │   ├── Cell.tsx           # 單一格子（支援放置提示）
+│       │   │   ├── Piece.tsx          # 棋子（支援拖曳）
+│       │   │   ├── PlayerReserve.tsx  # 玩家儲備區
+│       │   │   └── GameDndContext.tsx # 拖曳上下文（DragOverlay）
 │       │   ├── pages/          # 頁面組件
-│       │   ├── lib/            # API client、WebSocket client
+│       │   │   ├── LocalGame.tsx      # 本機雙人
+│       │   │   ├── AIGame.tsx         # AI 對戰
+│       │   │   └── OnlineGame.tsx     # 線上對戰
+│       │   ├── lib/            # 遊戲邏輯、AI、儲存
+│       │   │   ├── gameLogic.ts       # 遊戲規則引擎
+│       │   │   ├── ai.ts              # AI 演算法
+│       │   │   └── storage.ts         # localStorage 管理
 │       │   ├── hooks/          # 自訂 React hooks
 │       │   └── types/          # TypeScript 類型
 │       ├── vercel.json         # Vercel 配置（含 rewrites）

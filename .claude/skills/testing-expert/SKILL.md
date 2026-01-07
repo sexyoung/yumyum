@@ -461,22 +461,22 @@ import {
 } from './ai';
 import { createInitialGameState, applyMove, type GameState } from './gameLogic';
 
-describe('AI 對手', () => {
+describe('AI 對手（困難模式）', () => {
   let gameState: GameState;
 
   beforeEach(() => {
     gameState = createInitialGameState();
   });
 
-  describe('簡單 AI', () => {
+  describe('Alpha-Beta AI', () => {
     it('應該優先選擇獲勝移動', () => {
-      // 設置一個紅方即將獲勝的棋盤（兩個連線）
+      // 設置一個藍方即將獲勝的棋盤（兩個連線）
       gameState.board[0][0].pieces = [{ color: 'blue', size: 'large' }];
       gameState.board[0][1].pieces = [{ color: 'blue', size: 'medium' }];
       // [0][2] 是空的，AI 應該在這裡下棋
 
       gameState.currentPlayer = 'blue';
-      const move = getEasyAIMove(gameState);
+      const move = getAIMove(gameState, 'hard');
 
       expect(move).toBeDefined();
       expect(move?.to).toEqual({ row: 0, col: 2 });
@@ -489,30 +489,12 @@ describe('AI 對手', () => {
       // [0][2] 是空的，AI 應該阻擋
 
       gameState.currentPlayer = 'blue';
-      const move = getEasyAIMove(gameState);
+      const move = getAIMove(gameState, 'hard');
 
       expect(move).toBeDefined();
       expect(move?.to).toEqual({ row: 0, col: 2 });
     });
 
-    it('不應該下出非法移動', () => {
-      // 執行 100 次隨機測試
-      for (let i = 0; i < 100; i++) {
-        const testState = createInitialGameState();
-        testState.currentPlayer = 'blue';
-
-        const move = getEasyAIMove(testState);
-
-        if (move) {
-          // 驗證移動是合法的
-          const validation = validateMove(testState, move.from, move.to, move.size);
-          expect(validation.valid).toBe(true);
-        }
-      }
-    });
-  });
-
-  describe('Minimax AI', () => {
     it('應該能正確評估獲勝棋盤', () => {
       // 紅方獲勝的棋盤
       gameState.board[0][0].pieces = [{ color: 'red', size: 'large' }];
@@ -524,63 +506,11 @@ describe('AI 對手', () => {
       expect(score).toBe(1000); // 獲勝分數
     });
 
-    it('應該能正確評估失敗棋盤', () => {
-      // 藍方獲勝的棋盤
-      gameState.board[0][0].pieces = [{ color: 'blue', size: 'large' }];
-      gameState.board[0][1].pieces = [{ color: 'blue', size: 'medium' }];
-      gameState.board[0][2].pieces = [{ color: 'blue', size: 'small' }];
-
-      const score = evaluateBoard(gameState, 'red');
-
-      expect(score).toBe(-1000); // 失敗分數
-    });
-
-    it('應該在簡單棋局中找到最佳解', () => {
-      // 一個明顯應該下在 (0,2) 的棋局
-      gameState.board[0][0].pieces = [{ color: 'blue', size: 'large' }];
-      gameState.board[0][1].pieces = [{ color: 'blue', size: 'medium' }];
-
-      gameState.currentPlayer = 'blue';
-      const move = getMediumAIMove(gameState);
-
-      expect(move).toBeDefined();
-      expect(move?.to).toEqual({ row: 0, col: 2 });
-    });
-
-    it('不應該下出非法移動', () => {
-      for (let i = 0; i < 50; i++) {
-        const testState = createInitialGameState();
-        testState.currentPlayer = 'blue';
-
-        const move = getMediumAIMove(testState);
-
-        if (move) {
-          const validation = validateMove(testState, move.from, move.to, move.size);
-          expect(validation.valid).toBe(true);
-        }
-      }
-    });
-  });
-
-  describe('Alpha-Beta AI', () => {
-    it('應該與 Minimax 產生相同結果（小棋盤）', () => {
-      // 簡單棋局
-      gameState.board[0][0].pieces = [{ color: 'red', size: 'small' }];
-
-      gameState.currentPlayer = 'blue';
-      const minimaxMove = getMediumAIMove(gameState);
-      const alphaBetaMove = getHardAIMove(gameState);
-
-      // 在簡單情況下，兩者應該選擇相同的最佳移動
-      expect(alphaBetaMove).toBeDefined();
-      // 評估分數應該相同（允許誤差）
-    });
-
     it('應該在合理時間內返回結果', () => {
       const startTime = Date.now();
 
       gameState.currentPlayer = 'blue';
-      const move = getHardAIMove(gameState);
+      const move = getAIMove(gameState, 'hard');
 
       const elapsed = Date.now() - startTime;
 
@@ -593,7 +523,7 @@ describe('AI 對手', () => {
         const testState = createInitialGameState();
         testState.currentPlayer = 'blue';
 
-        const move = getHardAIMove(testState);
+        const move = getAIMove(testState, 'hard');
 
         if (move) {
           const validation = validateMove(testState, move.from, move.to, move.size);
@@ -962,25 +892,16 @@ test.describe('本機雙人遊戲 - 手機版', () => {
 ```typescript
 import { test, expect } from '@playwright/test';
 
-test.describe('AI 對戰', () => {
-  test('應該能選擇難度並開始遊戲', async ({ page }) => {
+test.describe('AI 對戰（困難模式）', () => {
+  test('應該直接進入遊戲', async ({ page }) => {
     await page.goto('/ai');
 
-    // 驗證難度選擇按鈕
-    await expect(page.locator('text=簡單')).toBeVisible();
-    await expect(page.locator('text=中等')).toBeVisible();
-    await expect(page.locator('text=困難')).toBeVisible();
-
-    // 選擇簡單難度
-    await page.click('text=簡單');
-
-    // 驗證進入遊戲
+    // 直接進入遊戲（無難度選擇）
     await expect(page.locator('[data-testid="game-board"]')).toBeVisible();
   });
 
   test('AI 應該自動回應玩家移動', async ({ page }) => {
     await page.goto('/ai');
-    await page.click('text=簡單');
 
     // 玩家下棋
     await page.click('[data-testid="reserve-red-medium"]');
@@ -998,7 +919,6 @@ test.describe('AI 對戰', () => {
 
   test('應該能在重新整理後恢復 AI 遊戲', async ({ page }) => {
     await page.goto('/ai');
-    await page.click('text=中等');
 
     // 玩家下一步
     await page.click('[data-testid="reserve-red-small"]');

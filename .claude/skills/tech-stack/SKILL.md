@@ -49,6 +49,13 @@ description: 詳述 YumYum 的技術選擇，包含 React+Vite、Hono.js、Verce
 - 生產環境自動 tree-shake
 - 不需要額外的 CSS 檔案
 
+### @dnd-kit（拖曳功能）
+
+- 現代化的 React 拖放套件
+- 支援觸控和滑鼠
+- 使用 PointerSensor 提供流暢體驗
+- DragOverlay 避免 z-index 問題
+
 ## 後端技術
 
 ### Hono.js
