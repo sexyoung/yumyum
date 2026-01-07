@@ -24,7 +24,7 @@ export default function PlayerReserve({ color, reserves, onPieceClick, selectedS
   const sizes: PieceSize[] = ['small', 'medium', 'large'];
 
   return (
-    <div className={`flex flex-row md:flex-col gap-3 md:gap-4 ${disabled ? 'opacity-40' : ''}`}>
+    <div className={`flex flex-row md:flex-col gap-3 md:gap-4 lg:gap-5 ${disabled ? 'opacity-40' : ''}`}>
       {sizes.map((size) => {
         const isSelected = selectedSize === size;
         const hasPieces = reserves[size] > 0;

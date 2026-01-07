@@ -274,15 +274,15 @@ export default function AIGame() {
                 離開
               </button>
               {gameState.winner ? (
-                <p className={`text-base md:text-xl font-bold ${gameState.winner === playerColor ? 'text-red-600' : 'text-blue-600'}`}>
+                <p className={`text-base md:text-xl lg:text-2xl font-bold ${gameState.winner === playerColor ? 'text-red-600' : 'text-blue-600'}`}>
                   {gameState.winner === playerColor ? '你獲勝了！' : 'AI 獲勝了'}
                 </p>
               ) : aiThinking ? (
-                <p className="text-base md:text-xl font-bold text-blue-600">
+                <p className="text-base md:text-xl lg:text-2xl font-bold text-blue-600">
                   AI 思考中...
                 </p>
               ) : (
-                <p className={`text-base md:text-xl font-bold ${gameState.currentPlayer === playerColor ? 'text-red-600' : 'text-blue-600'}`}>
+                <p className={`text-base md:text-xl lg:text-2xl font-bold ${gameState.currentPlayer === playerColor ? 'text-red-600' : 'text-blue-600'}`}>
                   {gameState.currentPlayer === playerColor ? '你的回合' : 'AI 的回合'}
                 </p>
               )}
@@ -303,51 +303,54 @@ export default function AIGame() {
           </div>
         </div>
 
-        {/* AI 儲備區 - 頂部 */}
-        <div className="flex-none p-3 flex justify-center">
-          <div className="bg-white rounded-lg shadow-lg p-3">
-            <PlayerReserve
-              color={aiColor}
-              reserves={gameState.reserves[aiColor]}
-              selectedSize={null}
-              disabled={true}
-            />
+        {/* 遊戲區域：手機垂直排列，桌機水平排列 */}
+        <div className="flex-1 flex flex-col md:flex-row md:items-center md:justify-center md:gap-6 lg:gap-10">
+          {/* AI 儲備區 - 手機頂部 / 桌機左側 */}
+          <div className="flex-none p-3 md:p-0 flex justify-center md:order-1">
+            <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
+              <PlayerReserve
+                color={aiColor}
+                reserves={gameState.reserves[aiColor]}
+                selectedSize={null}
+                disabled={true}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* 棋盤 - 中間置中 */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="bg-white rounded-lg shadow-lg p-3">
-            <Board
-              board={gameState.board}
-              onCellClick={handleCellClick}
-              selectedCell={
-                selectedPiece?.type === 'board'
-                  ? { row: selectedPiece.row, col: selectedPiece.col }
-                  : null
-              }
-              canDrag={!gameState.winner && !aiThinking && gameState.currentPlayer === playerColor}
-              currentPlayer={playerColor}
-              winningCells={getWinningLine(gameState)?.cells}
-            />
+          {/* 棋盤 - 中間置中 */}
+          <div className="flex-1 md:flex-none flex items-center justify-center md:order-2">
+            <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
+              <Board
+                board={gameState.board}
+                onCellClick={handleCellClick}
+                selectedCell={
+                  selectedPiece?.type === 'board'
+                    ? { row: selectedPiece.row, col: selectedPiece.col }
+                    : null
+                }
+                canDrag={!gameState.winner && !aiThinking && gameState.currentPlayer === playerColor}
+                currentPlayer={playerColor}
+                winningCells={getWinningLine(gameState)?.cells}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* 玩家儲備區 - 底部 */}
-        <div className="flex-none p-3 flex justify-center">
-          <div className="bg-white rounded-lg shadow-lg p-3">
-            <PlayerReserve
-              color={playerColor}
-              reserves={gameState.reserves[playerColor]}
-              onPieceClick={(size) => handlePieceClick(playerColor, size)}
-              selectedSize={
-                selectedPiece?.type === 'reserve' && selectedPiece.color === playerColor
-                  ? selectedPiece.size
-                  : null
-              }
-              canDrag={!gameState.winner && !aiThinking && gameState.currentPlayer === playerColor}
-              disabled={!gameState.winner && (aiThinking || gameState.currentPlayer !== playerColor)}
-            />
+          {/* 玩家儲備區 - 手機底部 / 桌機右側 */}
+          <div className="flex-none p-3 md:p-0 flex justify-center md:order-3">
+            <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
+              <PlayerReserve
+                color={playerColor}
+                reserves={gameState.reserves[playerColor]}
+                onPieceClick={(size) => handlePieceClick(playerColor, size)}
+                selectedSize={
+                  selectedPiece?.type === 'reserve' && selectedPiece.color === playerColor
+                    ? selectedPiece.size
+                    : null
+                }
+                canDrag={!gameState.winner && !aiThinking && gameState.currentPlayer === playerColor}
+                disabled={!gameState.winner && (aiThinking || gameState.currentPlayer !== playerColor)}
+              />
+            </div>
           </div>
         </div>
       </div>

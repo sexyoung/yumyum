@@ -75,7 +75,7 @@ export default function Cell({ cell, row, col, onClick, selected = false, canDra
     <div
       ref={setNodeRef}
       className={`
-        w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32
+        w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 lg:w-36 lg:h-36
         border-2 border-gray-400
         ${getBgClass()}
         flex items-center justify-center

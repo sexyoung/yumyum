@@ -22,9 +22,9 @@ interface PieceProps {
 }
 
 const sizeClasses = {
-  small: 'w-12 h-12 md:w-12 md:h-12',
-  medium: 'w-16 h-16 md:w-16 md:h-16',
-  large: 'w-20 h-20 md:w-24 md:h-24',
+  small: 'w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16',
+  medium: 'w-16 h-16 md:w-18 md:h-18 lg:w-20 lg:h-20',
+  large: 'w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28',
 };
 
 const colorClasses = {

@@ -232,11 +232,11 @@ export default function LocalGame() {
                 離開
               </button>
               {gameState.winner ? (
-                <p className={`text-base md:text-xl font-bold ${gameState.winner === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
+                <p className={`text-base md:text-xl lg:text-2xl font-bold ${gameState.winner === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
                   {gameState.winner === 'red' ? '紅方獲勝！' : '藍方獲勝！'}
                 </p>
               ) : (
-                <p className={`text-base md:text-xl font-bold ${gameState.currentPlayer === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
+                <p className={`text-base md:text-xl lg:text-2xl font-bold ${gameState.currentPlayer === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
                   {gameState.currentPlayer === 'red' ? '紅方' : '藍方'}回合
                 </p>
               )}
@@ -257,57 +257,60 @@ export default function LocalGame() {
           </div>
         </div>
 
-        {/* 藍方儲備區 - 頂部 */}
-        <div className="flex-none p-3 flex justify-center">
-          <div className="bg-white rounded-lg shadow-lg p-3">
-            <PlayerReserve
-              color="blue"
-              reserves={gameState.reserves.blue}
-              onPieceClick={(size) => handlePieceClick('blue', size)}
-              selectedSize={
-                selectedPiece?.type === 'reserve' && selectedPiece.color === 'blue'
-                  ? selectedPiece.size
-                  : null
-              }
-              canDrag={!gameState.winner && gameState.currentPlayer === 'blue'}
-              disabled={!gameState.winner && gameState.currentPlayer !== 'blue'}
-            />
+        {/* 遊戲區域：手機垂直排列，桌機水平排列 */}
+        <div className="flex-1 flex flex-col md:flex-row md:items-center md:justify-center md:gap-6 lg:gap-10">
+          {/* 藍方儲備區 - 手機頂部 / 桌機左側 */}
+          <div className="flex-none p-3 md:p-0 flex justify-center md:order-1">
+            <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
+              <PlayerReserve
+                color="blue"
+                reserves={gameState.reserves.blue}
+                onPieceClick={(size) => handlePieceClick('blue', size)}
+                selectedSize={
+                  selectedPiece?.type === 'reserve' && selectedPiece.color === 'blue'
+                    ? selectedPiece.size
+                    : null
+                }
+                canDrag={!gameState.winner && gameState.currentPlayer === 'blue'}
+                disabled={!gameState.winner && gameState.currentPlayer !== 'blue'}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* 棋盤 - 中間置中 */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="bg-white rounded-lg shadow-lg p-3">
-            <Board
-              board={gameState.board}
-              onCellClick={handleCellClick}
-              selectedCell={
-                selectedPiece?.type === 'board'
-                  ? { row: selectedPiece.row, col: selectedPiece.col }
-                  : null
-              }
-              canDrag={!gameState.winner}
-              currentPlayer={gameState.currentPlayer}
-              winningCells={getWinningLine(gameState)?.cells}
-            />
+          {/* 棋盤 - 中間置中 */}
+          <div className="flex-1 md:flex-none flex items-center justify-center md:order-2">
+            <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
+              <Board
+                board={gameState.board}
+                onCellClick={handleCellClick}
+                selectedCell={
+                  selectedPiece?.type === 'board'
+                    ? { row: selectedPiece.row, col: selectedPiece.col }
+                    : null
+                }
+                canDrag={!gameState.winner}
+                currentPlayer={gameState.currentPlayer}
+                winningCells={getWinningLine(gameState)?.cells}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* 紅方儲備區 - 底部 */}
-        <div className="flex-none p-3 flex justify-center">
-          <div className="bg-white rounded-lg shadow-lg p-3">
-            <PlayerReserve
-              color="red"
-              reserves={gameState.reserves.red}
-              onPieceClick={(size) => handlePieceClick('red', size)}
-              selectedSize={
-                selectedPiece?.type === 'reserve' && selectedPiece.color === 'red'
-                  ? selectedPiece.size
-                  : null
-              }
-              canDrag={!gameState.winner && gameState.currentPlayer === 'red'}
-              disabled={!gameState.winner && gameState.currentPlayer !== 'red'}
-            />
+          {/* 紅方儲備區 - 手機底部 / 桌機右側 */}
+          <div className="flex-none p-3 md:p-0 flex justify-center md:order-3">
+            <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
+              <PlayerReserve
+                color="red"
+                reserves={gameState.reserves.red}
+                onPieceClick={(size) => handlePieceClick('red', size)}
+                selectedSize={
+                  selectedPiece?.type === 'reserve' && selectedPiece.color === 'red'
+                    ? selectedPiece.size
+                    : null
+                }
+                canDrag={!gameState.winner && gameState.currentPlayer === 'red'}
+                disabled={!gameState.winner && gameState.currentPlayer !== 'red'}
+              />
+            </div>
           </div>
         </div>
       </div>

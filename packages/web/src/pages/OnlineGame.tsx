@@ -443,13 +443,13 @@ const OnlineGame: React.FC = () => {
     const renderStatusText = () => {
       if (isGameOver) {
         return (
-          <p className={`text-base md:text-xl font-bold ${isWinner ? 'text-green-600' : 'text-red-600'}`}>
+          <p className={`text-base md:text-xl lg:text-2xl font-bold ${isWinner ? 'text-green-600' : 'text-red-600'}`}>
             {isWinner ? '你獲勝了！' : '你輸了'}
           </p>
         );
       }
       return (
-        <p className={`text-base md:text-xl font-bold ${isMyTurn ? 'text-green-600' : 'text-gray-400'}`}>
+        <p className={`text-base md:text-xl lg:text-2xl font-bold ${isMyTurn ? 'text-green-600' : 'text-gray-400'}`}>
           {isMyTurn ? '你的回合' : '對手回合'}
         </p>
       );
@@ -536,7 +536,7 @@ const OnlineGame: React.FC = () => {
 
           {/* 棋盤區域 - 置中 */}
           <div className="flex-1 flex items-center justify-center">
-            <div className="bg-white rounded-lg shadow-lg p-3">
+            <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
               <Board
                 board={gameState.board}
                 onCellClick={handleBoardClick}
@@ -577,7 +577,7 @@ const OnlineGame: React.FC = () => {
 
           {/* 我的儲備區 - 底部 */}
           <div className="flex-none p-3 flex justify-center">
-            <div className="bg-white rounded-lg shadow-lg p-3">
+            <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
               <PlayerReserve
                 color={myColor}
                 reserves={gameState.reserves[myColor]}
