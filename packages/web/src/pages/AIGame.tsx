@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { GameState, PieceSize, PieceColor } from '@yumyum/types';
 import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
@@ -45,6 +46,7 @@ const initialGameState: GameState = {
 };
 
 export default function AIGame() {
+  const navigate = useNavigate();
   const [difficulty, setDifficulty] = useState<AIDifficulty | null>(null);
   const [gameState, setGameState] = useState<GameState>(initialGameState);
   const [selectedPiece, setSelectedPiece] = useState<SelectedPiece>(null);
@@ -289,48 +291,41 @@ export default function AIGame() {
   // 遊戲界面
   return (
     <div className="h-[100dvh] bg-gray-50 flex flex-col overflow-hidden">
-      {/* 標題 */}
+      {/* 頂部資訊 */}
       <div className="flex-none p-2 md:p-4 bg-white shadow">
         <div className="flex items-center justify-between">
-          <h1 className="text-lg md:text-2xl font-bold flex-1 text-center">
-            單人 AI 遊戲
-            <span className="ml-2 text-sm md:text-base font-normal text-gray-600">
-              ({difficulty === 'easy' ? '簡單' : difficulty === 'medium' ? '中等' : '困難'})
-            </span>
-          </h1>
+          <button
+            onClick={() => navigate('/')}
+            className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
+          >
+            離開
+          </button>
+          {gameState.winner ? (
+            <p className={`text-base md:text-xl font-bold ${gameState.winner === playerColor ? 'text-red-600' : 'text-blue-600'}`}>
+              {gameState.winner === playerColor ? '你獲勝了！' : 'AI 獲勝了'}
+            </p>
+          ) : aiThinking ? (
+            <p className="text-base md:text-xl font-bold text-blue-600">
+              AI 思考中...
+            </p>
+          ) : (
+            <p className={`text-base md:text-xl font-bold ${gameState.currentPlayer === playerColor ? 'text-red-600' : 'text-blue-600'}`}>
+              {gameState.currentPlayer === playerColor ? '你的回合' : 'AI 的回合'}
+            </p>
+          )}
           <button
             onClick={handleRestart}
-            className="px-3 py-1 md:px-4 md:py-2 text-sm md:text-base bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors"
+            className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
             data-testid="restart-button"
           >
             重新開始
           </button>
         </div>
 
-        {/* 勝利訊息 */}
-        {gameState.winner ? (
-          <p className="text-center text-base md:text-xl font-bold mt-1 md:mt-2">
-            <span className={gameState.winner === playerColor ? 'text-red-600' : 'text-blue-600'}>
-              {gameState.winner === playerColor ? '🎉 你獲勝了！' : '😔 AI 獲勝了'}
-            </span>
-          </p>
-        ) : aiThinking ? (
-          <p className="text-center text-sm md:text-base text-blue-600 mt-0.5 md:mt-1 font-semibold">
-            🤔 AI 思考中...
-          </p>
-        ) : (
-          <p className="text-center text-sm md:text-base text-gray-600 mt-0.5 md:mt-1">
-            當前回合：
-            <span className={`font-bold ${gameState.currentPlayer === playerColor ? 'text-red-600' : 'text-blue-600'}`}>
-              {gameState.currentPlayer === playerColor ? '你的回合' : 'AI 的回合'}
-            </span>
-          </p>
-        )}
-
         {/* 錯誤訊息 */}
         {errorMessage && (
-          <p className="text-center text-sm text-red-600 mt-1 font-semibold">
-            ⚠️ {errorMessage}
+          <p className="text-center text-sm text-red-600 mt-2 font-semibold">
+            {errorMessage}
           </p>
         )}
       </div>

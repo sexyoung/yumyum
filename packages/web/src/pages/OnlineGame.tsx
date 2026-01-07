@@ -305,7 +305,7 @@ const OnlineGame: React.FC = () => {
     const isMyTurn = gameState.currentPlayer === myColor;
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-400 to-blue-500 p-4">
+      <div className="h-[100dvh] bg-gradient-to-br from-green-400 to-blue-500 flex flex-col">
         {/* 重連提示浮層 */}
         {isReconnecting && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -320,9 +320,9 @@ const OnlineGame: React.FC = () => {
           </div>
         )}
 
-        <div className="max-w-6xl mx-auto">
-          {/* 頂部資訊 */}
-          <div className="bg-white rounded-lg shadow-lg p-4 mb-4">
+        {/* 頂部資訊 */}
+        <div className="flex-none p-4">
+          <div className="bg-white rounded-lg shadow-lg p-4">
             <div className="flex justify-between items-center">
               <button
                 onClick={handleBackToLobby}
@@ -335,27 +335,28 @@ const OnlineGame: React.FC = () => {
               </p>
             </div>
           </div>
+        </div>
 
-          {/* 遊戲區域 */}
-          <div className="flex flex-col items-center gap-4">
-            {/* 棋盤 */}
-            <div className="bg-white rounded-lg shadow-lg p-4">
-              <Board
-                board={gameState.board}
-                onCellClick={handleBoardClick}
-                selectedCell={selectedBoardPos}
-              />
-            </div>
+        {/* 棋盤區域 - 置中 */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-lg p-4">
+            <Board
+              board={gameState.board}
+              onCellClick={handleBoardClick}
+              selectedCell={selectedBoardPos}
+            />
+          </div>
+        </div>
 
-            {/* 我的儲備區 */}
-            <div className="bg-white rounded-lg shadow-lg p-4">
-              <PlayerReserve
-                color={myColor}
-                reserves={gameState.reserves[myColor]}
-                onPieceClick={handleReserveClick}
-                selectedSize={selectedReserveSize}
-              />
-            </div>
+        {/* 我的儲備區 - 底部 */}
+        <div className="flex-none p-4 flex justify-center">
+          <div className="bg-white rounded-lg shadow-lg p-4">
+            <PlayerReserve
+              color={myColor}
+              reserves={gameState.reserves[myColor]}
+              onPieceClick={handleReserveClick}
+              selectedSize={selectedReserveSize}
+            />
           </div>
         </div>
       </div>

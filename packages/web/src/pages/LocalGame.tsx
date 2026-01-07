@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { GameState, PieceSize, PieceColor } from '@yumyum/types';
 import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
@@ -41,6 +42,7 @@ const initialGameState: GameState = {
 };
 
 export default function LocalGame() {
+  const navigate = useNavigate();
   const [gameState, setGameState] = useState<GameState>(() => {
     // 初始化時嘗試載入保存的狀態
     return loadLocalGameState() || initialGameState;
@@ -194,39 +196,37 @@ export default function LocalGame() {
 
   return (
     <div className="h-[100dvh] bg-gray-50 flex flex-col overflow-hidden">
-      {/* 標題 - 不使用 fixed，改用 flex-none */}
+      {/* 頂部資訊 */}
       <div className="flex-none p-2 md:p-4 bg-white shadow">
         <div className="flex items-center justify-between">
-          <h1 className="text-lg md:text-2xl font-bold flex-1 text-center">本機雙人遊戲</h1>
+          <button
+            onClick={() => navigate('/')}
+            className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
+          >
+            離開
+          </button>
+          {gameState.winner ? (
+            <p className={`text-base md:text-xl font-bold ${gameState.winner === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
+              {gameState.winner === 'red' ? '紅方獲勝！' : '藍方獲勝！'}
+            </p>
+          ) : (
+            <p className={`text-base md:text-xl font-bold ${gameState.currentPlayer === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
+              {gameState.currentPlayer === 'red' ? '紅方' : '藍方'}回合
+            </p>
+          )}
           <button
             onClick={handleRestart}
-            className="px-3 py-1 md:px-4 md:py-2 text-sm md:text-base bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors"
+            className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
             data-testid="restart-button"
           >
             重新開始
           </button>
         </div>
 
-        {/* 勝利訊息 */}
-        {gameState.winner ? (
-          <p className="text-center text-base md:text-xl font-bold mt-1 md:mt-2">
-            <span className={gameState.winner === 'red' ? 'text-red-600' : 'text-blue-600'}>
-              {gameState.winner === 'red' ? '🎉 紅方獲勝！' : '🎉 藍方獲勝！'}
-            </span>
-          </p>
-        ) : (
-          <p className="text-center text-sm md:text-base text-gray-600 mt-0.5 md:mt-1">
-            當前回合：
-            <span className={`font-bold ${gameState.currentPlayer === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
-              {gameState.currentPlayer === 'red' ? '紅方' : '藍方'}
-            </span>
-          </p>
-        )}
-
         {/* 錯誤訊息 */}
         {errorMessage && (
-          <p className="text-center text-sm text-red-600 mt-1 font-semibold">
-            ⚠️ {errorMessage}
+          <p className="text-center text-sm text-red-600 mt-2 font-semibold">
+            {errorMessage}
           </p>
         )}
       </div>

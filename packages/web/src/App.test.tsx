@@ -50,7 +50,8 @@ describe('App 路由測試', () => {
 
     fireEvent.click(screen.getByRole('link', { name: /本機雙人/i }));
 
-    expect(await screen.findByText('本機雙人遊戲')).toBeInTheDocument();
+    // 新的 UI 不顯示標題，改為檢查回合提示
+    expect(await screen.findByText(/紅方.*回合|藍方.*回合/)).toBeInTheDocument();
   });
 
   it('點擊線上雙人連結應該導航到線上雙人對戰頁面', async () => {
