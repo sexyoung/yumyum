@@ -13,7 +13,7 @@ export interface UseGameWebSocketOptions {
   onOpponentLeft?: () => void;
   onError?: (message: string) => void;
   onReconnecting?: (attempt: number) => void;
-  onRematchRequested?: (by: PieceColor) => void;
+  onRematchRequested?: (by: PieceColor, loserStarts: PieceColor | null) => void;
   onRematchDeclined?: () => void;
   onRematchStart?: (gameState: GameState, yourColor: PieceColor) => void;
 }
@@ -105,7 +105,7 @@ export function useGameWebSocket(options: UseGameWebSocketOptions = {}) {
             optionsRef.current.onError?.(message.reason);
             break;
           case 'rematch_requested':
-            optionsRef.current.onRematchRequested?.(message.by);
+            optionsRef.current.onRematchRequested?.(message.by, message.loserStarts);
             break;
           case 'rematch_declined':
             optionsRef.current.onRematchDeclined?.();

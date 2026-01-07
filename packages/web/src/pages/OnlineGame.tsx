@@ -29,6 +29,7 @@ const OnlineGame: React.FC = () => {
   const [rematchRequested, setRematchRequested] = useState(false); // 我是否已請求
   const [opponentRequestedRematch, setOpponentRequestedRematch] = useState(false); // 對方是否請求
   const [rematchDeclined, setRematchDeclined] = useState(false); // 是否被拒絕
+  const [loserStartsColor, setLoserStartsColor] = useState<PieceColor | null>(null); // 下局先手
 
   // WebSocket
   const { connect, sendMessage, isReconnecting, reconnectAttempt, isConnected } = useGameWebSocket({
@@ -92,8 +93,9 @@ const OnlineGame: React.FC = () => {
     onReconnecting: (attempt) => {
       console.log('正在重連:', attempt);
     },
-    onRematchRequested: (by) => {
-      console.log('對方請求再戰:', by);
+    onRematchRequested: (by, loserStarts) => {
+      console.log('對方請求再戰:', by, '輸家先手:', loserStarts);
+      setLoserStartsColor(loserStarts);
       if (by !== myColor) {
         setOpponentRequestedRematch(true);
       }
@@ -112,6 +114,7 @@ const OnlineGame: React.FC = () => {
       setRematchRequested(false);
       setOpponentRequestedRematch(false);
       setRematchDeclined(false);
+      setLoserStartsColor(null);
       setSelectedReserveSize(null);
       setSelectedBoardPos(null);
     },
@@ -369,7 +372,12 @@ const OnlineGame: React.FC = () => {
             {opponentRequestedRematch && !rematchDeclined ? (
               // 對方已請求再戰
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                <p className="text-yellow-800 font-semibold mb-3">對方想要再來一局！</p>
+                <p className="text-yellow-800 font-semibold mb-2">對方想要再來一局！</p>
+                {loserStartsColor && (
+                  <p className="text-yellow-700 text-sm mb-3">
+                    下局由 {loserStartsColor === 'red' ? '紅方' : '藍方'} 先手
+                  </p>
+                )}
                 <div className="flex gap-3 justify-center">
                   <button
                     onClick={handleRematchAccept}
@@ -389,6 +397,11 @@ const OnlineGame: React.FC = () => {
               // 我已請求，等待對方
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                 <p className="text-blue-800 font-semibold">已發送再戰請求，等待對方回應...</p>
+                {loserStartsColor && (
+                  <p className="text-blue-700 text-sm mt-1">
+                    下局由 {loserStartsColor === 'red' ? '紅方' : '藍方'} 先手
+                  </p>
+                )}
               </div>
             ) : rematchDeclined ? (
               // 被拒絕

@@ -16,6 +16,9 @@ const gamePlayers = new Map<
 // 儲存 rematch 請求（roomId -> 提出請求的顏色）
 const rematchRequests = new Map<string, PieceColor>();
 
+// 儲存最後的贏家（roomId -> winner color）
+const lastWinners = new Map<string, PieceColor>();
+
 export function handleGameWebSocketConnection(ws: WebSocket, roomId: string) {
   console.log(`WebSocket connection: roomId=${roomId}`);
 
@@ -40,8 +43,9 @@ export function handleGameWebSocketConnection(ws: WebSocket, roomId: string) {
     if (playerInfo) {
       console.log(`Player left: ${playerInfo.playerName} (${playerInfo.roomId})`);
 
-      // 清除 rematch 請求
+      // 清除 rematch 請求和 winner 記錄
       rematchRequests.delete(playerInfo.roomId);
+      lastWinners.delete(playerInfo.roomId);
 
       // 從房間移除 WebSocket
       const roomConnections = gameRooms.get(playerInfo.roomId);
@@ -193,6 +197,9 @@ async function handleGameClientMessage(
 
         // 檢查遊戲是否結束
         if (newGameState.winner) {
+          // 記錄贏家（用於 rematch 時輸家先手）
+          lastWinners.set(playerInfo.roomId, newGameState.winner);
+
           const gameOverMsg: GameServerMessage = {
             type: 'game_over',
             winner: newGameState.winner,
@@ -232,8 +239,10 @@ async function handleGameClientMessage(
         if (existingRequest !== color) {
           // 雙方都同意，開始新遊戲
           rematchRequests.delete(roomId);
+          const lastWinner = lastWinners.get(roomId) || null;
+          lastWinners.delete(roomId);
 
-          const newRoom = await roomManager.resetGameForRematch(roomId);
+          const newRoom = await roomManager.resetGameForRematch(roomId, lastWinner);
           if (newRoom) {
             // 通知雙方遊戲重新開始
             const roomConnections = gameRooms.get(roomId);
@@ -254,12 +263,16 @@ async function handleGameClientMessage(
       } else {
         // 記錄請求並通知對方
         rematchRequests.set(roomId, color);
+        const lastWinner = lastWinners.get(roomId) || null;
+        const loserStarts = lastWinner ? (lastWinner === 'red' ? 'blue' : 'red') : null;
+
         const requestMsg: GameServerMessage = {
           type: 'rematch_requested',
           by: color,
+          loserStarts,
         };
         broadcastToRoom(roomId, requestMsg);
-        console.log(`🔄 Rematch 請求: ${roomId} by ${color}`);
+        console.log(`🔄 Rematch 請求: ${roomId} by ${color}, 輸家先手: ${loserStarts}`);
       }
       break;
     }
@@ -277,8 +290,10 @@ async function handleGameClientMessage(
       // 只有對方提出請求時才能接受
       if (existingRequest && existingRequest !== color) {
         rematchRequests.delete(roomId);
+        const lastWinner = lastWinners.get(roomId) || null;
+        lastWinners.delete(roomId);
 
-        const newRoom = await roomManager.resetGameForRematch(roomId);
+        const newRoom = await roomManager.resetGameForRematch(roomId, lastWinner);
         if (newRoom) {
           const roomConnections = gameRooms.get(roomId);
           if (roomConnections) {

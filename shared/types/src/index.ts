@@ -60,7 +60,7 @@ export type GameServerMessage =
   | { type: 'opponent_left' }
   | { type: 'invalid_move'; reason: string }
   | { type: 'error'; message: string }
-  | { type: 'rematch_requested'; by: PieceColor }
+  | { type: 'rematch_requested'; by: PieceColor; loserStarts: PieceColor | null }
   | { type: 'rematch_declined' }
   | { type: 'rematch_start'; gameState: GameState; yourColor: PieceColor };
 

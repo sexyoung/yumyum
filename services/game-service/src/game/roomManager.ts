@@ -187,8 +187,8 @@ export async function deleteRoom(roomId: string): Promise<void> {
   console.log(`🗑️ 房間已刪除: ${roomId}`);
 }
 
-// 重置遊戲狀態（再來一局）
-export async function resetGameForRematch(roomId: string): Promise<RoomData | null> {
+// 重置遊戲狀態（再來一局，輸家先手）
+export async function resetGameForRematch(roomId: string, lastWinner: PieceColor | null): Promise<RoomData | null> {
   const roomData = await getRoom(roomId);
   if (!roomData) {
     return null;
@@ -196,10 +196,16 @@ export async function resetGameForRematch(roomId: string): Promise<RoomData | nu
 
   // 重置遊戲狀態
   roomData.gameState = createInitialGameState();
+
+  // 輸家先手（如果有 winner 的話）
+  if (lastWinner) {
+    roomData.gameState.currentPlayer = lastWinner === 'red' ? 'blue' : 'red';
+  }
+
   roomData.status = 'playing';
   roomData.lastActivity = Date.now();
 
   await saveRoom(roomData);
-  console.log(`🔄 房間重置（再來一局）: ${roomId}`);
+  console.log(`🔄 房間重置（再來一局）: ${roomId}, 先手: ${roomData.gameState.currentPlayer}`);
   return roomData;
 }
