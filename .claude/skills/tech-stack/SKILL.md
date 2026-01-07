@@ -88,9 +88,8 @@ description: 詳述 YumYum 的技術選擇，包含 React+Vite、Hono.js、Verce
 
 **成本計算：**
 ```
-API Gateway（256MB）：~$1.5/月
 Game Service（512MB）：~$3/月
-總計：~$4.5/月（在 $5 免費額度內！）✅
+總計：~$3/月（在 $5 免費額度內！）✅
 ```
 
 ### Vercel Rewrites（API 代理）
@@ -208,32 +207,36 @@ const prisma = new PrismaClient()
 
 ### 本地開發
 ```yaml
-前端: localhost:5173（Vite）
-後端: localhost:3000（Hono.js）
-PostgreSQL: Docker localhost:5432
-Redis: Docker localhost:6379
+前端: localhost:5173（Vite，proxy /api → localhost:3000）
+後端: localhost:3000（game-service，Hono.js + WebSocket）
+PostgreSQL: Docker host.docker.internal:5432
+Redis: Docker host.docker.internal:6379
 ```
 
 ### 正式環境
 ```yaml
 前端: yumyum.game（Vercel）
-API: api.yumyum.game（Railway）
-WebSocket: ws.yumyum.game（Railway）
+後端: api.yumyum.game（Railway，API + WebSocket）
 PostgreSQL: Supabase
 Redis: Upstash
 ```
 
 ## 範例
 
-**範例 1：API 配置**
+**範例 1：環境變數配置**
 ```typescript
-// packages/web/src/config/api.ts
-const isDev = import.meta.env.DEV;
+// packages/web/src/lib/env.ts
+// HTTP API：直接使用相對路徑（vite proxy / Vercel middleware 處理）
+// WebSocket：需要完整 URL
 
-export const config = {
-  apiUrl: isDev ? 'http://localhost:3000' : '/api',
-  wsUrl: isDev ? 'ws://localhost:3000' : `wss://${window.location.host}/ws`,
-};
+export function getWsUrl(): string {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  return apiUrl.replace(/^http/, 'ws');
+}
+
+// 使用方式
+fetch('/api/rooms');                    // HTTP API（相對路徑）
+new WebSocket(`${getWsUrl()}/game/123`); // WebSocket（完整 URL）
 ```
 
 **範例 2：優化 Upstash 使用量**

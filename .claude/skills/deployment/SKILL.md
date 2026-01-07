@@ -10,7 +10,7 @@ description: 涵蓋 Vercel（前端）、Railway（後端）、Supabase（資料
 部署應用程式時：
 
 1. **前端 → Vercel**：連接 GitHub repo，設定 root directory 為 `packages/web`，push 時自動部署
-2. **後端 → Railway**：創建兩個服務（api-gateway、game-service），使用 Dockerfiles
+2. **後端 → Railway**：創建 game-service 服務，使用 Dockerfile
 3. **資料庫 → Supabase**：創建專案，執行 SQL schema，取得連線字串
 4. **Redis → Upstash**：在新加坡區域創建資料庫，取得 REST URL
 5. **域名 → Cloudflare**：yumyum.game 指向 Vercel，api/ws 子域名指向 Railway
@@ -39,22 +39,15 @@ description: 涵蓋 Vercel（前端）、Railway（後端）、Supabase（資料
 ### 本地開發
 
 ```bash
-# .env.local（前端）
+# .env（共用）
 NODE_ENV=development
 VITE_API_URL=http://localhost:3000
 
-# .env（後端 - api-gateway）
-NODE_ENV=development
+# 後端 game-service
 PORT=3000
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/yumyum_dev
-REDIS_URL=redis://localhost:6379
+DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:5432/yumyum_dev
+REDIS_URL=redis://host.docker.internal:6379
 CORS_ORIGIN=http://localhost:5173
-
-# .env（後端 - game-service）
-NODE_ENV=development
-PORT=3001
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/yumyum_dev
-REDIS_URL=redis://localhost:6379
 ```
 
 ### Vercel（正式環境）
@@ -67,19 +60,12 @@ REDIS_URL=redis://localhost:6379
 ### Railway（正式環境）
 
 ```yaml
-# Service: api-gateway
+# Service: game-service（整合 API + WebSocket）
 NODE_ENV=production
 PORT=3000
 DATABASE_URL=${{Postgres.DATABASE_URL}}  # 自動注入
 REDIS_URL=<Upstash Redis URL>
 CORS_ORIGIN=https://yumyum.game,https://*.vercel.app
-
-# Service: game-service
-NODE_ENV=production
-PORT=3001
-DATABASE_URL=${{Postgres.DATABASE_URL}}
-REDIS_URL=<Upstash Redis URL>
-WS_HEARTBEAT_INTERVAL=30000
 ```
 
 ## Vercel 部署
@@ -164,22 +150,16 @@ WS_HEARTBEAT_INTERVAL=30000
    → "Deploy from GitHub repo"
    → 選擇你的 repository
 
-2. 添加 API Gateway 服務:
-   → Add Service → GitHub Repo
-   → Root Directory: services/api-gateway
-   → 自動偵測 Dockerfile
-
-3. 添加 Game Service:
+2. 添加 Game Service:
    → Add Service → GitHub Repo
    → Root Directory: services/game-service
    → 自動偵測 Dockerfile
 
-4. 設定環境變數（見上方）
+3. 設定環境變數（見上方）
 
-5. 配置自訂域名:
+4. 配置自訂域名:
    Settings → Domains → Custom Domain
-   - api.yumyum.game（API Gateway）
-   - ws.yumyum.game（Game Service）
+   - api.yumyum.game（API + WebSocket）
 ```
 
 ### 自訂域名設定
@@ -197,9 +177,7 @@ WS_HEARTBEAT_INTERVAL=30000
    Target: xxx.up.railway.app
    Proxy: DNS only
 
-4. 重複設定 ws.yumyum.game
-
-5. Railway 自動:
+4. Railway 自動:
    ✅ 驗證域名
    ✅ 配置 SSL
    ✅ 啟用 HTTPS/WSS
@@ -335,8 +313,7 @@ CLI 指令:
 
 □ 域名設定正確
   □ yumyum.game → Vercel
-  □ api.yumyum.game → Railway
-  □ ws.yumyum.game → Railway
+  □ api.yumyum.game → Railway（API + WebSocket）
   □ 全部啟用 HTTPS
 
 □ 資料庫連線正常

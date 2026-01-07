@@ -32,18 +32,12 @@ yumyum/
 │       ├── vercel.json         # Vercel 配置（含 rewrites）
 │       └── package.json
 ├── services/
-│   ├── api-gateway/           # API Gateway（Railway）
-│   │   ├── src/
-│   │   │   ├── routes/        # API 路由
-│   │   │   └── middleware/    # CORS、認證、錯誤處理
-│   │   ├── Dockerfile
-│   │   └── package.json
-│   └── game-service/          # 遊戲服務（Railway）
+│   └── game-service/          # 後端服務（Railway）- 整合 API + WebSocket
 │       ├── src/
 │       │   ├── websocket/     # WebSocket 處理器
-│       │   ├── game/          # 遊戲引擎、房間、AI
+│       │   ├── game/          # 遊戲引擎、房間管理
 │       │   ├── redis/         # Redis 操作
-│       │   └── db/            # PostgreSQL 操作
+│       │   └── lib/           # Prisma client 等共用模組
 │       ├── Dockerfile
 │       └── package.json
 ├── shared/
@@ -106,7 +100,8 @@ yumyum/
 ```typescript
 // WebSocket 連線
 ws://localhost:3000/game/:roomId       // 開發環境
-wss://yumyum.game/ws/game/:roomId      // 正式環境（透過 Vercel proxy）
+ws://localhost:3000/chat/:roomId       // 開發環境（聊天室）
+wss://api.yumyum.game/game/:roomId     // 正式環境
 
 // 客戶端 → 伺服器
 type ClientMessage =
@@ -299,7 +294,7 @@ export class GameWebSocket {
 
 **範例 3：Prisma Client 使用**
 ```typescript
-// services/api-gateway/src/db/prisma.ts
+// services/game-service/src/lib/prisma.ts
 import { PrismaClient } from '@prisma/client';
 
 // Singleton pattern
