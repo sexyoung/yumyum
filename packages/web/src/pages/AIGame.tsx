@@ -249,7 +249,7 @@ export default function AIGame() {
   // 難度選擇界面
   if (!difficulty) {
     return (
-      <div className="h-[100dvh] bg-gray-50 flex flex-col items-center justify-center p-4">
+      <div className="h-[100dvh] bg-gray-50 flex flex-col items-center justify-center p-3">
         <h1 className="text-2xl md:text-4xl font-bold mb-8 text-center">單人 AI 遊戲</h1>
 
         <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg max-w-md w-full">
@@ -290,64 +290,61 @@ export default function AIGame() {
 
   // 遊戲界面
   return (
-    <div className="h-[100dvh] bg-gray-50 flex flex-col overflow-hidden">
+    <div className="h-[100dvh] bg-gradient-to-br from-purple-400 to-indigo-600 flex flex-col">
       {/* 頂部資訊 */}
-      <div className="flex-none p-2 md:p-4 bg-white shadow">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigate('/')}
-            className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
-          >
-            離開
-          </button>
-          {gameState.winner ? (
-            <p className={`text-base md:text-xl font-bold ${gameState.winner === playerColor ? 'text-red-600' : 'text-blue-600'}`}>
-              {gameState.winner === playerColor ? '你獲勝了！' : 'AI 獲勝了'}
-            </p>
-          ) : aiThinking ? (
-            <p className="text-base md:text-xl font-bold text-blue-600">
-              AI 思考中...
-            </p>
-          ) : (
-            <p className={`text-base md:text-xl font-bold ${gameState.currentPlayer === playerColor ? 'text-red-600' : 'text-blue-600'}`}>
-              {gameState.currentPlayer === playerColor ? '你的回合' : 'AI 的回合'}
+      <div className="flex-none px-3 pt-3">
+        <div className="bg-white rounded-lg shadow-lg p-3">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => navigate('/')}
+              className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
+            >
+              離開
+            </button>
+            {gameState.winner ? (
+              <p className={`text-base md:text-xl font-bold ${gameState.winner === playerColor ? 'text-red-600' : 'text-blue-600'}`}>
+                {gameState.winner === playerColor ? '你獲勝了！' : 'AI 獲勝了'}
+              </p>
+            ) : aiThinking ? (
+              <p className="text-base md:text-xl font-bold text-blue-600">
+                AI 思考中...
+              </p>
+            ) : (
+              <p className={`text-base md:text-xl font-bold ${gameState.currentPlayer === playerColor ? 'text-red-600' : 'text-blue-600'}`}>
+                {gameState.currentPlayer === playerColor ? '你的回合' : 'AI 的回合'}
+              </p>
+            )}
+            <button
+              onClick={handleRestart}
+              className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
+              data-testid="restart-button"
+            >
+              重新開始
+            </button>
+          </div>
+          {/* 錯誤訊息 */}
+          {errorMessage && (
+            <p className="text-center text-sm text-red-600 mt-2 font-semibold">
+              {errorMessage}
             </p>
           )}
-          <button
-            onClick={handleRestart}
-            className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
-            data-testid="restart-button"
-          >
-            重新開始
-          </button>
         </div>
-
-        {/* 錯誤訊息 */}
-        {errorMessage && (
-          <p className="text-center text-sm text-red-600 mt-2 font-semibold">
-            {errorMessage}
-          </p>
-        )}
       </div>
 
-      {/* 遊戲區域 */}
-      <div className="flex-1 flex flex-col md:flex-row items-stretch md:items-center justify-between md:justify-center overflow-hidden">
-        {/* 玩家儲備區（手機：頂部，桌機：左側） */}
-        <div className="flex-none h-28 md:h-auto flex items-center justify-center px-2 md:p-4">
+      {/* AI 儲備區 - 頂部 */}
+      <div className="flex-none p-3 flex justify-center">
+        <div className="bg-white rounded-lg shadow-lg p-3">
           <PlayerReserve
-            color={playerColor}
-            reserves={gameState.reserves[playerColor]}
-            onPieceClick={(size) => handlePieceClick(playerColor, size)}
-            selectedSize={
-              selectedPiece?.type === 'reserve' && selectedPiece.color === playerColor
-                ? selectedPiece.size
-                : null
-            }
+            color={aiColor}
+            reserves={gameState.reserves[aiColor]}
+            selectedSize={null}
           />
         </div>
+      </div>
 
-        {/* 棋盤 */}
-        <div className="flex-1 flex items-center justify-center md:flex-none">
+      {/* 棋盤 - 中間置中 */}
+      <div className="flex-1 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-lg p-3">
           <Board
             board={gameState.board}
             onCellClick={handleCellClick}
@@ -358,13 +355,20 @@ export default function AIGame() {
             }
           />
         </div>
+      </div>
 
-        {/* AI 儲備區（手機：底部，桌機：右側） */}
-        <div className="flex-none h-28 md:h-auto flex items-center justify-center px-2 md:p-4">
+      {/* 玩家儲備區 - 底部 */}
+      <div className="flex-none p-3 flex justify-center">
+        <div className="bg-white rounded-lg shadow-lg p-3">
           <PlayerReserve
-            color={aiColor}
-            reserves={gameState.reserves[aiColor]}
-            selectedSize={null}
+            color={playerColor}
+            reserves={gameState.reserves[playerColor]}
+            onPieceClick={(size) => handlePieceClick(playerColor, size)}
+            selectedSize={
+              selectedPiece?.type === 'reserve' && selectedPiece.color === playerColor
+                ? selectedPiece.size
+                : null
+            }
           />
         </div>
       </div>

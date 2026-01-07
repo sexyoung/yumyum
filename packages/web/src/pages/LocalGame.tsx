@@ -195,49 +195,46 @@ export default function LocalGame() {
   };
 
   return (
-    <div className="h-[100dvh] bg-gray-50 flex flex-col overflow-hidden">
+    <div className="h-[100dvh] bg-gradient-to-br from-orange-400 to-red-500 flex flex-col">
       {/* 頂部資訊 */}
-      <div className="flex-none p-2 md:p-4 bg-white shadow">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigate('/')}
-            className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
-          >
-            離開
-          </button>
-          {gameState.winner ? (
-            <p className={`text-base md:text-xl font-bold ${gameState.winner === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
-              {gameState.winner === 'red' ? '紅方獲勝！' : '藍方獲勝！'}
-            </p>
-          ) : (
-            <p className={`text-base md:text-xl font-bold ${gameState.currentPlayer === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
-              {gameState.currentPlayer === 'red' ? '紅方' : '藍方'}回合
+      <div className="flex-none px-3 pt-3">
+        <div className="bg-white rounded-lg shadow-lg p-3">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => navigate('/')}
+              className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
+            >
+              離開
+            </button>
+            {gameState.winner ? (
+              <p className={`text-base md:text-xl font-bold ${gameState.winner === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
+                {gameState.winner === 'red' ? '紅方獲勝！' : '藍方獲勝！'}
+              </p>
+            ) : (
+              <p className={`text-base md:text-xl font-bold ${gameState.currentPlayer === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
+                {gameState.currentPlayer === 'red' ? '紅方' : '藍方'}回合
+              </p>
+            )}
+            <button
+              onClick={handleRestart}
+              className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
+              data-testid="restart-button"
+            >
+              重新開始
+            </button>
+          </div>
+          {/* 錯誤訊息 */}
+          {errorMessage && (
+            <p className="text-center text-sm text-red-600 mt-2 font-semibold">
+              {errorMessage}
             </p>
           )}
-          <button
-            onClick={handleRestart}
-            className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
-            data-testid="restart-button"
-          >
-            重新開始
-          </button>
         </div>
-
-        {/* 錯誤訊息 */}
-        {errorMessage && (
-          <p className="text-center text-sm text-red-600 mt-2 font-semibold">
-            {errorMessage}
-          </p>
-        )}
       </div>
 
-      {/* 遊戲區域 - 使用 flex-1 佔滿剩餘空間 */}
-      <div className="flex-1 flex flex-col md:flex-row items-stretch md:items-center justify-between md:justify-center overflow-hidden">
-        {/* 手機佈局：垂直排列，紅方頂部、藍方底部 */}
-        {/* 桌機佈局：水平排列 */}
-
-        {/* 紅方儲備區（手機：頂部，桌機：左側） */}
-        <div className="flex-none h-28 md:h-auto flex items-center justify-center px-2 md:p-4">
+      {/* 紅方儲備區 - 頂部 */}
+      <div className="flex-none p-3 flex justify-center">
+        <div className="bg-white rounded-lg shadow-lg p-3">
           <PlayerReserve
             color="red"
             reserves={gameState.reserves.red}
@@ -249,9 +246,11 @@ export default function LocalGame() {
             }
           />
         </div>
+      </div>
 
-        {/* 棋盤（手機：中間填滿，桌機：中間） */}
-        <div className="flex-1 flex items-center justify-center md:flex-none">
+      {/* 棋盤 - 中間置中 */}
+      <div className="flex-1 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-lg p-3">
           <Board
             board={gameState.board}
             onCellClick={handleCellClick}
@@ -262,9 +261,11 @@ export default function LocalGame() {
             }
           />
         </div>
+      </div>
 
-        {/* 藍方儲備區（手機：底部，桌機：右側） */}
-        <div className="flex-none h-28 md:h-auto flex items-center justify-center px-2 md:p-4">
+      {/* 藍方儲備區 - 底部 */}
+      <div className="flex-none p-3 flex justify-center">
+        <div className="bg-white rounded-lg shadow-lg p-3">
           <PlayerReserve
             color="blue"
             reserves={gameState.reserves.blue}
@@ -276,20 +277,6 @@ export default function LocalGame() {
             }
           />
         </div>
-      </div>
-
-      {/* 除錯資訊（開發時使用） - 手機版隱藏 */}
-      <div className="hidden md:block fixed bottom-4 right-4 bg-black/80 text-white text-xs p-2 rounded max-w-xs">
-        <p>棋盤: {gameState.board.flat().filter(cell => cell.pieces.length > 0).length} 個棋子</p>
-        <p>紅方剩餘: {Object.values(gameState.reserves.red).reduce((a, b) => a + b, 0)} 個</p>
-        <p>藍方剩餘: {Object.values(gameState.reserves.blue).reduce((a, b) => a + b, 0)} 個</p>
-        {selectedPiece && (
-          <p className="mt-1 text-yellow-300">
-            選中: {selectedPiece.type === 'reserve'
-              ? `${selectedPiece.color} ${selectedPiece.size}`
-              : `棋盤 (${selectedPiece.row},${selectedPiece.col})`}
-          </p>
-        )}
       </div>
     </div>
   );
