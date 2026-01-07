@@ -11,6 +11,7 @@ interface PlayerReserveProps {
   onPieceClick?: (size: PieceSize) => void;
   selectedSize?: PieceSize | null; // 選中的棋子尺寸
   canDrag?: boolean; // 是否允許拖曳棋子
+  disabled?: boolean; // 是否禁用（非當前玩家回合時降低透明度）
 }
 
 /**
@@ -19,11 +20,11 @@ interface PlayerReserveProps {
  * 手機版：水平排列節省空間
  * 桌機版：垂直排列更清楚
  */
-export default function PlayerReserve({ color, reserves, onPieceClick, selectedSize, canDrag = false }: PlayerReserveProps) {
+export default function PlayerReserve({ color, reserves, onPieceClick, selectedSize, canDrag = false, disabled = false }: PlayerReserveProps) {
   const sizes: PieceSize[] = ['small', 'medium', 'large'];
 
   return (
-    <div className="flex flex-row md:flex-col gap-3 md:gap-4">
+    <div className={`flex flex-row md:flex-col gap-3 md:gap-4 ${disabled ? 'opacity-40' : ''}`}>
       {sizes.map((size) => {
         const isSelected = selectedSize === size;
         const hasPieces = reserves[size] > 0;

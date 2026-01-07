@@ -1,6 +1,5 @@
 import { PieceSize, PieceColor } from '@yumyum/types';
 import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 
 // 拖曳資料類型
 export interface DragData {
@@ -45,20 +44,16 @@ export default function Piece({ size, color, onClick, label, selected = false, d
     : (size === 'small' ? 'S' : size === 'medium' ? 'M' : 'L');
 
   // 使用 dnd-kit 的 useDraggable
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  // 不需要 transform，因為視覺移動由 DragOverlay 處理
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: dragId || `piece-${color}-${size}`,
     data: dragData,
     disabled: !draggable,
   });
 
-  const style = transform ? {
-    transform: CSS.Translate.toString(transform),
-  } : undefined;
-
   return (
     <div
       ref={setNodeRef}
-      style={style}
       className={`
         ${sizeClasses[size]}
         ${colorClasses[color]}
@@ -66,8 +61,7 @@ export default function Piece({ size, color, onClick, label, selected = false, d
         ${selected ? 'border-4 border-yellow-400 ring-2 ring-yellow-300' : 'border-2 border-gray-700'}
         cursor-pointer
         flex items-center justify-center
-        transition-colors
-        ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}
+        ${draggable ? 'cursor-grab active:cursor-grabbing' : 'transition-colors'}
         ${isDragging ? 'opacity-0' : ''}
         touch-none
       `}

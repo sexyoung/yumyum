@@ -269,6 +269,7 @@ export default function LocalGame() {
                   : null
               }
               canDrag={!gameState.winner && gameState.currentPlayer === 'red'}
+              disabled={!gameState.winner && gameState.currentPlayer !== 'red'}
             />
           </div>
         </div>
@@ -303,6 +304,7 @@ export default function LocalGame() {
                   : null
               }
               canDrag={!gameState.winner && gameState.currentPlayer === 'blue'}
+              disabled={!gameState.winner && gameState.currentPlayer !== 'blue'}
             />
           </div>
         </div>

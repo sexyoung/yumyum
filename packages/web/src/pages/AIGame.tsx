@@ -362,6 +362,7 @@ export default function AIGame() {
               color={aiColor}
               reserves={gameState.reserves[aiColor]}
               selectedSize={null}
+              disabled={true}
             />
           </div>
         </div>
@@ -396,6 +397,7 @@ export default function AIGame() {
                   : null
               }
               canDrag={!gameState.winner && !aiThinking && gameState.currentPlayer === playerColor}
+              disabled={!gameState.winner && (aiThinking || gameState.currentPlayer !== playerColor)}
             />
           </div>
         </div>

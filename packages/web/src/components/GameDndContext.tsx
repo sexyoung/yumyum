@@ -3,8 +3,7 @@ import {
   DndContext,
   DragEndEvent,
   DragStartEvent,
-  TouchSensor,
-  MouseSensor,
+  PointerSensor,
   useSensor,
   useSensors,
   DragOverlay,
@@ -24,22 +23,15 @@ export default function GameDndContext({ children, onDrop }: GameDndContextProps
   // 追蹤當前正在拖曳的棋子資料
   const [activeDragData, setActiveDragData] = useState<DragData | null>(null);
 
-  // 設定感應器，支援觸控和滑鼠
-  const mouseSensor = useSensor(MouseSensor, {
-    // 需要移動 5px 才開始拖曳，避免誤觸
+  // 使用 PointerSensor，同時支援觸控和滑鼠
+  const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: {
-      distance: 5,
+      // 需要移動 3px 才開始拖曳，避免誤觸
+      distance: 3,
     },
   });
 
-  const touchSensor = useSensor(TouchSensor, {
-    // 需要移動 5px 才開始拖曳
-    activationConstraint: {
-      distance: 5,
-    },
-  });
-
-  const sensors = useSensors(mouseSensor, touchSensor);
+  const sensors = useSensors(pointerSensor);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const dragData = event.active.data.current as DragData | undefined;
@@ -68,10 +60,12 @@ export default function GameDndContext({ children, onDrop }: GameDndContextProps
       {children}
       <DragOverlay dropAnimation={null}>
         {activeDragData && (
-          <Piece
-            size={activeDragData.size}
-            color={activeDragData.color}
-          />
+          <div style={{ willChange: 'transform', transform: 'translate3d(0, 0, 0)' }}>
+            <Piece
+              size={activeDragData.size}
+              color={activeDragData.color}
+            />
+          </div>
         )}
       </DragOverlay>
     </DndContext>

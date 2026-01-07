@@ -67,7 +67,6 @@ export default function Cell({ cell, row, col, onClick, selected = false, canDra
         flex items-center justify-center
         cursor-pointer
         hover:bg-gray-200
-        transition-colors
         relative
       `}
       onClick={onClick}
