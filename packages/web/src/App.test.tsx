@@ -32,17 +32,18 @@ describe('App 路由測試', () => {
   it('應該在根路徑渲染首頁', () => {
     renderWithProviders(<AppRoutes />);
     expect(screen.getByText('YumYum 吞吞棋')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /單人遊戲/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /對戰電腦/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /本機雙人/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /線上雙人/i })).toBeInTheDocument();
   });
 
-  it('點擊單人遊戲連結應該導航到 AI 遊戲頁面', async () => {
+  it('點擊對戰電腦連結應該導航到 AI 遊戲頁面', async () => {
     renderWithProviders(<AppRoutes />);
 
-    fireEvent.click(screen.getByRole('link', { name: /單人遊戲/i }));
+    fireEvent.click(screen.getByRole('link', { name: /對戰電腦/i }));
 
-    expect(await screen.findByText('單人 AI 遊戲')).toBeInTheDocument();
+    // AI 遊戲頁面顯示「你的回合」（玩家先手）
+    expect(await screen.findByText('你的回合')).toBeInTheDocument();
   });
 
   it('點擊本機雙人連結應該導航到本機雙人遊戲頁面', async () => {
