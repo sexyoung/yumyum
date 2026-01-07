@@ -50,7 +50,7 @@ const initialGameState: GameState = {
 
 export default function AIGame() {
   const navigate = useNavigate();
-  const [difficulty, setDifficulty] = useState<AIDifficulty | null>(null);
+  const [difficulty] = useState<AIDifficulty>('hard');
   const [gameState, setGameState] = useState<GameState>(initialGameState);
   const [selectedPiece, setSelectedPiece] = useState<SelectedPiece>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -65,7 +65,6 @@ export default function AIGame() {
     const saved = loadAIGameState();
     if (saved) {
       setGameState(saved.gameState);
-      setDifficulty(saved.difficulty);
     }
   }, []);
 
@@ -252,65 +251,13 @@ export default function AIGame() {
     }
   };
 
-  // 開始新遊戲
-  const handleNewGame = (selectedDifficulty: AIDifficulty) => {
-    setDifficulty(selectedDifficulty);
-    setGameState(initialGameState);
-    setSelectedPiece(null);
-    setErrorMessage(null);
-    clearAIGameState();
-  };
-
   // 重新開始
   const handleRestart = () => {
-    setDifficulty(null);
     setGameState(initialGameState);
     setSelectedPiece(null);
     setErrorMessage(null);
     clearAIGameState();
   };
-
-  // 難度選擇界面
-  if (!difficulty) {
-    return (
-      <div className="h-[100dvh] bg-gray-50 flex flex-col items-center justify-center p-3">
-        <h1 className="text-2xl md:text-4xl font-bold mb-8 text-center">單人 AI 遊戲</h1>
-
-        <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg max-w-md w-full">
-          <h2 className="text-xl md:text-2xl font-bold mb-6 text-center">選擇難度</h2>
-
-          <div className="space-y-4">
-            <button
-              onClick={() => handleNewGame('easy')}
-              className="w-full px-6 py-4 bg-green-500 hover:bg-green-600 text-white rounded-lg text-lg font-semibold transition-colors"
-              data-testid="difficulty-easy"
-            >
-              簡單
-              <p className="text-sm font-normal mt-1">隨機 + 基本策略</p>
-            </button>
-
-            <button
-              onClick={() => handleNewGame('medium')}
-              className="w-full px-6 py-4 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-lg font-semibold transition-colors"
-              data-testid="difficulty-medium"
-            >
-              中等
-              <p className="text-sm font-normal mt-1">Minimax 算法（3 層）</p>
-            </button>
-
-            <button
-              onClick={() => handleNewGame('hard')}
-              className="w-full px-6 py-4 bg-red-500 hover:bg-red-600 text-white rounded-lg text-lg font-semibold transition-colors"
-              data-testid="difficulty-hard"
-            >
-              困難
-              <p className="text-sm font-normal mt-1">Alpha-Beta 剪枝（5 層）</p>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // 遊戲界面
   return (
