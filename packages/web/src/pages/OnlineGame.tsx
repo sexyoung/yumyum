@@ -7,7 +7,7 @@ import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
 import GameDndContext from '../components/GameDndContext';
 import { DragData } from '../components/Piece';
-import { placePieceFromReserve, movePieceOnBoard } from '../lib/gameLogic';
+import { placePieceFromReserve, movePieceOnBoard, getWinningLine } from '../lib/gameLogic';
 
 type GamePhase = 'connecting' | 'waiting' | 'playing' | 'finished' | 'opponent_left' | 'error';
 
@@ -496,6 +496,7 @@ const OnlineGame: React.FC = () => {
                 selectedCell={selectedBoardPos}
                 canDrag={!isGameOver && isMyTurn}
                 currentPlayer={myColor}
+                winningCells={getWinningLine(gameState)?.cells}
               />
             </div>
           </div>
