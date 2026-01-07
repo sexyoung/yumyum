@@ -339,8 +339,90 @@ const OnlineGame: React.FC = () => {
     );
   }
 
-  if (phase === 'playing' && gameState && myColor) {
+  if ((phase === 'playing' || phase === 'finished') && gameState && myColor) {
     const isMyTurn = gameState.currentPlayer === myColor;
+    const isGameOver = phase === 'finished' || !!gameState.winner;
+    const winner = gameState.winner;
+    const isWinner = winner === myColor;
+    const opponentColor: PieceColor = myColor === 'red' ? 'blue' : 'red';
+
+    const handleRematchRequest = () => {
+      sendMessage({ type: 'rematch_request' });
+      setRematchRequested(true);
+    };
+
+    const handleRematchAccept = () => {
+      sendMessage({ type: 'rematch_accept' });
+    };
+
+    const handleRematchDecline = () => {
+      sendMessage({ type: 'rematch_decline' });
+      setOpponentRequestedRematch(false);
+      setIDeclinedRematch(true);
+    };
+
+    // 渲染右上角按鈕（遊戲中為空，結束後為再戰按鈕）
+    const renderRightButton = () => {
+      if (!isGameOver) {
+        // 遊戲進行中，顯示空白佔位
+        return <div className="w-[52px] md:w-[68px]"></div>;
+      }
+
+      // 遊戲結束，顯示再戰相關按鈕
+      if (opponentRequestedRematch && !rematchDeclined) {
+        return (
+          <div className="flex gap-1">
+            <button
+              onClick={handleRematchAccept}
+              className="px-2 py-1.5 md:px-3 md:py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium text-sm transition"
+            >
+              接受
+            </button>
+            <button
+              onClick={handleRematchDecline}
+              className="px-2 py-1.5 md:px-3 md:py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-lg font-medium text-sm transition"
+            >
+              拒絕
+            </button>
+          </div>
+        );
+      }
+
+      if (rematchRequested && !rematchDeclined) {
+        return (
+          <span className="text-sm text-blue-600 font-medium">等待中...</span>
+        );
+      }
+
+      if (iDeclinedRematch || rematchDeclined) {
+        return <div className="w-[52px] md:w-[68px]"></div>;
+      }
+
+      return (
+        <button
+          onClick={handleRematchRequest}
+          className="px-3 py-1.5 md:px-4 md:py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition"
+        >
+          再一場
+        </button>
+      );
+    };
+
+    // 渲染中間狀態文字
+    const renderStatusText = () => {
+      if (isGameOver) {
+        return (
+          <p className={`text-base md:text-xl font-bold ${isWinner ? 'text-green-600' : 'text-red-600'}`}>
+            {isWinner ? '你獲勝了！' : '你輸了'}
+          </p>
+        );
+      }
+      return (
+        <p className={`text-base md:text-xl font-bold ${isMyTurn ? 'text-green-600' : 'text-gray-400'}`}>
+          {isMyTurn ? '你的回合' : '對手回合'}
+        </p>
+      );
+    };
 
     return (
       <GameDndContext onDrop={handleDrop}>
@@ -360,147 +442,79 @@ const OnlineGame: React.FC = () => {
           )}
 
           {/* 頂部資訊 */}
-          <div className="flex-none p-4">
-            <div className="bg-white rounded-lg shadow-lg p-4">
+          <div className="flex-none px-3 pt-3">
+            <div className="bg-white rounded-lg shadow-lg p-3">
               <div className="flex justify-between items-center">
                 <button
                   onClick={handleBackToLobby}
-                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
+                  className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
                 >
                   離開
                 </button>
-                <p className={`text-xl font-bold ${isMyTurn ? 'text-green-600' : 'text-gray-400'}`}>
-                  {isMyTurn ? '你的回合' : '對手回合'}
-                </p>
+                {renderStatusText()}
+                {renderRightButton()}
               </div>
+              {/* 對方請求再戰的提示 */}
+              {isGameOver && opponentRequestedRematch && !rematchDeclined && (
+                <p className="text-center text-sm text-yellow-600 mt-2 font-semibold">
+                  對方想要再來一局！{loserStartsColor && `（${loserStartsColor === 'red' ? '紅方' : '藍方'}先手）`}
+                </p>
+              )}
+              {/* 等待對方回應的提示 */}
+              {isGameOver && rematchRequested && !rematchDeclined && (
+                <p className="text-center text-sm text-blue-600 mt-2 font-semibold">
+                  已發送再戰請求，等待對方回應...{loserStartsColor && `（${loserStartsColor === 'red' ? '紅方' : '藍方'}先手）`}
+                </p>
+              )}
+              {/* 拒絕提示 */}
+              {isGameOver && (iDeclinedRematch || rematchDeclined) && (
+                <p className="text-center text-sm text-gray-500 mt-2">
+                  {iDeclinedRematch ? '已拒絕再戰' : '對方拒絕了再戰'}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* 對手儲備區 - 頂部 */}
+          <div className="flex-none p-3 flex justify-center">
+            <div className="bg-white rounded-lg shadow-lg p-3">
+              <PlayerReserve
+                color={opponentColor}
+                reserves={gameState.reserves[opponentColor]}
+                selectedSize={null}
+                disabled={true}
+              />
             </div>
           </div>
 
           {/* 棋盤區域 - 置中 */}
           <div className="flex-1 flex items-center justify-center">
-            <div className="bg-white rounded-lg shadow-lg p-4">
+            <div className="bg-white rounded-lg shadow-lg p-3">
               <Board
                 board={gameState.board}
                 onCellClick={handleBoardClick}
                 selectedCell={selectedBoardPos}
-                canDrag={isMyTurn}
+                canDrag={!isGameOver && isMyTurn}
                 currentPlayer={myColor}
               />
             </div>
           </div>
 
           {/* 我的儲備區 - 底部 */}
-          <div className="flex-none p-4 flex justify-center">
-            <div className="bg-white rounded-lg shadow-lg p-4">
+          <div className="flex-none p-3 flex justify-center">
+            <div className="bg-white rounded-lg shadow-lg p-3">
               <PlayerReserve
                 color={myColor}
                 reserves={gameState.reserves[myColor]}
                 onPieceClick={handleReserveClick}
                 selectedSize={selectedReserveSize}
-                canDrag={isMyTurn}
+                canDrag={!isGameOver && isMyTurn}
+                disabled={isGameOver || !isMyTurn}
               />
             </div>
           </div>
         </div>
       </GameDndContext>
-    );
-  }
-
-  if (phase === 'finished' && gameState) {
-    const winner = gameState.winner;
-    const isWinner = winner === myColor;
-
-    const handleRematchRequest = () => {
-      sendMessage({ type: 'rematch_request' });
-      setRematchRequested(true);
-    };
-
-    const handleRematchAccept = () => {
-      sendMessage({ type: 'rematch_accept' });
-    };
-
-    const handleRematchDecline = () => {
-      sendMessage({ type: 'rematch_decline' });
-      setOpponentRequestedRematch(false);
-      setIDeclinedRematch(true);
-    };
-
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-600">
-        <div className="bg-white rounded-lg shadow-2xl p-8 text-center max-w-md">
-          <div className="text-8xl mb-4">{isWinner ? ':)' : ':('}</div>
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">
-            {isWinner ? '恭喜獲勝！' : '遊戲結束'}
-          </h2>
-          <p className="text-xl text-gray-600 mb-6">
-            {winner ? `${winner === 'red' ? '紅方' : '藍方'}獲勝！` : '平局'}
-          </p>
-
-          {/* 再戰區塊 */}
-          <div className="mb-6">
-            {opponentRequestedRematch && !rematchDeclined ? (
-              // 對方已請求再戰
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                <p className="text-yellow-800 font-semibold mb-2">對方想要再來一局！</p>
-                {loserStartsColor && (
-                  <p className="text-yellow-700 text-sm mb-3">
-                    下局由 {loserStartsColor === 'red' ? '紅方' : '藍方'} 先手
-                  </p>
-                )}
-                <div className="flex gap-3 justify-center">
-                  <button
-                    onClick={handleRematchAccept}
-                    className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition"
-                  >
-                    接受
-                  </button>
-                  <button
-                    onClick={handleRematchDecline}
-                    className="px-6 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-lg font-semibold transition"
-                  >
-                    拒絕
-                  </button>
-                </div>
-              </div>
-            ) : rematchRequested && !rematchDeclined ? (
-              // 我已請求，等待對方
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                <p className="text-blue-800 font-semibold">已發送再戰請求，等待對方回應...</p>
-                {loserStartsColor && (
-                  <p className="text-blue-700 text-sm mt-1">
-                    下局由 {loserStartsColor === 'red' ? '紅方' : '藍方'} 先手
-                  </p>
-                )}
-              </div>
-            ) : iDeclinedRematch ? (
-              // 我拒絕了對方
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-                <p className="text-gray-600">已拒絕對方的再戰請求</p>
-              </div>
-            ) : rematchDeclined ? (
-              // 對方拒絕我
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-                <p className="text-gray-600">對方拒絕了再戰請求</p>
-              </div>
-            ) : (
-              // 初始狀態，可以請求再戰
-              <button
-                onClick={handleRematchRequest}
-                className="px-8 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold text-lg transition w-full"
-              >
-                再來一局
-              </button>
-            )}
-          </div>
-
-          <button
-            onClick={handleBackToLobby}
-            className="px-8 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold text-lg transition w-full"
-          >
-            返回大廳
-          </button>
-        </div>
-      </div>
     );
   }
 
