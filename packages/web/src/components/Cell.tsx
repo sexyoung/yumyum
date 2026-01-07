@@ -1,6 +1,13 @@
-import { Cell as CellType, PieceColor } from '@yumyum/types';
-import { useDroppable } from '@dnd-kit/core';
-import Piece from './Piece';
+import { Cell as CellType, PieceColor, PieceSize } from '@yumyum/types';
+import { useDroppable, useDndContext } from '@dnd-kit/core';
+import Piece, { DragData } from './Piece';
+
+// 棋子大小的數值對照，用於比較大小
+const sizeValue: Record<PieceSize, number> = {
+  small: 1,
+  medium: 2,
+  large: 3,
+};
 
 interface CellProps {
   cell: CellType;
@@ -31,13 +38,32 @@ export default function Cell({ cell, row, col, onClick, selected = false, canDra
     data: { row, col },
   });
 
+  // 獲取當前拖曳的棋子資訊
+  const { active } = useDndContext();
+  const dragData = active?.data.current as DragData | undefined;
+
+  // 判斷是否可以放置：空格可放，或拖曳的棋子比對手的最上層棋子大（不能蓋自己的棋子）
+  const canPlace = !topPiece || (
+    dragData &&
+    topPiece.color !== dragData.color &&
+    sizeValue[dragData.size] > sizeValue[topPiece.size]
+  );
+
+  // 決定背景顏色
+  const getBgClass = () => {
+    if (!isOver) {
+      return selected ? 'bg-yellow-100' : 'bg-gray-100';
+    }
+    return canPlace ? 'bg-green-100 border-green-400' : 'bg-red-100 border-red-400';
+  };
+
   return (
     <div
       ref={setNodeRef}
       className={`
         w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32
         border-2 border-gray-400
-        ${isOver ? 'bg-green-100 border-green-400' : selected ? 'bg-yellow-100' : 'bg-gray-100'}
+        ${getBgClass()}
         flex items-center justify-center
         cursor-pointer
         hover:bg-gray-200
