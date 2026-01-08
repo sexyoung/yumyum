@@ -92,7 +92,7 @@ const HomePageContent: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center p-8">
       <div className="text-center text-white max-w-4xl w-full">
-        <h1 className="text-6xl font-bold mb-4">YumYum 吞吞棋</h1>
+        <h1 className="text-6xl font-bold mb-4">YumYum 好吃棋</h1>
         <p className="text-xl mb-8">Monorepo 初始化成功！</p>
 
         <div className="grid md:grid-cols-2 gap-4">

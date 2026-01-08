@@ -580,7 +580,7 @@ const OnlineGame: React.FC = () => {
 
     return (
       <GameDndContext onDrop={handleDrop}>
-        <div className="h-[100dvh] bg-gradient-to-br from-green-400 to-blue-500 flex flex-col">
+        <div className="h-[100dvh] bg-gradient-to-br from-red-400 to-rose-600 flex flex-col">
           {/* 重連提示浮層 */}
           {isReconnecting && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

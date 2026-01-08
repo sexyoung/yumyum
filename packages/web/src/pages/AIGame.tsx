@@ -386,7 +386,7 @@ export default function AIGame() {
   // 遊戲界面
   return (
     <GameDndContext onDrop={handleDrop}>
-      <div className="h-[100dvh] bg-gradient-to-br from-purple-400 to-indigo-600 flex flex-col">
+      <div className="h-[100dvh] bg-gradient-to-br from-green-400 to-emerald-600 flex flex-col">
         {/* 頂部資訊 */}
         <div className="flex-none px-3 pt-3">
           <div className="bg-white rounded-lg shadow-lg p-3">

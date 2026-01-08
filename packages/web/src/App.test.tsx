@@ -31,7 +31,7 @@ describe('App 路由測試', () => {
 
   it('應該在根路徑渲染首頁', () => {
     renderWithProviders(<AppRoutes />);
-    expect(screen.getByText('YumYum 吞吞棋')).toBeInTheDocument();
+    expect(screen.getByText('YumYum 好吃棋')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /對戰電腦/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /本機雙人/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /線上雙人/i })).toBeInTheDocument();
