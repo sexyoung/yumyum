@@ -98,6 +98,16 @@ export default function Tutorial() {
       text: '看！大棋子蓋住了小棋子，被蓋住的不算數！',
     },
     {
+      id: 'move-piece',
+      attachTo: { element: '[data-testid="cell-0-0"]', on: 'bottom' as const },
+      text: '棋盤上的棋子也可以移動到其他格子！',
+    },
+    {
+      id: 'move-demo',
+      attachTo: { element: '[data-testid="cell-2-2"]', on: 'top' as const },
+      text: '大棋子從左上移到右下了！',
+    },
+    {
       id: 'winning',
       classes: 'shepherd-top',
       text: '連成一線就獲勝！看棋盤對角線 ↗ 紅方勝！',
@@ -183,6 +193,23 @@ export default function Tutorial() {
               red: { ...prev.reserves.red, large: 1 },
             },
             currentPlayer: 'blue',
+          }));
+          setSelectedPiece(null);
+        }, 300);
+        break;
+      case 'move-piece':
+        // 維持 capture-demo 的狀態，只是說明可以移動
+        break;
+      case 'move-demo':
+        setTimeout(() => {
+          setGameState(prev => ({
+            ...prev,
+            board: [
+              [{ pieces: [{ color: 'blue', size: 'small' }] }, { pieces: [] }, { pieces: [] }],
+              [{ pieces: [] }, { pieces: [{ color: 'red', size: 'medium' }] }, { pieces: [] }],
+              [{ pieces: [] }, { pieces: [] }, { pieces: [{ color: 'red', size: 'large' }] }],
+            ],
+            currentPlayer: 'red',
           }));
           setSelectedPiece(null);
         }, 300);
