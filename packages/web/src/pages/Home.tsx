@@ -16,6 +16,9 @@ const Home: React.FC = () => {
           線上雙人
         </Link>
       </div>
+      <Link to="/tutorial" data-testid="link-tutorial" className="mt-6 text-white/80 hover:text-white hover:underline text-lg transition duration-300">
+        遊戲教學
+      </Link>
     </div>
   );
 };

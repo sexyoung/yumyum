@@ -2,6 +2,70 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Shepherd.js 自定義樣式 */
+.shepherd-element {
+  z-index: 9999;
+  max-width: min(320px, calc(100vw - 32px)) !important;
+}
+
+.shepherd-modal-overlay-container {
+  z-index: 9998;
+}
+
+/* 防止教學頁面出現捲軸 */
+html.shepherd-modal-is-visible,
+body.shepherd-modal-is-visible {
+  overflow: hidden !important;
+  height: 100% !important;
+}
+
+/* 確保 tooltip 不會超出視窗 */
+.shepherd-element[data-popper-placement^="top"],
+.shepherd-element[data-popper-placement^="bottom"] {
+  left: 50% !important;
+  transform: translateX(-50%);
+}
+
+.shepherd-element[data-popper-placement^="left"],
+.shepherd-element[data-popper-placement^="right"] {
+  top: 50% !important;
+}
+
+/* 置頂提示框 */
+.shepherd-top {
+  top: 80px !important;
+  bottom: auto !important;
+}
+
+.shepherd-content {
+  @apply rounded-xl shadow-2xl;
+}
+
+/* 隱藏 header */
+.shepherd-header {
+  @apply hidden;
+}
+
+.shepherd-text {
+  @apply px-4 py-4 text-gray-700 text-base leading-relaxed;
+}
+
+.shepherd-footer {
+  @apply px-4 pb-4 pt-2 flex justify-end gap-2 flex-wrap;
+}
+
+.shepherd-button {
+  @apply px-4 py-2 rounded-lg font-medium transition;
+}
+
+.shepherd-button-primary {
+  @apply bg-purple-600 hover:bg-purple-700 text-white;
+}
+
+.shepherd-button-secondary {
+  @apply bg-gray-200 hover:bg-gray-300 text-gray-700;
+}
+
 /* 獲勝格子的放大縮小動畫 */
 @keyframes winning-pulse {
   0% {
