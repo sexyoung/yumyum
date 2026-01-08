@@ -9,7 +9,13 @@ import GameDndContext from '../components/GameDndContext';
 import { DragData } from '../components/Piece';
 import SoundToggle from '../components/SoundToggle';
 import MoveHistory from '../components/MoveHistory';
-import { placePieceFromReserve, movePieceOnBoard, getWinningLine } from '../lib/gameLogic';
+import {
+  canPlacePieceFromReserve,
+  canMovePieceOnBoard,
+  placePieceFromReserve,
+  movePieceOnBoard,
+  getWinningLine,
+} from '../lib/gameLogic';
 import { playSound } from '../lib/sounds';
 
 // 初始遊戲狀態（用於回放第 0 步）
@@ -268,20 +274,25 @@ const OnlineGame: React.FC = () => {
 
     // 情況 1: 從儲備區放置
     if (selectedReserveSize) {
-      const newState = placePieceFromReserve(gameState, row, col, myColor, selectedReserveSize);
-      if (newState !== gameState) {
-        // 播放音效（判斷是否為吃子）
-        const isCapture = gameState.board[row][col].pieces.length > 0;
-        playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
-
-        const move: GameMove = {
-          type: 'place',
-          row,
-          col,
-          size: selectedReserveSize,
-        };
-        sendMessage({ type: 'make_move', move });
+      // 先驗證移動是否合法
+      const validation = canPlacePieceFromReserve(gameState, row, col, myColor, selectedReserveSize);
+      if (!validation.valid) {
+        return;
       }
+
+      // 播放音效（判斷是否為吃子）
+      const isCapture = gameState.board[row][col].pieces.length > 0;
+      const newState = placePieceFromReserve(gameState, row, col, myColor, selectedReserveSize);
+      playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
+
+      const move: GameMove = {
+        type: 'place',
+        row,
+        col,
+        size: selectedReserveSize,
+      };
+      sendMessage({ type: 'make_move', move });
+      setSelectedReserveSize(null);
       return;
     }
 
@@ -298,6 +309,20 @@ const OnlineGame: React.FC = () => {
 
     // 情況 3: 移動已選擇的棋子
     if (selectedBoardPos) {
+      // 先驗證移動是否合法
+      const validation = canMovePieceOnBoard(
+        gameState,
+        selectedBoardPos.row,
+        selectedBoardPos.col,
+        row,
+        col
+      );
+      if (!validation.valid) {
+        return;
+      }
+
+      // 播放音效（判斷是否為吃子）
+      const isCapture = gameState.board[row][col].pieces.length > 0;
       const newState = movePieceOnBoard(
         gameState,
         selectedBoardPos.row,
@@ -305,20 +330,17 @@ const OnlineGame: React.FC = () => {
         row,
         col
       );
-      if (newState !== gameState) {
-        // 播放音效（判斷是否為吃子）
-        const isCapture = gameState.board[row][col].pieces.length > 0;
-        playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
+      playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
 
-        const move: GameMove = {
-          type: 'move',
-          fromRow: selectedBoardPos.row,
-          fromCol: selectedBoardPos.col,
-          toRow: row,
-          toCol: col,
-        };
-        sendMessage({ type: 'make_move', move });
-      }
+      const move: GameMove = {
+        type: 'move',
+        fromRow: selectedBoardPos.row,
+        fromCol: selectedBoardPos.col,
+        toRow: row,
+        toCol: col,
+      };
+      sendMessage({ type: 'make_move', move });
+      setSelectedBoardPos(null);
     }
   }, [phase, gameState, myColor, selectedReserveSize, selectedBoardPos, sendMessage]);
 
@@ -331,38 +353,44 @@ const OnlineGame: React.FC = () => {
     if (data.color !== myColor) return;
 
     if (data.type === 'reserve') {
-      // 從儲備區放置
+      // 先驗證移動是否合法
+      const validation = canPlacePieceFromReserve(gameState, row, col, myColor, data.size);
+      if (!validation.valid) {
+        return;
+      }
+
+      // 播放音效
+      const isCapture = gameState.board[row][col].pieces.length > 0;
       const newState = placePieceFromReserve(gameState, row, col, myColor, data.size);
-      if (newState !== gameState) {
-        // 播放音效
-        const isCapture = gameState.board[row][col].pieces.length > 0;
-        playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
+      playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
 
-        const move: GameMove = {
-          type: 'place',
-          row,
-          col,
-          size: data.size,
-        };
-        sendMessage({ type: 'make_move', move });
-      }
+      const move: GameMove = {
+        type: 'place',
+        row,
+        col,
+        size: data.size,
+      };
+      sendMessage({ type: 'make_move', move });
     } else if (data.fromRow !== undefined && data.fromCol !== undefined) {
-      // 從棋盤移動
-      const newState = movePieceOnBoard(gameState, data.fromRow, data.fromCol, row, col);
-      if (newState !== gameState) {
-        // 播放音效
-        const isCapture = gameState.board[row][col].pieces.length > 0;
-        playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
-
-        const move: GameMove = {
-          type: 'move',
-          fromRow: data.fromRow,
-          fromCol: data.fromCol,
-          toRow: row,
-          toCol: col,
-        };
-        sendMessage({ type: 'make_move', move });
+      // 先驗證移動是否合法
+      const validation = canMovePieceOnBoard(gameState, data.fromRow, data.fromCol, row, col);
+      if (!validation.valid) {
+        return;
       }
+
+      // 播放音效
+      const isCapture = gameState.board[row][col].pieces.length > 0;
+      const newState = movePieceOnBoard(gameState, data.fromRow, data.fromCol, row, col);
+      playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
+
+      const move: GameMove = {
+        type: 'move',
+        fromRow: data.fromRow,
+        fromCol: data.fromCol,
+        toRow: row,
+        toCol: col,
+      };
+      sendMessage({ type: 'make_move', move });
     }
   }, [phase, gameState, myColor, sendMessage]);
 
