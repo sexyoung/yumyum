@@ -7,7 +7,9 @@ import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
 import GameDndContext from '../components/GameDndContext';
 import { DragData } from '../components/Piece';
+import SoundToggle from '../components/SoundToggle';
 import { placePieceFromReserve, movePieceOnBoard, getWinningLine } from '../lib/gameLogic';
+import { playSound } from '../lib/sounds';
 
 type GamePhase = 'connecting' | 'waiting' | 'playing' | 'finished' | 'opponent_left' | 'error';
 
@@ -64,12 +66,43 @@ const OnlineGame: React.FC = () => {
     },
     onMoveMade: (newGameState) => {
       console.log('收到移動:', newGameState);
-      setGameState(newGameState);
+
+      // 判斷是否為對手的移動（比較舊的 currentPlayer 和 myColor）
+      // 如果舊的回合不是自己，代表這是對手的移動，需要播放音效
+      setGameState(prevState => {
+        if (prevState && prevState.currentPlayer !== myColor) {
+          // 這是對手的移動，播放音效
+          // 比較棋盤變化來判斷是否為吃子
+          let isCapture = false;
+          for (let r = 0; r < 3; r++) {
+            for (let c = 0; c < 3; c++) {
+              const oldPieces = prevState.board[r][c].pieces;
+              const newPieces = newGameState.board[r][c].pieces;
+              // 如果新的棋子數量比舊的多，且舊的有對手的棋子（吃子）
+              if (newPieces.length > oldPieces.length && oldPieces.length > 0) {
+                const oldTop = oldPieces[oldPieces.length - 1];
+                if (oldTop.color === myColor) {
+                  isCapture = true;
+                  break;
+                }
+              }
+            }
+            if (isCapture) break;
+          }
+          playSound(isCapture ? 'capture' : 'place');
+        }
+        return newGameState;
+      });
+
       setSelectedReserveSize(null);
       setSelectedBoardPos(null);
     },
     onGameOver: (winner) => {
       console.log('遊戲結束:', winner);
+      // 播放勝負音效
+      if (myColor) {
+        playSound(winner === myColor ? 'win' : 'lose');
+      }
       setPhase('finished');
     },
     onOpponentLeft: () => {
@@ -180,6 +213,10 @@ const OnlineGame: React.FC = () => {
     if (selectedReserveSize) {
       const newState = placePieceFromReserve(gameState, row, col, myColor, selectedReserveSize);
       if (newState !== gameState) {
+        // 播放音效（判斷是否為吃子）
+        const isCapture = gameState.board[row][col].pieces.length > 0;
+        playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
+
         const move: GameMove = {
           type: 'place',
           row,
@@ -212,6 +249,10 @@ const OnlineGame: React.FC = () => {
         col
       );
       if (newState !== gameState) {
+        // 播放音效（判斷是否為吃子）
+        const isCapture = gameState.board[row][col].pieces.length > 0;
+        playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
+
         const move: GameMove = {
           type: 'move',
           fromRow: selectedBoardPos.row,
@@ -236,6 +277,10 @@ const OnlineGame: React.FC = () => {
       // 從儲備區放置
       const newState = placePieceFromReserve(gameState, row, col, myColor, data.size);
       if (newState !== gameState) {
+        // 播放音效
+        const isCapture = gameState.board[row][col].pieces.length > 0;
+        playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
+
         const move: GameMove = {
           type: 'place',
           row,
@@ -248,6 +293,10 @@ const OnlineGame: React.FC = () => {
       // 從棋盤移動
       const newState = movePieceOnBoard(gameState, data.fromRow, data.fromCol, row, col);
       if (newState !== gameState) {
+        // 播放音效
+        const isCapture = gameState.board[row][col].pieces.length > 0;
+        playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
+
         const move: GameMove = {
           type: 'move',
           fromRow: data.fromRow,
@@ -504,12 +553,15 @@ const OnlineGame: React.FC = () => {
           <div className="flex-none px-3 pt-3">
             <div className="bg-white rounded-lg shadow-lg p-3">
               <div className="flex justify-between items-center">
-                <button
-                  onClick={handleBackToLobby}
-                  className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
-                >
-                  離開
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleBackToLobby}
+                    className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
+                  >
+                    離開
+                  </button>
+                  <SoundToggle />
+                </div>
                 {renderStatusText()}
                 {renderRightButton()}
               </div>

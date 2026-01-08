@@ -4,6 +4,7 @@ import { GameState, PieceSize, PieceColor } from '@yumyum/types';
 import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
 import GameDndContext from '../components/GameDndContext';
+import SoundToggle from '../components/SoundToggle';
 import { DragData } from '../components/Piece';
 import {
   canPlacePieceFromReserve,
@@ -16,6 +17,7 @@ import {
   getAIMove,
   AIDifficulty,
 } from '../lib/ai';
+import { playSound } from '../lib/sounds';
 import {
   saveAIGameState,
   loadAIGameState,
@@ -120,11 +122,26 @@ export default function AIGame() {
         if (aiMove) {
           console.log('AI Move:', JSON.stringify(aiMove));
           let newState: GameState;
+          let isCapture = false;
+
           if (aiMove.type === 'place') {
+            // 檢查是否為吃子
+            isCapture = gameState.board[aiMove.row][aiMove.col].pieces.length > 0;
             newState = executePlacePiece(gameState, aiMove.row, aiMove.col, aiColor, aiMove.size);
           } else {
+            // 檢查是否為吃子
+            isCapture = gameState.board[aiMove.toRow][aiMove.toCol].pieces.length > 0;
             newState = executeMovePiece(gameState, aiMove.fromRow, aiMove.fromCol, aiMove.toRow, aiMove.toCol);
           }
+
+          // 播放音效
+          if (newState.winner) {
+            // AI 贏了，玩家聽到失敗音效
+            playSound('lose');
+          } else {
+            playSound(isCapture ? 'capture' : 'place');
+          }
+
           setGameState(newState);
         }
 
@@ -205,7 +222,18 @@ export default function AIGame() {
     const move = { type: 'place', row, col, color, size };
     console.log('Player Move:', JSON.stringify(move));
 
+    // 判斷是否為吃子
+    const isCapture = gameState.board[row][col].pieces.length > 0;
+
     const newGameState = executePlacePiece(gameState, row, col, color, size);
+
+    // 播放音效
+    if (newGameState.winner) {
+      playSound('win');
+    } else {
+      playSound(isCapture ? 'capture' : 'place');
+    }
+
     setGameState(newGameState);
     setSelectedPiece(null);
     setErrorMessage(null);
@@ -224,7 +252,18 @@ export default function AIGame() {
     const move = { type: 'move', fromRow, fromCol, toRow, toCol, color: playerColor };
     console.log('Player Move:', JSON.stringify(move));
 
+    // 判斷是否為吃子
+    const isCapture = gameState.board[toRow][toCol].pieces.length > 0;
+
     const newGameState = executeMovePiece(gameState, fromRow, fromCol, toRow, toCol);
+
+    // 播放音效
+    if (newGameState.winner) {
+      playSound('win');
+    } else {
+      playSound(isCapture ? 'capture' : 'place');
+    }
+
     setGameState(newGameState);
     setSelectedPiece(null);
     setErrorMessage(null);
@@ -267,12 +306,15 @@ export default function AIGame() {
         <div className="flex-none px-3 pt-3">
           <div className="bg-white rounded-lg shadow-lg p-3">
             <div className="flex items-center justify-between">
-              <button
-                onClick={() => navigate('/')}
-                className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
-              >
-                離開
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate('/')}
+                  className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
+                >
+                  離開
+                </button>
+                <SoundToggle />
+              </div>
               {gameState.winner ? (
                 <p className={`text-base md:text-xl lg:text-2xl font-bold ${gameState.winner === playerColor ? 'text-red-600' : 'text-blue-600'}`}>
                   {gameState.winner === playerColor ? '你獲勝了！' : 'AI 獲勝了'}

@@ -4,6 +4,7 @@ import { GameState, PieceSize, PieceColor } from '@yumyum/types';
 import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
 import GameDndContext from '../components/GameDndContext';
+import SoundToggle from '../components/SoundToggle';
 import { DragData } from '../components/Piece';
 import {
   canPlacePieceFromReserve,
@@ -12,6 +13,7 @@ import {
   movePieceOnBoard as executeMovePiece,
   getWinningLine,
 } from '../lib/gameLogic';
+import { playSound } from '../lib/sounds';
 import {
   saveLocalGameState,
   loadLocalGameState,
@@ -164,8 +166,20 @@ export default function LocalGame() {
       return;
     }
 
+    // 判斷是否為吃子（目標格有對手棋子）
+    const targetCell = gameState.board[row][col];
+    const isCapture = targetCell.pieces.length > 0;
+
     // 執行放置
     const newGameState = executePlacePiece(gameState, row, col, color, size);
+
+    // 播放音效
+    if (newGameState.winner) {
+      playSound('win');
+    } else {
+      playSound(isCapture ? 'capture' : 'place');
+    }
+
     setGameState(newGameState);
     setSelectedPiece(null);
     setErrorMessage(null);
@@ -183,8 +197,20 @@ export default function LocalGame() {
       return;
     }
 
+    // 判斷是否為吃子（目標格有對手棋子）
+    const targetCell = gameState.board[toRow][toCol];
+    const isCapture = targetCell.pieces.length > 0;
+
     // 執行移動
     const newGameState = executeMovePiece(gameState, fromRow, fromCol, toRow, toCol);
+
+    // 播放音效
+    if (newGameState.winner) {
+      playSound('win');
+    } else {
+      playSound(isCapture ? 'capture' : 'place');
+    }
+
     setGameState(newGameState);
     setSelectedPiece(null);
     setErrorMessage(null);
@@ -225,12 +251,15 @@ export default function LocalGame() {
         <div className="flex-none px-3 pt-3">
           <div className="bg-white rounded-lg shadow-lg p-3">
             <div className="flex items-center justify-between">
-              <button
-                onClick={() => navigate('/')}
-                className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
-              >
-                離開
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate('/')}
+                  className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
+                >
+                  離開
+                </button>
+                <SoundToggle />
+              </div>
               {gameState.winner ? (
                 <p className={`text-base md:text-xl lg:text-2xl font-bold ${gameState.winner === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
                   {gameState.winner === 'red' ? '紅方獲勝！' : '藍方獲勝！'}
