@@ -15,6 +15,25 @@
   }
 }
 
+/* 棋子放置彈跳動畫 */
+@keyframes piece-place {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-piece-place {
+  animation: piece-place 0.25s ease-out;
+}
+
 /* 收到 emoji 的浮動動畫 */
 @keyframes emoji-float {
   0% {

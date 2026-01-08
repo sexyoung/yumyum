@@ -27,14 +27,15 @@ const sizeClasses = {
   large: 'w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28',
 };
 
+// 漸層 + 陰影樣式（3D 立體感）
 const colorClasses = {
-  red: 'bg-red-500',
-  blue: 'bg-blue-500',
+  red: 'bg-gradient-to-br from-red-400 via-red-500 to-red-600 shadow-lg shadow-red-500/40',
+  blue: 'bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 shadow-lg shadow-blue-500/40',
 };
 
 /**
  * Piece 組件 - 顯示一個棋子
- * 功能優先：簡單圓形，純色背景，不做陰影和漸層
+ * 漸層背景 + 陰影效果，帶有 3D 立體感
  * 使用 @dnd-kit 支援拖曳功能
  */
 export default function Piece({ size, color, onClick, label, selected = false, draggable = false, dragData, dragId }: PieceProps) {
@@ -58,7 +59,7 @@ export default function Piece({ size, color, onClick, label, selected = false, d
         ${sizeClasses[size]}
         ${colorClasses[color]}
         rounded-full
-        ${selected ? 'border-4 border-yellow-400 ring-2 ring-yellow-300' : 'border-2 border-gray-700'}
+        ${selected ? 'border-4 border-yellow-400 ring-4 ring-yellow-300/50 shadow-xl shadow-yellow-400/40' : 'border-2 border-gray-700'}
         cursor-pointer
         flex items-center justify-center
         ${draggable ? 'cursor-grab active:cursor-grabbing' : 'transition-colors'}

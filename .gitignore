@@ -140,3 +140,7 @@ vite.config.ts.timestamp-*
 .env
 .env.staging
 .vercel
+
+# Playwright
+playwright-report/
+test-results/

@@ -23,8 +23,7 @@ interface CellProps {
 /**
  * Cell 組件 - 棋盤上的一個格子
  * 可以堆疊多個棋子，顯示最上層的棋子
- * 功能優先：簡單邊框區分格子，最小 44x44px（手機友善）
- * 使用 @dnd-kit 支援拖曳放置功能
+ * 支援拖曳放置功能，帶有流暢的顏色過渡效果
  */
 export default function Cell({ cell, row, col, onClick, selected = false, canDrag = false, currentPlayer, winningIndex = -1 }: CellProps) {
   const isWinning = winningIndex >= 0;
@@ -82,6 +81,7 @@ export default function Cell({ cell, row, col, onClick, selected = false, canDra
         cursor-pointer
         hover:bg-gray-200
         relative
+        transition-colors duration-150
       `}
       style={animationStyle}
       onClick={onClick}
