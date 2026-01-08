@@ -51,6 +51,9 @@ const OnlineGame: React.FC = () => {
   const [selectedReserveSize, setSelectedReserveSize] = useState<'small' | 'medium' | 'large' | null>(null);
   const [selectedBoardPos, setSelectedBoardPos] = useState<{ row: number; col: number } | null>(null);
 
+  // 等待伺服器回應（樂觀更新時使用）
+  const [waitingForServer, setWaitingForServer] = useState(false);
+
   // 再戰狀態
   const [rematchRequested, setRematchRequested] = useState(false); // 我是否已請求
   const [opponentRequestedRematch, setOpponentRequestedRematch] = useState(false); // 對方是否請求
@@ -155,6 +158,7 @@ const OnlineGame: React.FC = () => {
       prevGameStateRef.current = newGameState;
       setSelectedReserveSize(null);
       setSelectedBoardPos(null);
+      setWaitingForServer(false);
     },
     onGameOver: (winner) => {
       console.log('遊戲結束:', winner);
@@ -262,15 +266,17 @@ const OnlineGame: React.FC = () => {
   const handleReserveClick = useCallback((size: 'small' | 'medium' | 'large') => {
     if (phase !== 'playing' || !gameState || !myColor) return;
     if (gameState.currentPlayer !== myColor) return;
+    if (waitingForServer) return; // 等待伺服器回應時禁止操作
 
     setSelectedReserveSize(size);
     setSelectedBoardPos(null);
-  }, [phase, gameState, myColor]);
+  }, [phase, gameState, myColor, waitingForServer]);
 
   // 處理棋盤點擊
   const handleBoardClick = useCallback((row: number, col: number) => {
     if (phase !== 'playing' || !gameState || !myColor) return;
     if (gameState.currentPlayer !== myColor) return;
+    if (waitingForServer) return; // 等待伺服器回應時禁止操作
 
     // 情況 1: 從儲備區放置
     if (selectedReserveSize) {
@@ -285,6 +291,11 @@ const OnlineGame: React.FC = () => {
       const newState = placePieceFromReserve(gameState, row, col, myColor, selectedReserveSize);
       playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
 
+      // 樂觀更新：立即更新本地狀態
+      setGameState(newState);
+      setWaitingForServer(true);
+      setSelectedReserveSize(null);
+
       const move: GameMove = {
         type: 'place',
         row,
@@ -292,7 +303,6 @@ const OnlineGame: React.FC = () => {
         size: selectedReserveSize,
       };
       sendMessage({ type: 'make_move', move });
-      setSelectedReserveSize(null);
       return;
     }
 
@@ -332,6 +342,11 @@ const OnlineGame: React.FC = () => {
       );
       playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
 
+      // 樂觀更新：立即更新本地狀態
+      setGameState(newState);
+      setWaitingForServer(true);
+      setSelectedBoardPos(null);
+
       const move: GameMove = {
         type: 'move',
         fromRow: selectedBoardPos.row,
@@ -340,14 +355,14 @@ const OnlineGame: React.FC = () => {
         toCol: col,
       };
       sendMessage({ type: 'make_move', move });
-      setSelectedBoardPos(null);
     }
-  }, [phase, gameState, myColor, selectedReserveSize, selectedBoardPos, sendMessage]);
+  }, [phase, gameState, myColor, selectedReserveSize, selectedBoardPos, sendMessage, waitingForServer]);
 
   // 處理拖曳放置
   const handleDrop = useCallback((row: number, col: number, data: DragData) => {
     if (phase !== 'playing' || !gameState || !myColor) return;
     if (gameState.currentPlayer !== myColor) return;
+    if (waitingForServer) return; // 等待伺服器回應時禁止操作
 
     // 只能操作自己的棋子
     if (data.color !== myColor) return;
@@ -363,6 +378,10 @@ const OnlineGame: React.FC = () => {
       const isCapture = gameState.board[row][col].pieces.length > 0;
       const newState = placePieceFromReserve(gameState, row, col, myColor, data.size);
       playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
+
+      // 樂觀更新：立即更新本地狀態
+      setGameState(newState);
+      setWaitingForServer(true);
 
       const move: GameMove = {
         type: 'place',
@@ -383,6 +402,10 @@ const OnlineGame: React.FC = () => {
       const newState = movePieceOnBoard(gameState, data.fromRow, data.fromCol, row, col);
       playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
 
+      // 樂觀更新：立即更新本地狀態
+      setGameState(newState);
+      setWaitingForServer(true);
+
       const move: GameMove = {
         type: 'move',
         fromRow: data.fromRow,
@@ -392,7 +415,7 @@ const OnlineGame: React.FC = () => {
       };
       sendMessage({ type: 'make_move', move });
     }
-  }, [phase, gameState, myColor, sendMessage]);
+  }, [phase, gameState, myColor, sendMessage, waitingForServer]);
 
   // 返回大廳
   const handleBackToLobby = () => {
@@ -695,7 +718,7 @@ const OnlineGame: React.FC = () => {
                 board={displayState.board}
                 onCellClick={isGameOver ? undefined : handleBoardClick}
                 selectedCell={isGameOver ? null : selectedBoardPos}
-                canDrag={!isGameOver && isMyTurn}
+                canDrag={!isGameOver && isMyTurn && !waitingForServer}
                 currentPlayer={myColor}
                 winningCells={getWinningLine(displayState)?.cells}
               />
@@ -746,8 +769,8 @@ const OnlineGame: React.FC = () => {
                   reserves={gameState.reserves[myColor]}
                   onPieceClick={handleReserveClick}
                   selectedSize={selectedReserveSize}
-                  canDrag={isMyTurn}
-                  disabled={!isMyTurn}
+                  canDrag={isMyTurn && !waitingForServer}
+                  disabled={!isMyTurn || waitingForServer}
                 />
               </div>
             </div>
