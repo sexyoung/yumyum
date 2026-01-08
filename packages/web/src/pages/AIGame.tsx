@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GameState, PieceSize, PieceColor } from '@yumyum/types';
+import { GameState, PieceSize, PieceColor, MoveRecord } from '@yumyum/types';
 import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
 import GameDndContext from '../components/GameDndContext';
 import SoundToggle from '../components/SoundToggle';
+import MoveHistory from '../components/MoveHistory';
 import { DragData } from '../components/Piece';
 import {
   canPlacePieceFromReserve,
@@ -58,9 +59,27 @@ export default function AIGame() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [aiThinking, setAiThinking] = useState(false);
 
+  // 歷史記錄相關狀態
+  const [moveHistory, setMoveHistory] = useState<MoveRecord[]>([]);
+  const [isReplaying, setIsReplaying] = useState(false);
+  const [replayStep, setReplayStep] = useState(0);
+
   // 玩家顏色固定為紅色，AI 為藍色
   const playerColor: PieceColor = 'red';
   const aiColor: PieceColor = 'blue';
+
+  // 取得當前顯示的遊戲狀態（遊戲結束或回放模式時根據 replayStep 顯示歷史狀態）
+  const showReplay = isReplaying || gameState.winner;
+  const displayState = showReplay
+    ? (replayStep === 0 ? initialGameState : moveHistory[replayStep - 1]?.gameStateAfter || gameState)
+    : gameState;
+
+  // 遊戲結束時，預設顯示最後一步
+  useEffect(() => {
+    if (gameState.winner) {
+      setReplayStep(moveHistory.length);
+    }
+  }, [gameState.winner, moveHistory.length]);
 
   // 載入保存的遊戲
   useEffect(() => {
@@ -123,20 +142,50 @@ export default function AIGame() {
           console.log('AI Move:', JSON.stringify(aiMove));
           let newState: GameState;
           let isCapture = false;
+          let capturedPiece;
 
           if (aiMove.type === 'place') {
             // 檢查是否為吃子
-            isCapture = gameState.board[aiMove.row][aiMove.col].pieces.length > 0;
+            const targetCell = gameState.board[aiMove.row][aiMove.col];
+            isCapture = targetCell.pieces.length > 0;
+            if (isCapture) {
+              capturedPiece = targetCell.pieces[targetCell.pieces.length - 1];
+            }
             newState = executePlacePiece(gameState, aiMove.row, aiMove.col, aiColor, aiMove.size);
           } else {
             // 檢查是否為吃子
-            isCapture = gameState.board[aiMove.toRow][aiMove.toCol].pieces.length > 0;
+            const targetCell = gameState.board[aiMove.toRow][aiMove.toCol];
+            isCapture = targetCell.pieces.length > 0;
+            if (isCapture) {
+              capturedPiece = targetCell.pieces[targetCell.pieces.length - 1];
+            }
             newState = executeMovePiece(gameState, aiMove.fromRow, aiMove.fromCol, aiMove.toRow, aiMove.toCol);
           }
 
+          // 記錄 AI 移動
+          const fromCell = aiMove.type === 'move'
+            ? gameState.board[aiMove.fromRow][aiMove.fromCol]
+            : null;
+          const pieceSize = aiMove.type === 'place'
+            ? aiMove.size
+            : fromCell!.pieces[fromCell!.pieces.length - 1].size;
+
+          const moveRecord: MoveRecord = {
+            step: moveHistory.length + 1,
+            player: aiColor,
+            move: {
+              ...aiMove,
+              color: aiColor,
+              size: pieceSize,
+            },
+            capturedPiece,
+            gameStateAfter: newState,
+          };
+          setMoveHistory(prev => [...prev, moveRecord]);
+
           // 播放音效
           if (newState.winner) {
-            // AI 贏了，玩家聽到失敗音效
+            // AI 贏了，玩家聯到失敗音效
             playSound('lose');
           } else {
             playSound(isCapture ? 'capture' : 'place');
@@ -219,13 +268,25 @@ export default function AIGame() {
       return;
     }
 
-    const move = { type: 'place', row, col, color, size };
+    const move = { type: 'place' as const, row, col, color, size };
     console.log('Player Move:', JSON.stringify(move));
 
     // 判斷是否為吃子
-    const isCapture = gameState.board[row][col].pieces.length > 0;
+    const targetCell = gameState.board[row][col];
+    const isCapture = targetCell.pieces.length > 0;
+    const capturedPiece = isCapture ? targetCell.pieces[targetCell.pieces.length - 1] : undefined;
 
     const newGameState = executePlacePiece(gameState, row, col, color, size);
+
+    // 記錄移動
+    const moveRecord: MoveRecord = {
+      step: moveHistory.length + 1,
+      player: color,
+      move: { ...move, color, size },
+      capturedPiece,
+      gameStateAfter: newGameState,
+    };
+    setMoveHistory(prev => [...prev, moveRecord]);
 
     // 播放音效
     if (newGameState.winner) {
@@ -249,13 +310,29 @@ export default function AIGame() {
       return;
     }
 
-    const move = { type: 'move', fromRow, fromCol, toRow, toCol, color: playerColor };
+    // 取得移動棋子的資訊
+    const fromCell = gameState.board[fromRow][fromCol];
+    const movingPiece = fromCell.pieces[fromCell.pieces.length - 1];
+
+    const move = { type: 'move' as const, fromRow, fromCol, toRow, toCol };
     console.log('Player Move:', JSON.stringify(move));
 
     // 判斷是否為吃子
-    const isCapture = gameState.board[toRow][toCol].pieces.length > 0;
+    const targetCell = gameState.board[toRow][toCol];
+    const isCapture = targetCell.pieces.length > 0;
+    const capturedPiece = isCapture ? targetCell.pieces[targetCell.pieces.length - 1] : undefined;
 
     const newGameState = executeMovePiece(gameState, fromRow, fromCol, toRow, toCol);
+
+    // 記錄移動
+    const moveRecord: MoveRecord = {
+      step: moveHistory.length + 1,
+      player: playerColor,
+      move: { ...move, color: movingPiece.color, size: movingPiece.size },
+      capturedPiece,
+      gameStateAfter: newGameState,
+    };
+    setMoveHistory(prev => [...prev, moveRecord]);
 
     // 播放音效
     if (newGameState.winner) {
@@ -295,8 +372,16 @@ export default function AIGame() {
     setGameState(initialGameState);
     setSelectedPiece(null);
     setErrorMessage(null);
+    setMoveHistory([]);
+    setIsReplaying(false);
+    setReplayStep(0);
     clearAIGameState();
   };
+
+  // 回放步驟變更
+  const handleReplayStepChange = useCallback((step: number) => {
+    setReplayStep(Math.max(0, Math.min(step, moveHistory.length)));
+  }, [moveHistory.length]);
 
   // 遊戲界面
   return (
@@ -315,7 +400,11 @@ export default function AIGame() {
                 </button>
                 <SoundToggle />
               </div>
-              {gameState.winner ? (
+              {isReplaying ? (
+                <p className="text-base md:text-xl lg:text-2xl font-bold text-yellow-600">
+                  回放模式 ({replayStep}/{moveHistory.length})
+                </p>
+              ) : gameState.winner ? (
                 <p className={`text-base md:text-xl lg:text-2xl font-bold ${gameState.winner === playerColor ? 'text-red-600' : 'text-blue-600'}`}>
                   {gameState.winner === playerColor ? '你獲勝了！' : 'AI 獲勝了'}
                 </p>
@@ -347,54 +436,69 @@ export default function AIGame() {
 
         {/* 遊戲區域：手機垂直排列，桌機水平排列 */}
         <div className="flex-1 flex flex-col md:flex-row md:items-center md:justify-center md:gap-6 lg:gap-10">
-          {/* AI 儲備區 - 手機頂部 / 桌機左側 */}
-          <div className="flex-none p-3 md:p-0 flex justify-center md:order-1">
-            <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
-              <PlayerReserve
-                color={aiColor}
-                reserves={gameState.reserves[aiColor]}
-                selectedSize={null}
-                disabled={true}
-              />
+          {/* AI 儲備區 - 手機頂部 / 桌機左側（遊戲結束或回放時隱藏） */}
+          {!isReplaying && !gameState.winner && (
+            <div className="flex-none p-3 md:p-0 flex justify-center md:order-1">
+              <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
+                <PlayerReserve
+                  color={aiColor}
+                  reserves={displayState.reserves[aiColor]}
+                  selectedSize={null}
+                  disabled={true}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 棋盤 - 中間置中 */}
           <div className="flex-1 md:flex-none flex items-center justify-center md:order-2">
             <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
               <Board
-                board={gameState.board}
-                onCellClick={handleCellClick}
+                board={displayState.board}
+                onCellClick={isReplaying ? undefined : handleCellClick}
                 selectedCell={
-                  selectedPiece?.type === 'board'
+                  !isReplaying && selectedPiece?.type === 'board'
                     ? { row: selectedPiece.row, col: selectedPiece.col }
                     : null
                 }
-                canDrag={!gameState.winner && !aiThinking && gameState.currentPlayer === playerColor}
+                canDrag={!isReplaying && !gameState.winner && !aiThinking && gameState.currentPlayer === playerColor}
                 currentPlayer={playerColor}
-                winningCells={getWinningLine(gameState)?.cells}
+                winningCells={getWinningLine(displayState)?.cells}
               />
             </div>
           </div>
 
-          {/* 玩家儲備區 - 手機底部 / 桌機右側 */}
-          <div className="flex-none p-3 md:p-0 flex justify-center md:order-3">
-            <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
-              <PlayerReserve
-                color={playerColor}
-                reserves={gameState.reserves[playerColor]}
-                onPieceClick={(size) => handlePieceClick(playerColor, size)}
-                selectedSize={
-                  selectedPiece?.type === 'reserve' && selectedPiece.color === playerColor
-                    ? selectedPiece.size
-                    : null
-                }
-                canDrag={!gameState.winner && !aiThinking && gameState.currentPlayer === playerColor}
-                disabled={!gameState.winner && (aiThinking || gameState.currentPlayer !== playerColor)}
-              />
+          {/* 玩家儲備區 - 手機底部 / 桌機右側（遊戲結束或回放時隱藏） */}
+          {!isReplaying && !gameState.winner && (
+            <div className="flex-none p-3 md:p-0 flex justify-center md:order-3">
+              <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
+                <PlayerReserve
+                  color={playerColor}
+                  reserves={displayState.reserves[playerColor]}
+                  onPieceClick={(size) => handlePieceClick(playerColor, size)}
+                  selectedSize={
+                    selectedPiece?.type === 'reserve' && selectedPiece.color === playerColor
+                      ? selectedPiece.size
+                      : null
+                  }
+                  canDrag={!gameState.winner && !aiThinking && gameState.currentPlayer === playerColor}
+                  disabled={!gameState.winner && (aiThinking || gameState.currentPlayer !== playerColor)}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
+
+        {/* 遊戲結束或回放時顯示歷史記錄 - 底部 */}
+        {(isReplaying || gameState.winner) && (
+          <div className="flex-none p-3 flex justify-center">
+            <MoveHistory
+              history={moveHistory}
+              currentStep={replayStep}
+              onStepChange={handleReplayStepChange}
+            />
+          </div>
+        )}
       </div>
     </GameDndContext>
   );

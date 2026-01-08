@@ -2,14 +2,30 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
-import type { GameState, PieceColor, GameMove } from '@yumyum/types';
+import type { GameState, PieceColor, GameMove, MoveRecord, PieceSize } from '@yumyum/types';
 import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
 import GameDndContext from '../components/GameDndContext';
 import { DragData } from '../components/Piece';
 import SoundToggle from '../components/SoundToggle';
+import MoveHistory from '../components/MoveHistory';
 import { placePieceFromReserve, movePieceOnBoard, getWinningLine } from '../lib/gameLogic';
 import { playSound } from '../lib/sounds';
+
+// 初始遊戲狀態（用於回放第 0 步）
+const initialGameState: GameState = {
+  board: [
+    [{ pieces: [] }, { pieces: [] }, { pieces: [] }],
+    [{ pieces: [] }, { pieces: [] }, { pieces: [] }],
+    [{ pieces: [] }, { pieces: [] }, { pieces: [] }],
+  ],
+  reserves: {
+    red: { small: 2, medium: 2, large: 2 },
+    blue: { small: 2, medium: 2, large: 2 },
+  },
+  currentPlayer: 'red',
+  winner: null,
+};
 
 type GamePhase = 'connecting' | 'waiting' | 'playing' | 'finished' | 'opponent_left' | 'error';
 
@@ -42,6 +58,11 @@ const OnlineGame: React.FC = () => {
   const myEmojiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const opponentEmojiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // 歷史記錄狀態
+  const [moveHistory, setMoveHistory] = useState<MoveRecord[]>([]);
+  const [replayStep, setReplayStep] = useState(0);
+  const prevGameStateRef = useRef<GameState | null>(null);
+
   // WebSocket
   const { connect, sendMessage, isReconnecting, reconnectAttempt, isConnected } = useGameWebSocket({
     onRoomJoined: (joinedRoomId, color) => {
@@ -58,42 +79,74 @@ const OnlineGame: React.FC = () => {
     onOpponentJoined: (name) => {
       console.log('對手加入:', name);
     },
-    onGameStart: (initialGameState, yourColor) => {
+    onGameStart: (serverInitialState, yourColor) => {
       console.log('遊戲開始:', yourColor);
-      setGameState(initialGameState);
+      setGameState(serverInitialState);
       setMyColor(yourColor);
       setPhase('playing');
+      // 重置歷史記錄
+      setMoveHistory([]);
+      setReplayStep(0);
+      prevGameStateRef.current = serverInitialState;
     },
-    onMoveMade: (newGameState) => {
-      console.log('收到移動:', newGameState);
+    onMoveMade: (newGameState, lastMove, movedBy) => {
+      console.log('收到移動:', newGameState, lastMove, movedBy);
 
-      // 判斷是否為對手的移動（比較舊的 currentPlayer 和 myColor）
-      // 如果舊的回合不是自己，代表這是對手的移動，需要播放音效
-      setGameState(prevState => {
-        if (prevState && prevState.currentPlayer !== myColor) {
-          // 這是對手的移動，播放音效
-          // 比較棋盤變化來判斷是否為吃子
-          let isCapture = false;
-          for (let r = 0; r < 3; r++) {
-            for (let c = 0; c < 3; c++) {
-              const oldPieces = prevState.board[r][c].pieces;
-              const newPieces = newGameState.board[r][c].pieces;
-              // 如果新的棋子數量比舊的多，且舊的有對手的棋子（吃子）
-              if (newPieces.length > oldPieces.length && oldPieces.length > 0) {
-                const oldTop = oldPieces[oldPieces.length - 1];
-                if (oldTop.color === myColor) {
-                  isCapture = true;
-                  break;
-                }
+      const prevState = prevGameStateRef.current;
+
+      // 判斷是否為對手的移動，需要播放音效
+      if (prevState && prevState.currentPlayer !== myColor) {
+        // 這是對手的移動，播放音效
+        let isCapture = false;
+        for (let r = 0; r < 3; r++) {
+          for (let c = 0; c < 3; c++) {
+            const oldPieces = prevState.board[r][c].pieces;
+            const newPieces = newGameState.board[r][c].pieces;
+            if (newPieces.length > oldPieces.length && oldPieces.length > 0) {
+              const oldTop = oldPieces[oldPieces.length - 1];
+              if (oldTop.color === myColor) {
+                isCapture = true;
+                break;
               }
             }
-            if (isCapture) break;
           }
-          playSound(isCapture ? 'capture' : 'place');
+          if (isCapture) break;
         }
-        return newGameState;
-      });
+        playSound(isCapture ? 'capture' : 'place');
+      }
 
+      // 記錄移動歷史
+      if (prevState && lastMove) {
+        let capturedPiece;
+        let pieceSize: PieceSize;
+
+        if (lastMove.type === 'place') {
+          const targetCell = prevState.board[lastMove.row][lastMove.col];
+          if (targetCell.pieces.length > 0) {
+            capturedPiece = targetCell.pieces[targetCell.pieces.length - 1];
+          }
+          pieceSize = lastMove.size;
+        } else {
+          const targetCell = prevState.board[lastMove.toRow][lastMove.toCol];
+          if (targetCell.pieces.length > 0) {
+            capturedPiece = targetCell.pieces[targetCell.pieces.length - 1];
+          }
+          const fromCell = prevState.board[lastMove.fromRow][lastMove.fromCol];
+          pieceSize = fromCell.pieces[fromCell.pieces.length - 1].size;
+        }
+
+        const moveRecord: MoveRecord = {
+          step: moveHistory.length + 1,
+          player: movedBy,
+          move: { ...lastMove, color: movedBy, size: pieceSize },
+          capturedPiece,
+          gameStateAfter: newGameState,
+        };
+        setMoveHistory(prev => [...prev, moveRecord]);
+      }
+
+      setGameState(newGameState);
+      prevGameStateRef.current = newGameState;
       setSelectedReserveSize(null);
       setSelectedBoardPos(null);
     },
@@ -158,6 +211,10 @@ const OnlineGame: React.FC = () => {
       setLoserStartsColor(null);
       setSelectedReserveSize(null);
       setSelectedBoardPos(null);
+      // 重置歷史記錄
+      setMoveHistory([]);
+      setReplayStep(0);
+      prevGameStateRef.current = newGameState;
     },
     onEmoji: (emoji) => {
       console.log('收到對手 emoji:', emoji);
@@ -327,6 +384,18 @@ const OnlineGame: React.FC = () => {
     myEmojiTimeoutRef.current = setTimeout(() => setMyEmoji(null), 2000);
   }, [sendMessage]);
 
+  // 遊戲結束時預設顯示最後一步
+  useEffect(() => {
+    if (gameState?.winner) {
+      setReplayStep(moveHistory.length);
+    }
+  }, [gameState?.winner, moveHistory.length]);
+
+  // 回放步驟變更
+  const handleReplayStepChange = useCallback((step: number) => {
+    setReplayStep(Math.max(0, Math.min(step, moveHistory.length)));
+  }, [moveHistory.length]);
+
   // 渲染不同階段的畫面
   if (phase === 'connecting') {
     return (
@@ -425,6 +494,11 @@ const OnlineGame: React.FC = () => {
     const isGameOver = phase === 'finished' || !!gameState.winner;
     const winner = gameState.winner;
     const isWinner = winner === myColor;
+
+    // 計算顯示狀態（遊戲結束時根據 replayStep 顯示歷史）
+    const displayState = isGameOver
+      ? (replayStep === 0 ? initialGameState : moveHistory[replayStep - 1]?.gameStateAfter || gameState)
+      : gameState;
 
     const handleRematchRequest = () => {
       sendMessage({ type: 'rematch_request' });
@@ -590,12 +664,12 @@ const OnlineGame: React.FC = () => {
           <div className="flex-1 flex items-center justify-center">
             <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
               <Board
-                board={gameState.board}
-                onCellClick={handleBoardClick}
-                selectedCell={selectedBoardPos}
+                board={displayState.board}
+                onCellClick={isGameOver ? undefined : handleBoardClick}
+                selectedCell={isGameOver ? null : selectedBoardPos}
                 canDrag={!isGameOver && isMyTurn}
                 currentPlayer={myColor}
-                winningCells={getWinningLine(gameState)?.cells}
+                winningCells={getWinningLine(displayState)?.cells}
               />
             </div>
           </div>
@@ -627,19 +701,29 @@ const OnlineGame: React.FC = () => {
             </div>
           </div>
 
-          {/* 我的儲備區 - 底部 */}
-          <div className="flex-none p-3 flex justify-center">
-            <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
-              <PlayerReserve
-                color={myColor}
-                reserves={gameState.reserves[myColor]}
-                onPieceClick={handleReserveClick}
-                selectedSize={selectedReserveSize}
-                canDrag={!isGameOver && isMyTurn}
-                disabled={isGameOver || !isMyTurn}
+          {/* 遊戲結束時顯示歷史記錄，否則顯示儲備區 */}
+          {isGameOver ? (
+            <div className="flex-none p-3 flex justify-center">
+              <MoveHistory
+                history={moveHistory}
+                currentStep={replayStep}
+                onStepChange={handleReplayStepChange}
               />
             </div>
-          </div>
+          ) : (
+            <div className="flex-none p-3 flex justify-center">
+              <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
+                <PlayerReserve
+                  color={myColor}
+                  reserves={gameState.reserves[myColor]}
+                  onPieceClick={handleReserveClick}
+                  selectedSize={selectedReserveSize}
+                  canDrag={isMyTurn}
+                  disabled={!isMyTurn}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </GameDndContext>
     );

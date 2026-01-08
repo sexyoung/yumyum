@@ -39,3 +39,12 @@ export type GameMove =
       toRow: number;
       toCol: number;
     };
+
+// 移動記錄（用於歷史回放）
+export interface MoveRecord {
+  step: number;
+  player: PieceColor;
+  move: GameMove & { color: PieceColor; size: PieceSize };
+  capturedPiece?: Piece; // 被吃掉的棋子
+  gameStateAfter: GameState; // 這一步之後的遊戲狀態
+}

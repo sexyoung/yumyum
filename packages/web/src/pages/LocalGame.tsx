@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GameState, PieceSize, PieceColor } from '@yumyum/types';
+import { GameState, PieceSize, PieceColor, MoveRecord } from '@yumyum/types';
 import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
 import GameDndContext from '../components/GameDndContext';
 import SoundToggle from '../components/SoundToggle';
+import MoveHistory from '../components/MoveHistory';
 import { DragData } from '../components/Piece';
 import {
   canPlacePieceFromReserve,
@@ -54,6 +55,24 @@ export default function LocalGame() {
   });
   const [selectedPiece, setSelectedPiece] = useState<SelectedPiece>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // 歷史記錄相關狀態
+  const [moveHistory, setMoveHistory] = useState<MoveRecord[]>([]);
+  const [isReplaying, setIsReplaying] = useState(false);
+  const [replayStep, setReplayStep] = useState(0);
+
+  // 取得當前顯示的遊戲狀態（遊戲結束或回放模式時根據 replayStep 顯示歷史狀態）
+  const showReplay = isReplaying || gameState.winner;
+  const displayState = showReplay
+    ? (replayStep === 0 ? initialGameState : moveHistory[replayStep - 1]?.gameStateAfter || gameState)
+    : gameState;
+
+  // 遊戲結束時，預設顯示最後一步
+  useEffect(() => {
+    if (gameState.winner) {
+      setReplayStep(moveHistory.length);
+    }
+  }, [gameState.winner, moveHistory.length]);
 
   // 每次遊戲狀態更新時自動保存到 localStorage
   useEffect(() => {
@@ -169,9 +188,20 @@ export default function LocalGame() {
     // 判斷是否為吃子（目標格有對手棋子）
     const targetCell = gameState.board[row][col];
     const isCapture = targetCell.pieces.length > 0;
+    const capturedPiece = isCapture ? targetCell.pieces[targetCell.pieces.length - 1] : undefined;
 
     // 執行放置
     const newGameState = executePlacePiece(gameState, row, col, color, size);
+
+    // 記錄移動
+    const moveRecord: MoveRecord = {
+      step: moveHistory.length + 1,
+      player: color,
+      move: { type: 'place', row, col, size, color },
+      capturedPiece,
+      gameStateAfter: newGameState,
+    };
+    setMoveHistory(prev => [...prev, moveRecord]);
 
     // 播放音效
     if (newGameState.winner) {
@@ -197,12 +227,35 @@ export default function LocalGame() {
       return;
     }
 
+    // 取得移動的棋子資訊
+    const fromCell = gameState.board[fromRow][fromCol];
+    const movingPiece = fromCell.pieces[fromCell.pieces.length - 1];
+
     // 判斷是否為吃子（目標格有對手棋子）
     const targetCell = gameState.board[toRow][toCol];
     const isCapture = targetCell.pieces.length > 0;
+    const capturedPiece = isCapture ? targetCell.pieces[targetCell.pieces.length - 1] : undefined;
 
     // 執行移動
     const newGameState = executeMovePiece(gameState, fromRow, fromCol, toRow, toCol);
+
+    // 記錄移動
+    const moveRecord: MoveRecord = {
+      step: moveHistory.length + 1,
+      player: gameState.currentPlayer,
+      move: {
+        type: 'move',
+        fromRow,
+        fromCol,
+        toRow,
+        toCol,
+        color: movingPiece.color,
+        size: movingPiece.size,
+      },
+      capturedPiece,
+      gameStateAfter: newGameState,
+    };
+    setMoveHistory(prev => [...prev, moveRecord]);
 
     // 播放音效
     if (newGameState.winner) {
@@ -242,7 +295,17 @@ export default function LocalGame() {
     setGameState(initialGameState);
     setSelectedPiece(null);
     setErrorMessage(null);
+    setMoveHistory([]);
+    setIsReplaying(false);
+    setReplayStep(0);
   };
+
+  // 回放步驟變更
+  const handleReplayStepChange = useCallback((step: number) => {
+    // 限制步驟範圍
+    const clampedStep = Math.max(0, Math.min(step, moveHistory.length));
+    setReplayStep(clampedStep);
+  }, [moveHistory.length]);
 
   return (
     <GameDndContext onDrop={handleDrop}>
@@ -260,13 +323,17 @@ export default function LocalGame() {
                 </button>
                 <SoundToggle />
               </div>
-              {gameState.winner ? (
-                <p className={`text-base md:text-xl lg:text-2xl font-bold ${gameState.winner === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
-                  {gameState.winner === 'red' ? '紅方獲勝！' : '藍方獲勝！'}
+              {isReplaying ? (
+                <p className="text-base md:text-xl lg:text-2xl font-bold text-purple-600">
+                  回放模式 ({replayStep}/{moveHistory.length})
+                </p>
+              ) : displayState.winner ? (
+                <p className={`text-base md:text-xl lg:text-2xl font-bold ${displayState.winner === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
+                  {displayState.winner === 'red' ? '紅方獲勝！' : '藍方獲勝！'}
                 </p>
               ) : (
-                <p className={`text-base md:text-xl lg:text-2xl font-bold ${gameState.currentPlayer === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
-                  {gameState.currentPlayer === 'red' ? '紅方' : '藍方'}回合
+                <p className={`text-base md:text-xl lg:text-2xl font-bold ${displayState.currentPlayer === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
+                  {displayState.currentPlayer === 'red' ? '紅方' : '藍方'}回合
                 </p>
               )}
               <button
@@ -288,60 +355,75 @@ export default function LocalGame() {
 
         {/* 遊戲區域：手機垂直排列，桌機水平排列 */}
         <div className="flex-1 flex flex-col md:flex-row md:items-center md:justify-center md:gap-6 lg:gap-10">
-          {/* 藍方儲備區 - 手機頂部 / 桌機左側 */}
-          <div className="flex-none p-3 md:p-0 flex justify-center md:order-1">
-            <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
-              <PlayerReserve
-                color="blue"
-                reserves={gameState.reserves.blue}
-                onPieceClick={(size) => handlePieceClick('blue', size)}
-                selectedSize={
-                  selectedPiece?.type === 'reserve' && selectedPiece.color === 'blue'
-                    ? selectedPiece.size
-                    : null
-                }
-                canDrag={!gameState.winner && gameState.currentPlayer === 'blue'}
-                disabled={!gameState.winner && gameState.currentPlayer !== 'blue'}
-              />
+          {/* 藍方儲備區 - 手機頂部 / 桌機左側（遊戲結束或回放時隱藏） */}
+          {!isReplaying && !gameState.winner && (
+            <div className="flex-none p-3 md:p-0 flex justify-center md:order-1">
+              <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
+                <PlayerReserve
+                  color="blue"
+                  reserves={displayState.reserves.blue}
+                  onPieceClick={(size) => handlePieceClick('blue', size)}
+                  selectedSize={
+                    selectedPiece?.type === 'reserve' && selectedPiece.color === 'blue'
+                      ? selectedPiece.size
+                      : null
+                  }
+                  canDrag={!displayState.winner && displayState.currentPlayer === 'blue'}
+                  disabled={!displayState.winner && displayState.currentPlayer !== 'blue'}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* 棋盤 - 中間置中 */}
+          {/* 棋盤 - 中間 */}
           <div className="flex-1 md:flex-none flex items-center justify-center md:order-2">
             <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
               <Board
-                board={gameState.board}
-                onCellClick={handleCellClick}
+                board={displayState.board}
+                onCellClick={isReplaying ? undefined : handleCellClick}
                 selectedCell={
-                  selectedPiece?.type === 'board'
+                  !isReplaying && selectedPiece?.type === 'board'
                     ? { row: selectedPiece.row, col: selectedPiece.col }
                     : null
                 }
-                canDrag={!gameState.winner}
-                currentPlayer={gameState.currentPlayer}
-                winningCells={getWinningLine(gameState)?.cells}
+                canDrag={!isReplaying && !displayState.winner}
+                currentPlayer={displayState.currentPlayer}
+                winningCells={getWinningLine(displayState)?.cells}
               />
             </div>
           </div>
 
-          {/* 紅方儲備區 - 手機底部 / 桌機右側 */}
-          <div className="flex-none p-3 md:p-0 flex justify-center md:order-3">
-            <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
-              <PlayerReserve
-                color="red"
-                reserves={gameState.reserves.red}
-                onPieceClick={(size) => handlePieceClick('red', size)}
-                selectedSize={
-                  selectedPiece?.type === 'reserve' && selectedPiece.color === 'red'
-                    ? selectedPiece.size
-                    : null
-                }
-                canDrag={!gameState.winner && gameState.currentPlayer === 'red'}
-                disabled={!gameState.winner && gameState.currentPlayer !== 'red'}
-              />
+          {/* 紅方儲備區 - 手機底部 / 桌機右側（遊戲結束或回放時隱藏） */}
+          {!isReplaying && !gameState.winner && (
+            <div className="flex-none p-3 md:p-0 flex justify-center md:order-3">
+              <div className="bg-white rounded-lg shadow-lg p-3 md:p-4 lg:p-5">
+                <PlayerReserve
+                  color="red"
+                  reserves={displayState.reserves.red}
+                  onPieceClick={(size) => handlePieceClick('red', size)}
+                  selectedSize={
+                    selectedPiece?.type === 'reserve' && selectedPiece.color === 'red'
+                      ? selectedPiece.size
+                      : null
+                  }
+                  canDrag={!displayState.winner && displayState.currentPlayer === 'red'}
+                  disabled={!displayState.winner && displayState.currentPlayer !== 'red'}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
+
+        {/* 遊戲結束或回放時顯示歷史記錄 - 底部 */}
+        {(isReplaying || gameState.winner) && (
+          <div className="flex-none p-3 flex justify-center">
+            <MoveHistory
+              history={moveHistory}
+              currentStep={replayStep}
+              onStepChange={handleReplayStepChange}
+            />
+          </div>
+        )}
       </div>
     </GameDndContext>
   );

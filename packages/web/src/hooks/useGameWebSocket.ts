@@ -1,6 +1,6 @@
 // packages/web/src/hooks/useGameWebSocket.ts
 import { useEffect, useRef, useCallback, useState } from 'react';
-import type { GameClientMessage, GameServerMessage, PieceColor, GameState } from '@yumyum/types';
+import type { GameClientMessage, GameServerMessage, PieceColor, GameState, GameMove } from '@yumyum/types';
 import { getWsUrl } from '../lib/env';
 
 export interface UseGameWebSocketOptions {
@@ -8,7 +8,7 @@ export interface UseGameWebSocketOptions {
   onWaitingForOpponent?: () => void;
   onOpponentJoined?: (opponentName: string) => void;
   onGameStart?: (gameState: GameState, yourColor: PieceColor) => void;
-  onMoveMade?: (gameState: GameState) => void;
+  onMoveMade?: (gameState: GameState, lastMove: GameMove, movedBy: PieceColor) => void;
   onGameOver?: (winner: PieceColor | 'draw', gameState: GameState) => void;
   onOpponentLeft?: () => void;
   onError?: (message: string) => void;
@@ -91,7 +91,7 @@ export function useGameWebSocket(options: UseGameWebSocketOptions = {}) {
             optionsRef.current.onGameStart?.(message.gameState, message.yourColor);
             break;
           case 'move_made':
-            optionsRef.current.onMoveMade?.(message.gameState);
+            optionsRef.current.onMoveMade?.(message.gameState, message.lastMove, message.movedBy);
             break;
           case 'game_over':
             optionsRef.current.onGameOver?.(message.winner, message.gameState);
