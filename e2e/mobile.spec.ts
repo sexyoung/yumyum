@@ -12,7 +12,7 @@ test.describe('手機版測試', () => {
     await page.goto('/');
 
     // 標題應該可見
-    await expect(page.locator('text=YumYum 吞吞棋')).toBeVisible();
+    await expect(page.locator('text=YumYum 好吃棋')).toBeVisible();
 
     // 三個按鈕應該可見
     await expect(page.locator('[data-testid="link-ai"]')).toBeVisible();
