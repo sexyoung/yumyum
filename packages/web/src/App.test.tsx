@@ -31,10 +31,13 @@ describe('App 路由測試', () => {
 
   it('應該在根路徑渲染首頁', () => {
     renderWithProviders(<AppRoutes />);
+
     expect(screen.getByText('YumYum 好吃棋')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /對戰電腦/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /本機雙人/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /線上雙人/i })).toBeInTheDocument();
+
+    const expectedLinks = ['對戰電腦', '本機雙人', '線上雙人'];
+    expectedLinks.forEach((linkName) => {
+      expect(screen.getByRole('link', { name: new RegExp(linkName, 'i') })).toBeInTheDocument();
+    });
   });
 
   it('點擊對戰電腦連結應該導航到 AI 遊戲頁面', async () => {
