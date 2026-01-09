@@ -1,4 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+
+// 輔助函數：從儲備區放置棋子到指定格子
+async function placePiece(page: Page, color: 'red' | 'blue', size: 'small' | 'medium' | 'large', row: number, col: number): Promise<void> {
+  await page.click(`[data-testid="reserve-${color}-${size}"]`);
+  await page.click(`[data-testid="cell-${row}-${col}"]`);
+}
 
 test.describe('本機雙人對戰', () => {
   test.beforeEach(async ({ page }) => {
@@ -18,26 +24,21 @@ test.describe('本機雙人對戰', () => {
     await page.goto('/local');
 
     // 紅方下棋：放置 small 到 (0,0)
-    await page.click('[data-testid="reserve-red-small"]');
-    await page.click('[data-testid="cell-0-0"]');
+    await placePiece(page, 'red', 'small', 0, 0);
     await expect(page.locator('text=藍方回合')).toBeVisible();
 
     // 藍方下棋：放置 small 到 (1,0)
-    await page.click('[data-testid="reserve-blue-small"]');
-    await page.click('[data-testid="cell-1-0"]');
+    await placePiece(page, 'blue', 'small', 1, 0);
     await expect(page.locator('text=紅方回合')).toBeVisible();
 
     // 紅方下棋：放置 small 到 (0,1)
-    await page.click('[data-testid="reserve-red-small"]');
-    await page.click('[data-testid="cell-0-1"]');
+    await placePiece(page, 'red', 'small', 0, 1);
 
     // 藍方下棋：放置 small 到 (1,1)
-    await page.click('[data-testid="reserve-blue-small"]');
-    await page.click('[data-testid="cell-1-1"]');
+    await placePiece(page, 'blue', 'small', 1, 1);
 
     // 紅方下棋：放置 medium 到 (0,2) - 連成一線獲勝
-    await page.click('[data-testid="reserve-red-medium"]');
-    await page.click('[data-testid="cell-0-2"]');
+    await placePiece(page, 'red', 'medium', 0, 2);
 
     // 驗證紅方獲勝
     await expect(page.locator('text=紅方獲勝')).toBeVisible();
@@ -47,28 +48,22 @@ test.describe('本機雙人對戰', () => {
     await page.goto('/local');
 
     // 紅方下棋：放置 small 到 (0,0)
-    await page.click('[data-testid="reserve-red-small"]');
-    await page.click('[data-testid="cell-0-0"]');
+    await placePiece(page, 'red', 'small', 0, 0);
 
     // 藍方下棋：放置 small 到 (1,0)
-    await page.click('[data-testid="reserve-blue-small"]');
-    await page.click('[data-testid="cell-1-0"]');
+    await placePiece(page, 'blue', 'small', 1, 0);
 
     // 紅方下棋：放置 small 到 (2,2)
-    await page.click('[data-testid="reserve-red-small"]');
-    await page.click('[data-testid="cell-2-2"]');
+    await placePiece(page, 'red', 'small', 2, 2);
 
     // 藍方下棋：放置 small 到 (1,1)
-    await page.click('[data-testid="reserve-blue-small"]');
-    await page.click('[data-testid="cell-1-1"]');
+    await placePiece(page, 'blue', 'small', 1, 1);
 
     // 紅方下棋：放置 medium 到 (2,0)
-    await page.click('[data-testid="reserve-red-medium"]');
-    await page.click('[data-testid="cell-2-0"]');
+    await placePiece(page, 'red', 'medium', 2, 0);
 
     // 藍方下棋：放置 medium 到 (1,2) - 連成一線獲勝
-    await page.click('[data-testid="reserve-blue-medium"]');
-    await page.click('[data-testid="cell-1-2"]');
+    await placePiece(page, 'blue', 'medium', 1, 2);
 
     // 驗證藍方獲勝
     await expect(page.locator('text=藍方獲勝')).toBeVisible();
@@ -78,8 +73,7 @@ test.describe('本機雙人對戰', () => {
     await page.goto('/local');
 
     // 下一步棋
-    await page.click('[data-testid="reserve-red-small"]');
-    await page.click('[data-testid="cell-0-0"]');
+    await placePiece(page, 'red', 'small', 0, 0);
 
     // 點擊重新開始
     await page.click('[data-testid="restart-button"]');
@@ -96,11 +90,8 @@ test.describe('本機雙人對戰', () => {
     await page.goto('/local');
 
     // 下幾步棋
-    await page.click('[data-testid="reserve-red-small"]');
-    await page.click('[data-testid="cell-0-0"]');
-
-    await page.click('[data-testid="reserve-blue-small"]');
-    await page.click('[data-testid="cell-1-1"]');
+    await placePiece(page, 'red', 'small', 0, 0);
+    await placePiece(page, 'blue', 'small', 1, 1);
 
     // 重新整理頁面
     await page.reload();
@@ -117,12 +108,10 @@ test.describe('本機雙人對戰', () => {
     await page.goto('/local');
 
     // 紅方放置 small 到 (1,1)
-    await page.click('[data-testid="reserve-red-small"]');
-    await page.click('[data-testid="cell-1-1"]');
+    await placePiece(page, 'red', 'small', 1, 1);
 
     // 藍方用 large 吃掉紅方的 small
-    await page.click('[data-testid="reserve-blue-large"]');
-    await page.click('[data-testid="cell-1-1"]');
+    await placePiece(page, 'blue', 'large', 1, 1);
 
     // 驗證輪到紅方（表示藍方成功下棋）
     await expect(page.locator('text=紅方回合')).toBeVisible();

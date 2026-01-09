@@ -120,91 +120,90 @@ export default function LocalGame() {
     };
   }, []);
 
+  // --- 輔助函數 ---
+
+  // 顯示錯誤訊息並在 2 秒後清除
+  const showError = (message: string): void => {
+    setErrorMessage(message);
+    setTimeout(() => setErrorMessage(null), 2000);
+  };
+
+  // 取得目標格的頂部棋子（如果有）
+  const getTopPiece = (row: number, col: number) => {
+    const cell = gameState.board[row][col];
+    return cell.pieces.length > 0 ? cell.pieces[cell.pieces.length - 1] : undefined;
+  };
+
+  // 播放適當的音效（根據遊戲結果或移動類型）
+  const playSoundForMove = (newGameState: GameState, isCapture: boolean): void => {
+    // 移動前的 currentPlayer 是下棋的人
+    if (newGameState.winner) {
+      playSound(newGameState.winner === gameState.currentPlayer ? 'win' : 'lose');
+    } else {
+      playSound(isCapture ? 'capture' : 'place');
+    }
+  };
+
+  // 完成移動後的狀態更新
+  const finishMove = (newGameState: GameState, moveRecord: MoveRecord, isCapture: boolean): void => {
+    setMoveHistory(prev => [...prev, moveRecord]);
+    playSoundForMove(newGameState, isCapture);
+    setGameState(newGameState);
+    setSelectedPiece(null);
+    setErrorMessage(null);
+  };
+
+  // --- 事件處理 ---
+
   // 點擊儲備區棋子
-  const handlePieceClick = (color: PieceColor, size: PieceSize) => {
-    // 遊戲已結束，不允許操作
-    if (gameState.winner) {
+  const handlePieceClick = (color: PieceColor, size: PieceSize): void => {
+    // 遊戲已結束、不是當前玩家、或沒有剩餘棋子，不允許操作
+    if (gameState.winner || color !== gameState.currentPlayer || gameState.reserves[color][size] === 0) {
       return;
     }
 
-    // 只能選擇當前玩家的棋子
-    if (color !== gameState.currentPlayer) {
-      return;
-    }
-
-    // 檢查是否還有剩餘棋子
-    if (gameState.reserves[color][size] === 0) {
-      return;
-    }
-
-    // 如果已經選中同一個棋子，則取消選擇
-    if (
-      selectedPiece?.type === 'reserve' &&
-      selectedPiece.color === color &&
-      selectedPiece.size === size
-    ) {
-      setSelectedPiece(null);
-      return;
-    }
-
-    // 選中棋子
-    setSelectedPiece({
-      type: 'reserve',
-      color,
-      size,
-    });
+    // 如果已經選中同一個棋子，則取消選擇；否則選中棋子
+    const isSamePiece = selectedPiece?.type === 'reserve' && selectedPiece.color === color && selectedPiece.size === size;
+    setSelectedPiece(isSamePiece ? null : { type: 'reserve', color, size });
   };
 
   // 點擊棋盤格子
-  const handleCellClick = (row: number, col: number) => {
+  const handleCellClick = (row: number, col: number): void => {
     // 遊戲已結束，不允許操作
     if (gameState.winner) {
       return;
     }
 
+    // 沒有選中棋子，嘗試選中格子上的棋子
     if (!selectedPiece) {
-      // 沒有選中棋子，嘗試選中格子上的棋子
-      const cell = gameState.board[row][col];
-      if (cell.pieces.length > 0) {
-        const topPiece = cell.pieces[cell.pieces.length - 1];
-        // 只能選擇當前玩家的棋子
-        if (topPiece.color === gameState.currentPlayer) {
-          setSelectedPiece({
-            type: 'board',
-            row,
-            col,
-          });
-        }
+      const topPiece = getTopPiece(row, col);
+      // 只能選擇當前玩家的棋子
+      if (topPiece?.color === gameState.currentPlayer) {
+        setSelectedPiece({ type: 'board', row, col });
       }
       return;
     }
 
     // 有選中棋子，執行放置或移動
     if (selectedPiece.type === 'reserve') {
-      // 從儲備區放置棋子
       placePieceFromReserve(row, col, selectedPiece.color, selectedPiece.size);
     } else {
-      // 從棋盤移動棋子
       movePieceOnBoard(selectedPiece.row, selectedPiece.col, row, col);
     }
   };
 
   // 從儲備區放置棋子到棋盤
-  const placePieceFromReserve = (row: number, col: number, color: PieceColor, size: PieceSize) => {
+  const placePieceFromReserve = (row: number, col: number, color: PieceColor, size: PieceSize): void => {
     // 驗證移動是否合法
     const validation = canPlacePieceFromReserve(gameState, row, col, color, size);
-
     if (!validation.valid) {
-      // 顯示錯誤訊息
-      setErrorMessage(validation.error || '無法放置');
-      setTimeout(() => setErrorMessage(null), 2000);
+      showError(validation.error || '無法放置');
       return;
     }
 
     // 判斷是否為吃子（目標格有對手棋子）
-    const targetCell = gameState.board[row][col];
-    const isCapture = targetCell.pieces.length > 0;
-    const capturedPiece = isCapture ? targetCell.pieces[targetCell.pieces.length - 1] : undefined;
+    const capturedPiece = getTopPiece(row, col);
+    const isCapture = capturedPiece !== undefined;
 
     // 執行放置
     const newGameState = executePlacePiece(gameState, row, col, color, size);
@@ -217,41 +216,25 @@ export default function LocalGame() {
       capturedPiece,
       gameStateAfter: newGameState,
     };
-    setMoveHistory(prev => [...prev, moveRecord]);
 
-    // 播放音效（判斷是否為吃子，以及勝負）
-    // 移動前的 currentPlayer 是下棋的人
-    if (newGameState.winner) {
-      playSound(newGameState.winner === gameState.currentPlayer ? 'win' : 'lose');
-    } else {
-      playSound(isCapture ? 'capture' : 'place');
-    }
-
-    setGameState(newGameState);
-    setSelectedPiece(null);
-    setErrorMessage(null);
+    finishMove(newGameState, moveRecord, isCapture);
   };
 
   // 在棋盤上移動棋子
-  const movePieceOnBoard = (fromRow: number, fromCol: number, toRow: number, toCol: number) => {
+  const movePieceOnBoard = (fromRow: number, fromCol: number, toRow: number, toCol: number): void => {
     // 驗證移動是否合法
     const validation = canMovePieceOnBoard(gameState, fromRow, fromCol, toRow, toCol);
-
     if (!validation.valid) {
-      // 顯示錯誤訊息
-      setErrorMessage(validation.error || '無法移動');
-      setTimeout(() => setErrorMessage(null), 2000);
+      showError(validation.error || '無法移動');
       return;
     }
 
     // 取得移動的棋子資訊
-    const fromCell = gameState.board[fromRow][fromCol];
-    const movingPiece = fromCell.pieces[fromCell.pieces.length - 1];
+    const movingPiece = getTopPiece(fromRow, fromCol)!;
 
     // 判斷是否為吃子（目標格有對手棋子）
-    const targetCell = gameState.board[toRow][toCol];
-    const isCapture = targetCell.pieces.length > 0;
-    const capturedPiece = isCapture ? targetCell.pieces[targetCell.pieces.length - 1] : undefined;
+    const capturedPiece = getTopPiece(toRow, toCol);
+    const isCapture = capturedPiece !== undefined;
 
     // 執行移動
     const newGameState = executeMovePiece(gameState, fromRow, fromCol, toRow, toCol);
@@ -272,44 +255,26 @@ export default function LocalGame() {
       capturedPiece,
       gameStateAfter: newGameState,
     };
-    setMoveHistory(prev => [...prev, moveRecord]);
 
-    // 播放音效（判斷是否為吃子，以及勝負）
-    // 移動前的 currentPlayer 是下棋的人
-    if (newGameState.winner) {
-      playSound(newGameState.winner === gameState.currentPlayer ? 'win' : 'lose');
-    } else {
-      playSound(isCapture ? 'capture' : 'place');
-    }
-
-    setGameState(newGameState);
-    setSelectedPiece(null);
-    setErrorMessage(null);
+    finishMove(newGameState, moveRecord, isCapture);
   };
 
   // 處理拖曳放置
-  const handleDrop = (row: number, col: number, data: DragData) => {
-    // 遊戲已結束，不允許操作
-    if (gameState.winner) {
-      return;
-    }
-
-    // 檢查是否是當前玩家的棋子
-    if (data.color !== gameState.currentPlayer) {
+  const handleDrop = (row: number, col: number, data: DragData): void => {
+    // 遊戲已結束或不是當前玩家的棋子，不允許操作
+    if (gameState.winner || data.color !== gameState.currentPlayer) {
       return;
     }
 
     if (data.type === 'reserve') {
-      // 從儲備區放置
       placePieceFromReserve(row, col, data.color, data.size);
     } else if (data.fromRow !== undefined && data.fromCol !== undefined) {
-      // 從棋盤移動
       movePieceOnBoard(data.fromRow, data.fromCol, row, col);
     }
   };
 
   // 重新開始遊戲
-  const handleRestart = () => {
+  const handleRestart = (): void => {
     trackGameRestart('local');
     setGameState(initialGameState);
     setSelectedPiece(null);
@@ -325,6 +290,35 @@ export default function LocalGame() {
     const clampedStep = Math.max(0, Math.min(step, moveHistory.length));
     setReplayStep(clampedStep);
   }, [moveHistory.length]);
+
+  // 渲染遊戲狀態文字
+  function renderGameStatus(): JSX.Element {
+    if (isReplaying) {
+      return (
+        <p className="text-base md:text-xl lg:text-2xl font-bold text-purple-600">
+          回放模式 ({replayStep}/{moveHistory.length})
+        </p>
+      );
+    }
+
+    if (displayState.winner) {
+      const colorClass = displayState.winner === 'red' ? 'text-red-600' : 'text-blue-600';
+      const winnerText = displayState.winner === 'red' ? '紅方獲勝！' : '藍方獲勝！';
+      return (
+        <p className={`text-base md:text-xl lg:text-2xl font-bold ${colorClass}`}>
+          {winnerText}
+        </p>
+      );
+    }
+
+    const colorClass = displayState.currentPlayer === 'red' ? 'text-red-600' : 'text-blue-600';
+    const playerText = displayState.currentPlayer === 'red' ? '紅方' : '藍方';
+    return (
+      <p className={`text-base md:text-xl lg:text-2xl font-bold ${colorClass}`}>
+        {playerText}回合
+      </p>
+    );
+  }
 
   return (
     <GameDndContext onDrop={handleDrop}>
@@ -342,19 +336,7 @@ export default function LocalGame() {
                 </button>
                 <SoundToggle />
               </div>
-              {isReplaying ? (
-                <p className="text-base md:text-xl lg:text-2xl font-bold text-purple-600">
-                  回放模式 ({replayStep}/{moveHistory.length})
-                </p>
-              ) : displayState.winner ? (
-                <p className={`text-base md:text-xl lg:text-2xl font-bold ${displayState.winner === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
-                  {displayState.winner === 'red' ? '紅方獲勝！' : '藍方獲勝！'}
-                </p>
-              ) : (
-                <p className={`text-base md:text-xl lg:text-2xl font-bold ${displayState.currentPlayer === 'red' ? 'text-red-600' : 'text-blue-600'}`}>
-                  {displayState.currentPlayer === 'red' ? '紅方' : '藍方'}回合
-                </p>
-              )}
+              {renderGameStatus()}
               <button
                 onClick={handleRestart}
                 className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
