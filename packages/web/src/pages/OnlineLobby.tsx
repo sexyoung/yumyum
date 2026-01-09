@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { trackRoomCreate } from '../lib/analytics';
 
 const OnlineLobby: React.FC = () => {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ const OnlineLobby: React.FC = () => {
     mutationFn: api.createRoom,
     onSuccess: (data) => {
       console.log('房間已創建:', data.roomId);
+      trackRoomCreate();
       navigate(`/online/game/${data.roomId}`);
     },
     onError: (error) => {

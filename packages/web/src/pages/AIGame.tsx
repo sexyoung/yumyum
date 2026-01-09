@@ -24,6 +24,7 @@ import {
   loadAIGameState,
   clearAIGameState,
 } from '../lib/storage';
+import { trackGameStart, trackGameEnd, trackGameRestart } from '../lib/analytics';
 
 // 選擇狀態類型
 type SelectedPiece = {
@@ -68,18 +69,34 @@ export default function AIGame() {
   const playerColor: PieceColor = 'red';
   const aiColor: PieceColor = 'blue';
 
+  // 遊戲開始時間
+  const [gameStartTime] = useState(() => Date.now());
+
   // 取得當前顯示的遊戲狀態（遊戲結束或回放模式時根據 replayStep 顯示歷史狀態）
   const showReplay = isReplaying || gameState.winner;
   const displayState = showReplay
     ? (replayStep === 0 ? initialGameState : moveHistory[replayStep - 1]?.gameStateAfter || gameState)
     : gameState;
 
-  // 遊戲結束時，預設顯示最後一步
+  // 遊戲開始時追蹤
+  useEffect(() => {
+    trackGameStart({ game_mode: 'ai', difficulty });
+  }, [difficulty]);
+
+  // 遊戲結束時，預設顯示最後一步並追蹤
   useEffect(() => {
     if (gameState.winner) {
       setReplayStep(moveHistory.length);
+      trackGameEnd({
+        game_mode: 'ai',
+        result: gameState.winner === playerColor ? 'win' : 'lose',
+        winner_color: gameState.winner,
+        total_moves: moveHistory.length,
+        duration_seconds: Math.floor((Date.now() - gameStartTime) / 1000),
+        difficulty,
+      });
     }
-  }, [gameState.winner, moveHistory.length]);
+  }, [gameState.winner, moveHistory.length, gameStartTime, difficulty, playerColor]);
 
   // 載入保存的遊戲
   useEffect(() => {
@@ -369,6 +386,7 @@ export default function AIGame() {
 
   // 重新開始
   const handleRestart = () => {
+    trackGameRestart('ai');
     setGameState(initialGameState);
     setSelectedPiece(null);
     setErrorMessage(null);

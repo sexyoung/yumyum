@@ -20,6 +20,7 @@ import {
   loadLocalGameState,
   clearLocalGameState,
 } from '../lib/storage';
+import { trackGameStart, trackGameEnd, trackGameRestart } from '../lib/analytics';
 
 // 選擇狀態類型
 type SelectedPiece = {
@@ -61,18 +62,33 @@ export default function LocalGame() {
   const [isReplaying, setIsReplaying] = useState(false);
   const [replayStep, setReplayStep] = useState(0);
 
+  // 遊戲開始時間（用於計算遊戲時長）
+  const [gameStartTime] = useState(() => Date.now());
+
   // 取得當前顯示的遊戲狀態（遊戲結束或回放模式時根據 replayStep 顯示歷史狀態）
   const showReplay = isReplaying || gameState.winner;
   const displayState = showReplay
     ? (replayStep === 0 ? initialGameState : moveHistory[replayStep - 1]?.gameStateAfter || gameState)
     : gameState;
 
-  // 遊戲結束時，預設顯示最後一步
+  // 遊戲開始時追蹤
+  useEffect(() => {
+    trackGameStart({ game_mode: 'local' });
+  }, []);
+
+  // 遊戲結束時，預設顯示最後一步並追蹤
   useEffect(() => {
     if (gameState.winner) {
       setReplayStep(moveHistory.length);
+      trackGameEnd({
+        game_mode: 'local',
+        result: 'win', // 本地遊戲總有人贏
+        winner_color: gameState.winner,
+        total_moves: moveHistory.length,
+        duration_seconds: Math.floor((Date.now() - gameStartTime) / 1000),
+      });
     }
-  }, [gameState.winner, moveHistory.length]);
+  }, [gameState.winner, moveHistory.length, gameStartTime]);
 
   // 每次遊戲狀態更新時自動保存到 localStorage
   useEffect(() => {
@@ -292,6 +308,7 @@ export default function LocalGame() {
 
   // 重新開始遊戲
   const handleRestart = () => {
+    trackGameRestart('local');
     setGameState(initialGameState);
     setSelectedPiece(null);
     setErrorMessage(null);

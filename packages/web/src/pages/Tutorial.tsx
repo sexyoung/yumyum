@@ -6,6 +6,7 @@ import type { Tour } from 'shepherd.js';
 import 'shepherd.js/dist/css/shepherd.css';
 import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
+import { trackTutorialProgress } from '../lib/analytics';
 
 // 選擇狀態類型
 type SelectedPiece = {
@@ -249,12 +250,16 @@ export default function Tutorial() {
           ? [
               {
                 text: '上一步',
-                action: tour.back,
+                action: () => {
+                  trackTutorialProgress({ step_id: step.id, step_number: index, action: 'back' });
+                  tour.back();
+                },
                 classes: 'shepherd-button-secondary',
               },
               {
                 text: '返回首頁',
                 action: () => {
+                  trackTutorialProgress({ step_id: step.id, step_number: index, action: 'complete' });
                   tour.cancel();
                   navigate('/');
                 },
@@ -265,18 +270,29 @@ export default function Tutorial() {
               ...(index > 0
                 ? [{
                     text: '上一步',
-                    action: tour.back,
+                    action: () => {
+                      trackTutorialProgress({ step_id: step.id, step_number: index, action: 'back' });
+                      tour.back();
+                    },
                     classes: 'shepherd-button-secondary',
                   }]
                 : []),
               {
                 text: '下一步',
-                action: tour.next,
+                action: () => {
+                  trackTutorialProgress({ step_id: step.id, step_number: index, action: 'next' });
+                  tour.next();
+                },
                 classes: 'shepherd-button-primary',
               },
             ],
         when: {
-          show: () => updateGameStateForStep(step.id),
+          show: () => {
+            updateGameStateForStep(step.id);
+            if (index === 0) {
+              trackTutorialProgress({ step_id: step.id, step_number: index, action: 'start' });
+            }
+          },
         },
       });
     });
@@ -286,6 +302,7 @@ export default function Tutorial() {
     });
 
     tour.on('cancel', () => {
+      trackTutorialProgress({ step_id: 'cancelled', step_number: -1, action: 'skip' });
       navigate('/');
     });
 

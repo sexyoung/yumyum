@@ -7,6 +7,7 @@ import { GameWebSocket } from './lib/websocket';
 import type { ServerMessage } from '@yumyum/types';
 
 import AppRoutes from './AppRoutes';
+import { usePageTracking } from './hooks/usePageTracking';
 
 const HomePageContent: React.FC = () => {
   // 使用 React Query 呼叫 API
@@ -272,6 +273,20 @@ const HomePageContent: React.FC = () => {
   );
 };
 
+// 頁面追蹤包裝組件
+const AppContent: React.FC = () => {
+  usePageTracking();
+
+  return (
+    <Routes>
+      {/* 主要遊戲路由 */}
+      <Route path="/*" element={<AppRoutes />} />
+      {/* 開發測試路徑 */}
+      <Route path="/dev" element={<HomePageContent />} />
+    </Routes>
+  );
+};
+
 function App() {
   return (
     <BrowserRouter
@@ -280,12 +295,7 @@ function App() {
         v7_relativeSplatPath: true,
       }}
     >
-      <Routes>
-        {/* 主要遊戲路由 */}
-        <Route path="/*" element={<AppRoutes />} />
-        {/* 開發測試路徑 */}
-        <Route path="/dev" element={<HomePageContent />} />
-      </Routes>
+      <AppContent />
     </BrowserRouter>
   );
 }

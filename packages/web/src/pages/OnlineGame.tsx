@@ -17,6 +17,14 @@ import {
   getWinningLine,
 } from '../lib/gameLogic';
 import { playSound } from '../lib/sounds';
+import {
+  trackGameStart,
+  trackGameEnd,
+  trackRoomJoin,
+  trackRematchRequest,
+  trackEmojiSend,
+  trackError,
+} from '../lib/analytics';
 
 // 初始遊戲狀態（用於回放第 0 步）
 const initialGameState: GameState = {
@@ -72,6 +80,9 @@ const OnlineGame: React.FC = () => {
   const [replayStep, setReplayStep] = useState(0);
   const prevGameStateRef = useRef<GameState | null>(null);
 
+  // 遊戲開始時間
+  const gameStartTimeRef = useRef<number>(Date.now());
+
   // WebSocket
   const { connect, sendMessage, isReconnecting, reconnectAttempt, isConnected } = useGameWebSocket({
     onRoomJoined: (joinedRoomId, color) => {
@@ -97,6 +108,9 @@ const OnlineGame: React.FC = () => {
       setMoveHistory([]);
       setReplayStep(0);
       prevGameStateRef.current = serverInitialState;
+      // 追蹤遊戲開始
+      gameStartTimeRef.current = Date.now();
+      trackGameStart({ game_mode: 'online', room_id: roomId });
     },
     onMoveMade: (newGameState, lastMove, movedBy) => {
       console.log('收到移動:', newGameState, lastMove, movedBy);
@@ -165,6 +179,17 @@ const OnlineGame: React.FC = () => {
       // 播放勝負音效
       if (myColor) {
         playSound(winner === myColor ? 'win' : 'lose');
+        // 追蹤遊戲結束
+        if (winner === 'red' || winner === 'blue') {
+          trackGameEnd({
+            game_mode: 'online',
+            result: winner === myColor ? 'win' : 'lose',
+            winner_color: winner,
+            total_moves: moveHistory.length,
+            duration_seconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+            room_id: roomId,
+          });
+        }
       }
       setPhase('finished');
     },
@@ -178,6 +203,9 @@ const OnlineGame: React.FC = () => {
       if (message.includes('非法') || message.includes('無效') || message.includes('不能')) {
         return;
       }
+
+      // 追蹤錯誤
+      trackError('online_game', message);
 
       // 根據錯誤訊息提供更詳細的說明
       let details = '';
@@ -225,6 +253,9 @@ const OnlineGame: React.FC = () => {
       setMoveHistory([]);
       setReplayStep(0);
       prevGameStateRef.current = newGameState;
+      // 追蹤再戰開始
+      gameStartTimeRef.current = Date.now();
+      trackGameStart({ game_mode: 'online', room_id: roomId });
     },
     onEmoji: (emoji) => {
       console.log('收到對手 emoji:', emoji);
@@ -249,6 +280,9 @@ const OnlineGame: React.FC = () => {
       setPhase('error');
       return;
     }
+
+    // 追蹤加入房間
+    trackRoomJoin(roomId);
 
     // 連接 WebSocket
     connect(roomId);
@@ -424,6 +458,8 @@ const OnlineGame: React.FC = () => {
 
   // 發送 emoji（同時在自己畫面顯示）
   const handleSendEmoji = useCallback((emoji: string) => {
+    // 追蹤發送 emoji
+    trackEmojiSend(emoji);
     // 發送給對手
     sendMessage({ type: 'emoji', emoji });
     // 在自己畫面顯示
@@ -552,6 +588,7 @@ const OnlineGame: React.FC = () => {
       : gameState;
 
     const handleRematchRequest = () => {
+      trackRematchRequest();
       sendMessage({ type: 'rematch_request' });
       setRematchRequested(true);
     };
