@@ -9,7 +9,7 @@ interface MenuLinkProps {
   children: React.ReactNode;
 }
 
-function MenuLink({ to, testId, buttonName, colorClass, children }: MenuLinkProps): React.ReactElement {
+function MenuLink({ to, testId, buttonName, colorClass, children }: MenuLinkProps) {
   const baseClass = 'px-6 py-3 sm:px-8 sm:py-4 rounded-lg text-xl sm:text-2xl md:text-3xl font-semibold text-center transition duration-300';
 
   return (
@@ -30,7 +30,7 @@ const menuItems = [
   { to: '/online', testId: 'link-online', buttonName: 'online_mode', colorClass: 'bg-red-500 hover:bg-red-600', label: '線上雙人' },
 ] as const;
 
-function Home(): React.ReactElement {
+function Home() {
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center bg-gradient-to-br from-purple-600 to-blue-500 text-white p-4">
       <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 md:mb-8 lg:mb-10">

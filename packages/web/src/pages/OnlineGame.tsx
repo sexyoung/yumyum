@@ -1,5 +1,5 @@
 // packages/web/src/pages/OnlineGame.tsx
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import type { GameState, PieceColor, GameMove, MoveRecord, PieceSize } from '@yumyum/types';
@@ -44,7 +44,10 @@ const initialGameState: GameState = {
 
 type GamePhase = 'connecting' | 'waiting' | 'playing' | 'finished' | 'opponent_left' | 'error';
 
-const OnlineGame: React.FC = () => {
+// Emoji 狀態類型
+type EmojiState = { emoji: string; key: number; x: number } | null;
+
+function OnlineGame() {
   const navigate = useNavigate();
   const { roomId } = useParams<{ roomId: string }>();
 
@@ -60,7 +63,7 @@ const OnlineGame: React.FC = () => {
   const [errorDetails, setErrorDetails] = useState<string>('');
 
   // 選擇狀態（用於下棋）
-  const [selectedReserveSize, setSelectedReserveSize] = useState<'small' | 'medium' | 'large' | null>(null);
+  const [selectedReserveSize, setSelectedReserveSize] = useState<PieceSize | null>(null);
   const [selectedBoardPos, setSelectedBoardPos] = useState<{ row: number; col: number } | null>(null);
 
   // 等待伺服器回應（樂觀更新時使用）
@@ -74,8 +77,8 @@ const OnlineGame: React.FC = () => {
   const [loserStartsColor, setLoserStartsColor] = useState<PieceColor | null>(null); // 下局先手
 
   // Emoji 狀態（分開處理自己和對手的 emoji）
-  const [myEmoji, setMyEmoji] = useState<{ emoji: string; key: number; x: number } | null>(null);
-  const [opponentEmoji, setOpponentEmoji] = useState<{ emoji: string; key: number; x: number } | null>(null);
+  const [myEmoji, setMyEmoji] = useState<EmojiState>(null);
+  const [opponentEmoji, setOpponentEmoji] = useState<EmojiState>(null);
   const myEmojiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const opponentEmojiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -86,6 +89,67 @@ const OnlineGame: React.FC = () => {
 
   // 遊戲開始時間
   const gameStartTimeRef = useRef<number>(Date.now());
+
+  // --- 輔助函數 ---
+
+  // 取得目標格的頂部棋子（如果有）
+  const getTopPiece = useCallback((state: GameState, row: number, col: number) => {
+    const cell = state.board[row][col];
+    return cell.pieces.length > 0 ? cell.pieces[cell.pieces.length - 1] : undefined;
+  }, []);
+
+  // 播放適當的音效（根據遊戲結果或移動類型）
+  const playSoundForMove = useCallback((newState: GameState, isCapture: boolean, currentColor: PieceColor) => {
+    if (newState.winner) {
+      playSound(newState.winner === currentColor ? 'win' : 'lose');
+    } else {
+      playSound(isCapture ? 'capture' : 'place');
+    }
+  }, []);
+
+  // 顯示 Emoji 並設定自動清除
+  const showEmoji = useCallback((
+    emoji: string,
+    setEmoji: React.Dispatch<React.SetStateAction<EmojiState>>,
+    timeoutRef: React.MutableRefObject<NodeJS.Timeout | null>
+  ) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    // x: 隨機水平位置 (20% ~ 80%)
+    const x = 20 + Math.random() * 60;
+    setEmoji({ emoji, key: Date.now(), x });
+    timeoutRef.current = setTimeout(() => setEmoji(null), 2000);
+  }, []);
+
+  // 重置所有再戰狀態
+  const resetRematchState = useCallback(() => {
+    setRematchRequested(false);
+    setOpponentRequestedRematch(false);
+    setRematchDeclined(false);
+    setIDeclinedRematch(false);
+    setLoserStartsColor(null);
+  }, []);
+
+  // 重置遊戲相關狀態
+  const resetGameState = useCallback((newGameState: GameState, newColor: PieceColor) => {
+    setGameState(newGameState);
+    setMyColor(newColor);
+    setPhase('playing');
+    setSelectedReserveSize(null);
+    setSelectedBoardPos(null);
+    setMoveHistory([]);
+    setReplayStep(0);
+    prevGameStateRef.current = newGameState;
+    gameStartTimeRef.current = Date.now();
+  }, []);
+
+  // 設定錯誤並進入錯誤狀態
+  const showError = useCallback((message: string, details: string) => {
+    setErrorMessage(message);
+    setErrorDetails(details);
+    setPhase('error');
+  }, []);
 
   // WebSocket
   const { connect, sendMessage, isReconnecting, reconnectAttempt, isConnected } = useGameWebSocket({
@@ -105,15 +169,8 @@ const OnlineGame: React.FC = () => {
     },
     onGameStart: (serverInitialState, yourColor) => {
       console.log('遊戲開始:', yourColor);
-      setGameState(serverInitialState);
-      setMyColor(yourColor);
-      setPhase('playing');
-      // 重置歷史記錄
-      setMoveHistory([]);
-      setReplayStep(0);
-      prevGameStateRef.current = serverInitialState;
+      resetGameState(serverInitialState, yourColor);
       // 追蹤遊戲開始
-      gameStartTimeRef.current = Date.now();
       trackGameStart({ game_mode: 'online', room_id: roomId });
     },
     onMoveMade: (newGameState, lastMove, movedBy) => {
@@ -122,45 +179,25 @@ const OnlineGame: React.FC = () => {
       const prevState = prevGameStateRef.current;
 
       // 判斷是否為對手的移動，需要播放音效
-      if (prevState && prevState.currentPlayer !== myColor) {
-        // 這是對手的移動，播放音效
-        let isCapture = false;
-        for (let r = 0; r < 3; r++) {
-          for (let c = 0; c < 3; c++) {
-            const oldPieces = prevState.board[r][c].pieces;
-            const newPieces = newGameState.board[r][c].pieces;
-            if (newPieces.length > oldPieces.length && oldPieces.length > 0) {
-              const oldTop = oldPieces[oldPieces.length - 1];
-              if (oldTop.color === myColor) {
-                isCapture = true;
-                break;
-              }
-            }
-          }
-          if (isCapture) break;
-        }
+      if (prevState && prevState.currentPlayer !== myColor && lastMove) {
+        // 這是對手的移動，判斷是否吃子並播放音效
+        const targetRow = lastMove.type === 'place' ? lastMove.row : lastMove.toRow;
+        const targetCol = lastMove.type === 'place' ? lastMove.col : lastMove.toCol;
+        const oldPieces = prevState.board[targetRow][targetCol].pieces;
+        const isCapture = oldPieces.length > 0 && oldPieces[oldPieces.length - 1].color === myColor;
         playSound(isCapture ? 'capture' : 'place');
       }
 
       // 記錄移動歷史
       if (prevState && lastMove) {
-        let capturedPiece;
-        let pieceSize: PieceSize;
+        const targetRow = lastMove.type === 'place' ? lastMove.row : lastMove.toRow;
+        const targetCol = lastMove.type === 'place' ? lastMove.col : lastMove.toCol;
+        const targetCell = prevState.board[targetRow][targetCol];
+        const capturedPiece = targetCell.pieces.length > 0 ? targetCell.pieces[targetCell.pieces.length - 1] : undefined;
 
-        if (lastMove.type === 'place') {
-          const targetCell = prevState.board[lastMove.row][lastMove.col];
-          if (targetCell.pieces.length > 0) {
-            capturedPiece = targetCell.pieces[targetCell.pieces.length - 1];
-          }
-          pieceSize = lastMove.size;
-        } else {
-          const targetCell = prevState.board[lastMove.toRow][lastMove.toCol];
-          if (targetCell.pieces.length > 0) {
-            capturedPiece = targetCell.pieces[targetCell.pieces.length - 1];
-          }
-          const fromCell = prevState.board[lastMove.fromRow][lastMove.fromCol];
-          pieceSize = fromCell.pieces[fromCell.pieces.length - 1].size;
-        }
+        const pieceSize: PieceSize = lastMove.type === 'place'
+          ? lastMove.size
+          : prevState.board[lastMove.fromRow][lastMove.fromCol].pieces[prevState.board[lastMove.fromRow][lastMove.fromCol].pieces.length - 1].size;
 
         const moveRecord: MoveRecord = {
           step: moveHistory.length + 1,
@@ -221,9 +258,7 @@ const OnlineGame: React.FC = () => {
         details = '發生了一個未預期的錯誤。請返回大廳重試。';
       }
 
-      setErrorMessage(message);
-      setErrorDetails(details);
-      setPhase('error');
+      showError(message, details);
     },
     onReconnecting: (attempt) => {
       console.log('正在重連:', attempt);
@@ -242,46 +277,21 @@ const OnlineGame: React.FC = () => {
     },
     onRematchStart: (newGameState, yourColor) => {
       console.log('再戰開始:', yourColor);
-      setGameState(newGameState);
-      setMyColor(yourColor);
-      setPhase('playing');
-      // 重置所有再戰狀態
-      setRematchRequested(false);
-      setOpponentRequestedRematch(false);
-      setRematchDeclined(false);
-      setIDeclinedRematch(false);
-      setLoserStartsColor(null);
-      setSelectedReserveSize(null);
-      setSelectedBoardPos(null);
-      // 重置歷史記錄
-      setMoveHistory([]);
-      setReplayStep(0);
-      prevGameStateRef.current = newGameState;
+      resetGameState(newGameState, yourColor);
+      resetRematchState();
       // 追蹤再戰開始
-      gameStartTimeRef.current = Date.now();
       trackGameStart({ game_mode: 'online', room_id: roomId });
     },
     onEmoji: (emoji) => {
       console.log('收到對手 emoji:', emoji);
-      // 清除前一個 timeout
-      if (opponentEmojiTimeoutRef.current) {
-        clearTimeout(opponentEmojiTimeoutRef.current);
-      }
-      // 用 Date.now() 作為 key，強制重新播放動畫
-      // x: 隨機水平位置 (20% ~ 80%)
-      const x = 20 + Math.random() * 60;
-      setOpponentEmoji({ emoji, key: Date.now(), x });
-      // 2 秒後清除
-      opponentEmojiTimeoutRef.current = setTimeout(() => setOpponentEmoji(null), 2000);
+      showEmoji(emoji, setOpponentEmoji, opponentEmojiTimeoutRef);
     },
   });
 
   // 初始化連線
   useEffect(() => {
     if (!roomId) {
-      setErrorMessage('缺少房間 ID');
-      setErrorDetails('請從大廳創建或加入房間。');
-      setPhase('error');
+      showError('缺少房間 ID', '請從大廳創建或加入房間。');
       return;
     }
 
@@ -290,7 +300,7 @@ const OnlineGame: React.FC = () => {
 
     // 連接 WebSocket
     connect(roomId);
-  }, [roomId, connect]);
+  }, [roomId, connect, showError]);
 
   // 等待 WebSocket 連線成功後發送 join_room
   useEffect(() => {
@@ -305,8 +315,52 @@ const OnlineGame: React.FC = () => {
     });
   }, [isConnected, roomId, playerName, playerIdentity?.uuid, sendMessage]);
 
+  // 執行放置棋子的移動
+  const executePlace = useCallback((row: number, col: number, size: PieceSize) => {
+    if (!gameState || !myColor) return;
+
+    // 先驗證移動是否合法
+    const validation = canPlacePieceFromReserve(gameState, row, col, myColor, size);
+    if (!validation.valid) return;
+
+    // 播放音效（判斷是否為吃子，以及勝負）
+    const isCapture = gameState.board[row][col].pieces.length > 0;
+    const newState = placePieceFromReserve(gameState, row, col, myColor, size);
+    playSoundForMove(newState, isCapture, myColor);
+
+    // 樂觀更新：立即更新本地狀態
+    setGameState(newState);
+    setWaitingForServer(true);
+    setSelectedReserveSize(null);
+
+    const move: GameMove = { type: 'place', row, col, size };
+    sendMessage({ type: 'make_move', move });
+  }, [gameState, myColor, sendMessage, playSoundForMove]);
+
+  // 執行移動棋子的移動
+  const executeMove = useCallback((fromRow: number, fromCol: number, toRow: number, toCol: number) => {
+    if (!gameState || !myColor) return;
+
+    // 先驗證移動是否合法
+    const validation = canMovePieceOnBoard(gameState, fromRow, fromCol, toRow, toCol);
+    if (!validation.valid) return;
+
+    // 播放音效（判斷是否為吃子，以及勝負）
+    const isCapture = gameState.board[toRow][toCol].pieces.length > 0;
+    const newState = movePieceOnBoard(gameState, fromRow, fromCol, toRow, toCol);
+    playSoundForMove(newState, isCapture, myColor);
+
+    // 樂觀更新：立即更新本地狀態
+    setGameState(newState);
+    setWaitingForServer(true);
+    setSelectedBoardPos(null);
+
+    const move: GameMove = { type: 'move', fromRow, fromCol, toRow, toCol };
+    sendMessage({ type: 'make_move', move });
+  }, [gameState, myColor, sendMessage, playSoundForMove]);
+
   // 處理棋子選擇
-  const handleReserveClick = useCallback((size: 'small' | 'medium' | 'large') => {
+  const handleReserveClick = useCallback((size: PieceSize) => {
     if (phase !== 'playing' || !gameState || !myColor) return;
     if (gameState.currentPlayer !== myColor) return;
     if (waitingForServer) return; // 等待伺服器回應時禁止操作
@@ -323,83 +377,23 @@ const OnlineGame: React.FC = () => {
 
     // 情況 1: 從儲備區放置
     if (selectedReserveSize) {
-      // 先驗證移動是否合法
-      const validation = canPlacePieceFromReserve(gameState, row, col, myColor, selectedReserveSize);
-      if (!validation.valid) {
-        return;
-      }
-
-      // 播放音效（判斷是否為吃子，以及勝負）
-      const isCapture = gameState.board[row][col].pieces.length > 0;
-      const newState = placePieceFromReserve(gameState, row, col, myColor, selectedReserveSize);
-      playSound(newState.winner ? (newState.winner === myColor ? 'win' : 'lose') : (isCapture ? 'capture' : 'place'));
-
-      // 樂觀更新：立即更新本地狀態
-      setGameState(newState);
-      setWaitingForServer(true);
-      setSelectedReserveSize(null);
-
-      const move: GameMove = {
-        type: 'place',
-        row,
-        col,
-        size: selectedReserveSize,
-      };
-      sendMessage({ type: 'make_move', move });
+      executePlace(row, col, selectedReserveSize);
       return;
     }
 
     // 情況 2: 選擇棋盤上的棋子
-    const cell = gameState.board[row][col];
-    if (cell.pieces.length > 0 && cell.pieces[cell.pieces.length - 1].color === myColor) {
-      if (selectedBoardPos?.row === row && selectedBoardPos?.col === col) {
-        setSelectedBoardPos(null);
-      } else {
-        setSelectedBoardPos({ row, col });
-      }
+    const topPiece = getTopPiece(gameState, row, col);
+    if (topPiece?.color === myColor) {
+      const isSameCell = selectedBoardPos?.row === row && selectedBoardPos?.col === col;
+      setSelectedBoardPos(isSameCell ? null : { row, col });
       return;
     }
 
     // 情況 3: 移動已選擇的棋子
     if (selectedBoardPos) {
-      // 先驗證移動是否合法
-      const validation = canMovePieceOnBoard(
-        gameState,
-        selectedBoardPos.row,
-        selectedBoardPos.col,
-        row,
-        col
-      );
-      if (!validation.valid) {
-        return;
-      }
-
-      // 播放音效（判斷是否為吃子，以及勝負）
-      const isCapture = gameState.board[row][col].pieces.length > 0;
-      const newState = movePieceOnBoard(
-        gameState,
-        selectedBoardPos.row,
-        selectedBoardPos.col,
-        row,
-        col
-      );
-      playSound(newState.winner ? (newState.winner === myColor ? 'win' : 'lose') : (isCapture ? 'capture' : 'place'));
-
-      // 樂觀更新：立即更新本地狀態
-      setGameState(newState);
-      setWaitingForServer(true);
-      setSelectedBoardPos(null);
-
-      const move: GameMove = {
-        type: 'move',
-        fromRow: selectedBoardPos.row,
-        fromCol: selectedBoardPos.col,
-        toRow: row,
-        toCol: col,
-      };
-      sendMessage({ type: 'make_move', move });
+      executeMove(selectedBoardPos.row, selectedBoardPos.col, row, col);
     }
-  }, [phase, gameState, myColor, selectedReserveSize, selectedBoardPos, sendMessage, waitingForServer]);
+  }, [phase, gameState, myColor, selectedReserveSize, selectedBoardPos, waitingForServer, executePlace, executeMove, getTopPiece]);
 
   // 處理拖曳放置
   const handleDrop = useCallback((row: number, col: number, data: DragData) => {
@@ -411,59 +405,16 @@ const OnlineGame: React.FC = () => {
     if (data.color !== myColor) return;
 
     if (data.type === 'reserve') {
-      // 先驗證移動是否合法
-      const validation = canPlacePieceFromReserve(gameState, row, col, myColor, data.size);
-      if (!validation.valid) {
-        return;
-      }
-
-      // 播放音效（判斷是否為吃子，以及勝負）
-      const isCapture = gameState.board[row][col].pieces.length > 0;
-      const newState = placePieceFromReserve(gameState, row, col, myColor, data.size);
-      playSound(newState.winner ? (newState.winner === myColor ? 'win' : 'lose') : (isCapture ? 'capture' : 'place'));
-
-      // 樂觀更新：立即更新本地狀態
-      setGameState(newState);
-      setWaitingForServer(true);
-
-      const move: GameMove = {
-        type: 'place',
-        row,
-        col,
-        size: data.size,
-      };
-      sendMessage({ type: 'make_move', move });
+      executePlace(row, col, data.size);
     } else if (data.fromRow !== undefined && data.fromCol !== undefined) {
-      // 先驗證移動是否合法
-      const validation = canMovePieceOnBoard(gameState, data.fromRow, data.fromCol, row, col);
-      if (!validation.valid) {
-        return;
-      }
-
-      // 播放音效（判斷是否為吃子，以及勝負）
-      const isCapture = gameState.board[row][col].pieces.length > 0;
-      const newState = movePieceOnBoard(gameState, data.fromRow, data.fromCol, row, col);
-      playSound(newState.winner ? (newState.winner === myColor ? 'win' : 'lose') : (isCapture ? 'capture' : 'place'));
-
-      // 樂觀更新：立即更新本地狀態
-      setGameState(newState);
-      setWaitingForServer(true);
-
-      const move: GameMove = {
-        type: 'move',
-        fromRow: data.fromRow,
-        fromCol: data.fromCol,
-        toRow: row,
-        toCol: col,
-      };
-      sendMessage({ type: 'make_move', move });
+      executeMove(data.fromRow, data.fromCol, row, col);
     }
-  }, [phase, gameState, myColor, sendMessage, waitingForServer]);
+  }, [phase, gameState, myColor, waitingForServer, executePlace, executeMove]);
 
   // 返回大廳
-  const handleBackToLobby = () => {
+  const handleBackToLobby = useCallback(() => {
     navigate('/online');
-  };
+  }, [navigate]);
 
   // 發送 emoji（同時在自己畫面顯示）
   const handleSendEmoji = useCallback((emoji: string) => {
@@ -472,13 +423,8 @@ const OnlineGame: React.FC = () => {
     // 發送給對手
     sendMessage({ type: 'emoji', emoji });
     // 在自己畫面顯示
-    if (myEmojiTimeoutRef.current) {
-      clearTimeout(myEmojiTimeoutRef.current);
-    }
-    const x = 20 + Math.random() * 60;
-    setMyEmoji({ emoji, key: Date.now(), x });
-    myEmojiTimeoutRef.current = setTimeout(() => setMyEmoji(null), 2000);
-  }, [sendMessage]);
+    showEmoji(emoji, setMyEmoji, myEmojiTimeoutRef);
+  }, [sendMessage, showEmoji]);
 
   // 遊戲結束時預設顯示最後一步
   useEffect(() => {
@@ -492,7 +438,26 @@ const OnlineGame: React.FC = () => {
     setReplayStep(Math.max(0, Math.min(step, moveHistory.length)));
   }, [moveHistory.length]);
 
-  // 渲染不同階段的畫面
+  // --- 渲染輔助函數 ---
+
+  // 渲染 Emoji 浮動顯示
+  function renderEmojiFloat(emojiState: EmojiState, prefix: string) {
+    if (!emojiState) return null;
+    return (
+      <div
+        key={`${prefix}-${emojiState.key}`}
+        className="fixed top-[12%] -translate-x-1/2 pointer-events-none z-50"
+        style={{
+          left: `${emojiState.x}%`,
+          animation: 'emoji-float 2s ease-out forwards',
+        }}
+      >
+        <span className="text-7xl drop-shadow-lg">{emojiState.emoji}</span>
+      </div>
+    );
+  }
+
+  // 渲染連線中畫面
   if (phase === 'connecting') {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600">
@@ -504,6 +469,7 @@ const OnlineGame: React.FC = () => {
     );
   }
 
+  // 渲染錯誤畫面
   if (phase === 'error') {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-red-500 to-pink-600 p-4">
@@ -539,6 +505,7 @@ const OnlineGame: React.FC = () => {
     );
   }
 
+  // 渲染等待對手畫面
   if (phase === 'waiting') {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500 p-4">
@@ -561,6 +528,7 @@ const OnlineGame: React.FC = () => {
     );
   }
 
+  // 渲染對手已離開畫面
   if (phase === 'opponent_left') {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500 p-4">
@@ -585,6 +553,7 @@ const OnlineGame: React.FC = () => {
     );
   }
 
+  // 渲染遊戲畫面
   if ((phase === 'playing' || phase === 'finished') && gameState && myColor) {
     const isMyTurn = gameState.currentPlayer === myColor;
     const isGameOver = phase === 'finished' || !!gameState.winner;
@@ -596,6 +565,7 @@ const OnlineGame: React.FC = () => {
       ? (replayStep === 0 ? initialGameState : moveHistory[replayStep - 1]?.gameStateAfter || gameState)
       : gameState;
 
+    // 處理再戰相關操作
     const handleRematchRequest = () => {
       trackRematchRequest();
       sendMessage({ type: 'rematch_request' });
@@ -612,8 +582,28 @@ const OnlineGame: React.FC = () => {
       setIDeclinedRematch(true);
     };
 
+    // 渲染遊戲狀態文字
+    function renderGameStatus() {
+      if (isGameOver) {
+        const colorClass = isWinner ? 'text-green-600' : 'text-red-600';
+        const statusText = isWinner ? '你獲勝了！' : '你輸了';
+        return (
+          <p className={`text-base md:text-xl lg:text-2xl font-bold ${colorClass}`}>
+            {statusText}
+          </p>
+        );
+      }
+      const colorClass = isMyTurn ? 'text-green-600' : 'text-gray-400';
+      const statusText = isMyTurn ? '你的回合' : '對手回合';
+      return (
+        <p className={`text-base md:text-xl lg:text-2xl font-bold ${colorClass}`}>
+          {statusText}
+        </p>
+      );
+    }
+
     // 渲染右上角按鈕（遊戲中為空，結束後為再戰按鈕）
-    const renderRightButton = () => {
+    function renderRightButton() {
       if (!isGameOver) {
         // 遊戲進行中，顯示空白佔位
         return <div className="w-[52px] md:w-[68px]"></div>;
@@ -657,23 +647,40 @@ const OnlineGame: React.FC = () => {
           再一場
         </button>
       );
-    };
+    }
 
-    // 渲染中間狀態文字
-    const renderStatusText = () => {
-      if (isGameOver) {
+    // 渲染再戰狀態提示
+    function renderRematchStatus() {
+      if (!isGameOver) return null;
+
+      const loserText = loserStartsColor ? `（${loserStartsColor === 'red' ? '紅方' : '藍方'}先手）` : '';
+
+      if (opponentRequestedRematch && !rematchDeclined) {
         return (
-          <p className={`text-base md:text-xl lg:text-2xl font-bold ${isWinner ? 'text-green-600' : 'text-red-600'}`}>
-            {isWinner ? '你獲勝了！' : '你輸了'}
+          <p className="text-center text-sm text-yellow-600 mt-2 font-semibold">
+            對方想要再來一局！{loserText}
           </p>
         );
       }
-      return (
-        <p className={`text-base md:text-xl lg:text-2xl font-bold ${isMyTurn ? 'text-green-600' : 'text-gray-400'}`}>
-          {isMyTurn ? '你的回合' : '對手回合'}
-        </p>
-      );
-    };
+
+      if (rematchRequested && !rematchDeclined) {
+        return (
+          <p className="text-center text-sm text-blue-600 mt-2 font-semibold">
+            已發送再戰請求，等待對方回應...{loserText}
+          </p>
+        );
+      }
+
+      if (iDeclinedRematch || rematchDeclined) {
+        return (
+          <p className="text-center text-sm text-gray-500 mt-2">
+            {iDeclinedRematch ? '已拒絕再戰' : '對方拒絕了再戰'}
+          </p>
+        );
+      }
+
+      return null;
+    }
 
     return (
       <GameDndContext onDrop={handleDrop}>
@@ -692,33 +699,9 @@ const OnlineGame: React.FC = () => {
             </div>
           )}
 
-          {/* 自己發的 Emoji 浮動顯示 */}
-          {myEmoji && (
-            <div
-              key={`my-${myEmoji.key}`}
-              className="fixed top-[12%] -translate-x-1/2 pointer-events-none z-50"
-              style={{
-                left: `${myEmoji.x}%`,
-                animation: 'emoji-float 2s ease-out forwards',
-              }}
-            >
-              <span className="text-7xl drop-shadow-lg">{myEmoji.emoji}</span>
-            </div>
-          )}
-
-          {/* 對手發的 Emoji 浮動顯示 */}
-          {opponentEmoji && (
-            <div
-              key={`opponent-${opponentEmoji.key}`}
-              className="fixed top-[12%] -translate-x-1/2 pointer-events-none z-50"
-              style={{
-                left: `${opponentEmoji.x}%`,
-                animation: 'emoji-float 2s ease-out forwards',
-              }}
-            >
-              <span className="text-7xl drop-shadow-lg">{opponentEmoji.emoji}</span>
-            </div>
-          )}
+          {/* Emoji 浮動顯示 */}
+          {renderEmojiFloat(myEmoji, 'my')}
+          {renderEmojiFloat(opponentEmoji, 'opponent')}
 
           {/* 頂部資訊 */}
           <div className="flex-none px-3 pt-3">
@@ -733,27 +716,10 @@ const OnlineGame: React.FC = () => {
                   </button>
                   <SoundToggle />
                 </div>
-                {renderStatusText()}
+                {renderGameStatus()}
                 {renderRightButton()}
               </div>
-              {/* 對方請求再戰的提示 */}
-              {isGameOver && opponentRequestedRematch && !rematchDeclined && (
-                <p className="text-center text-sm text-yellow-600 mt-2 font-semibold">
-                  對方想要再來一局！{loserStartsColor && `（${loserStartsColor === 'red' ? '紅方' : '藍方'}先手）`}
-                </p>
-              )}
-              {/* 等待對方回應的提示 */}
-              {isGameOver && rematchRequested && !rematchDeclined && (
-                <p className="text-center text-sm text-blue-600 mt-2 font-semibold">
-                  已發送再戰請求，等待對方回應...{loserStartsColor && `（${loserStartsColor === 'red' ? '紅方' : '藍方'}先手）`}
-                </p>
-              )}
-              {/* 拒絕提示 */}
-              {isGameOver && (iDeclinedRematch || rematchDeclined) && (
-                <p className="text-center text-sm text-gray-500 mt-2">
-                  {iDeclinedRematch ? '已拒絕再戰' : '對方拒絕了再戰'}
-                </p>
-              )}
+              {renderRematchStatus()}
             </div>
           </div>
 
@@ -774,27 +740,15 @@ const OnlineGame: React.FC = () => {
           {/* Emoji 反應按鈕 */}
           <div className="flex-none px-3 flex justify-center">
             <div className="flex gap-2">
-              <button
-                onClick={() => handleSendEmoji('👍')}
-                className="w-12 h-12 bg-white rounded-full shadow-lg text-2xl hover:scale-110 active:scale-95 transition-transform"
-                title="讚"
-              >
-                👍
-              </button>
-              <button
-                onClick={() => handleSendEmoji('❤️')}
-                className="w-12 h-12 bg-white rounded-full shadow-lg text-2xl hover:scale-110 active:scale-95 transition-transform"
-                title="愛心"
-              >
-                ❤️
-              </button>
-              <button
-                onClick={() => handleSendEmoji('👎')}
-                className="w-12 h-12 bg-white rounded-full shadow-lg text-2xl hover:scale-110 active:scale-95 transition-transform"
-                title="倒讚"
-              >
-                👎
-              </button>
+              {['👍', '❤️', '👎'].map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => handleSendEmoji(emoji)}
+                  className="w-12 h-12 bg-white rounded-full shadow-lg text-2xl hover:scale-110 active:scale-95 transition-transform"
+                >
+                  {emoji}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -827,6 +781,6 @@ const OnlineGame: React.FC = () => {
   }
 
   return null;
-};
+}
 
 export default OnlineGame;

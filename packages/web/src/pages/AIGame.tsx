@@ -53,7 +53,7 @@ const initialGameState: GameState = {
 const playerColor: PieceColor = 'red';
 const aiColor: PieceColor = 'blue';
 
-export default function AIGame(): JSX.Element {
+export default function AIGame() {
   const navigate = useNavigate();
   const [difficulty] = useState<AIDifficulty>('hard');
   const [gameState, setGameState] = useState<GameState>(initialGameState);
@@ -365,7 +365,7 @@ export default function AIGame(): JSX.Element {
   }, [moveHistory.length]);
 
   // 渲染遊戲狀態文字
-  function renderGameStatus(): JSX.Element {
+  function renderGameStatus() {
     if (isReplaying) {
       return (
         <p className="text-base md:text-xl lg:text-2xl font-bold text-yellow-600">

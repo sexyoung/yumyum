@@ -1,5 +1,5 @@
 // packages/web/src/pages/Leaderboard.tsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api, LeaderboardEntry } from '../lib/api';
@@ -106,7 +106,7 @@ function LeaderboardRow({
   );
 }
 
-const Leaderboard: React.FC = () => {
+function Leaderboard() {
   const navigate = useNavigate();
   const [period, setPeriod] = useState<LeaderboardPeriod>('all_time');
 

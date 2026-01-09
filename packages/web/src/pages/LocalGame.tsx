@@ -292,7 +292,7 @@ export default function LocalGame() {
   }, [moveHistory.length]);
 
   // 渲染遊戲狀態文字
-  function renderGameStatus(): JSX.Element {
+  function renderGameStatus() {
     if (isReplaying) {
       return (
         <p className="text-base md:text-xl lg:text-2xl font-bold text-purple-600">

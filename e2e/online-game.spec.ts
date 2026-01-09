@@ -1,4 +1,6 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect, Page, BrowserContext } from '@playwright/test';
+
+// --- 測試輔助函數 ---
 
 // 清除 localStorage
 async function clearLocalStorage(page: Page): Promise<void> {
@@ -30,6 +32,15 @@ async function expectTurnIndicator(page: Page): Promise<void> {
   const turnIndicator = page.locator('text=你的回合').or(page.locator('text=對手回合'));
   await expect(turnIndicator).toBeVisible({ timeout: 10000 });
 }
+
+// 創建新玩家 context
+async function createPlayerContext(browser: any): Promise<{ context: BrowserContext; page: Page }> {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  return { context, page };
+}
+
+// --- 測試 ---
 
 test.describe('線上對戰 - 暱稱設定', () => {
   test.beforeEach(async ({ page }) => {
@@ -182,30 +193,30 @@ test.describe('線上對戰（需要後端服務）', () => {
 
   test.skip('雙人對戰流程', async ({ browser }) => {
     // 創建兩個獨立的瀏覽器 context
-    const context1 = await browser.newContext();
-    const context2 = await browser.newContext();
-    const player1 = await context1.newPage();
-    const player2 = await context2.newPage();
+    const { context: context1, page: player1 } = await createPlayerContext(browser);
+    const { context: context2, page: player2 } = await createPlayerContext(browser);
 
-    // 玩家一創建房間
-    await goToOnlineLobby(player1, '玩家一');
-    await player1.click('text=創建新房間');
-    await player1.waitForURL(/\/online\/game\/[A-Z0-9]+/);
+    try {
+      // 玩家一創建房間
+      await goToOnlineLobby(player1, '玩家一');
+      await player1.click('text=創建新房間');
+      await player1.waitForURL(/\/online\/game\/[A-Z0-9]+/);
 
-    // 取得房間 ID
-    const roomId = player1.url().split('/').pop();
+      // 取得房間 ID
+      const roomId = player1.url().split('/').pop();
 
-    // 玩家二加入房間
-    await goToOnlineLobby(player2, '玩家二');
-    await player2.fill('input[placeholder="例如：ABCD"]', roomId!);
-    await player2.click('text=加入房間');
+      // 玩家二加入房間
+      await goToOnlineLobby(player2, '玩家二');
+      await player2.fill('input[placeholder="例如：ABCD"]', roomId!);
+      await player2.click('text=加入房間');
 
-    // 兩個玩家都應該看到回合指示器
-    await expectTurnIndicator(player1);
-    await expectTurnIndicator(player2);
-
-    // 清理
-    await context1.close();
-    await context2.close();
+      // 兩個玩家都應該看到回合指示器
+      await expectTurnIndicator(player1);
+      await expectTurnIndicator(player2);
+    } finally {
+      // 清理
+      await context1.close();
+      await context2.close();
+    }
   });
 });

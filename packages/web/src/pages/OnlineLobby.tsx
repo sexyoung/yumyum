@@ -1,5 +1,5 @@
 // packages/web/src/pages/OnlineLobby.tsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '../lib/api';
@@ -13,7 +13,7 @@ import {
 import NicknameModal from '../components/NicknameModal';
 import type { PlayerInfo } from '@yumyum/types';
 
-const OnlineLobby: React.FC = () => {
+function OnlineLobby() {
   const navigate = useNavigate();
   const [joinRoomId, setJoinRoomId] = useState('');
   const [showNicknameModal, setShowNicknameModal] = useState(false);
@@ -23,7 +23,7 @@ const OnlineLobby: React.FC = () => {
 
   // 初始化：檢查玩家身份
   useEffect(() => {
-    const initPlayer = async () => {
+    async function initPlayer(): Promise<void> {
       const identity = getPlayerIdentity();
 
       if (!identity) {
@@ -47,7 +47,7 @@ const OnlineLobby: React.FC = () => {
         setShowNicknameModal(true);
       }
       setIsLoading(false);
-    };
+    }
 
     initPlayer();
   }, []);
@@ -81,21 +81,7 @@ const OnlineLobby: React.FC = () => {
     },
   });
 
-  // 處理首次設定暱稱
-  const handleSetNickname = (username: string) => {
-    const identity = getPlayerIdentity();
-    const uuid = identity?.uuid || generatePlayerUuid();
-    registerMutation.mutate({ uuid, username });
-  };
-
-  // 處理修改暱稱
-  const handleEditNickname = (newUsername: string) => {
-    const identity = getPlayerIdentity();
-    if (identity) {
-      updateUsernameMutation.mutate({ uuid: identity.uuid, newUsername });
-    }
-  };
-
+  // 創建房間
   const createRoomMutation = useMutation({
     mutationFn: api.createRoom,
     onSuccess: (data) => {
@@ -108,23 +94,39 @@ const OnlineLobby: React.FC = () => {
     },
   });
 
-  const handleCreateRoom = () => {
-    createRoomMutation.mutate();
-  };
+  // 處理首次設定暱稱
+  function handleSetNickname(username: string): void {
+    const identity = getPlayerIdentity();
+    const uuid = identity?.uuid || generatePlayerUuid();
+    registerMutation.mutate({ uuid, username });
+  }
 
-  const handleJoinRoom = () => {
-    if (joinRoomId.trim()) {
-      navigate(`/online/game/${joinRoomId.trim()}`);
+  // 處理修改暱稱
+  function handleEditNickname(newUsername: string): void {
+    const identity = getPlayerIdentity();
+    if (identity) {
+      updateUsernameMutation.mutate({ uuid: identity.uuid, newUsername });
     }
-  };
+  }
 
-  const handleBackHome = () => {
+  function handleCreateRoom(): void {
+    createRoomMutation.mutate();
+  }
+
+  function handleJoinRoom(): void {
+    const trimmedId = joinRoomId.trim();
+    if (trimmedId) {
+      navigate(`/online/game/${trimmedId}`);
+    }
+  }
+
+  function handleBackHome(): void {
     navigate('/');
-  };
+  }
 
-  const handleGoToLeaderboard = () => {
+  function handleGoToLeaderboard(): void {
     navigate('/leaderboard');
-  };
+  }
 
   // 載入中
   if (isLoading) {
@@ -278,6 +280,6 @@ const OnlineLobby: React.FC = () => {
       </div>
     </div>
   );
-};
+}
 
 export default OnlineLobby;
