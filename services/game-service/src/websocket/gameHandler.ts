@@ -3,6 +3,7 @@ import { WebSocket } from 'ws';
 import type { GameClientMessage, GameServerMessage, PieceColor } from '@yumyum/types';
 import * as roomManager from '../game/roomManager.js';
 import { validateMove, applyMove } from '../game/gameLogic.js';
+import { processGameResult } from '../game/gameResultService.js';
 
 // 儲存房間內的 WebSocket 連線（roomId -> Map<color, WebSocket>）
 const gameRooms = new Map<string, Map<PieceColor, WebSocket>>();
@@ -10,8 +11,14 @@ const gameRooms = new Map<string, Map<PieceColor, WebSocket>>();
 // 儲存 WebSocket 對應的玩家資訊
 const gamePlayers = new Map<
   WebSocket,
-  { playerName: string; roomId: string; color: PieceColor }
+  { playerName: string; roomId: string; color: PieceColor; uuid?: string }
 >();
+
+// 儲存房間內玩家的 UUID（用於遊戲結果處理）
+const roomPlayerUuids = new Map<string, { red?: string; blue?: string }>();
+
+// 儲存房間的移動計數
+const roomMoveCount = new Map<string, number>();
 
 // 儲存 rematch 請求（roomId -> 提出請求的顏色）
 const rematchRequests = new Map<string, PieceColor>();
@@ -53,6 +60,9 @@ export function handleGameWebSocketConnection(ws: WebSocket, roomId: string) {
         roomConnections.delete(playerInfo.color);
         if (roomConnections.size === 0) {
           gameRooms.delete(playerInfo.roomId);
+          // 清理房間相關資料
+          roomPlayerUuids.delete(playerInfo.roomId);
+          roomMoveCount.delete(playerInfo.roomId);
         }
       }
 
@@ -82,7 +92,7 @@ async function handleGameClientMessage(
   switch (message.type) {
     case 'join_room': {
       try {
-        console.log(`Join room request: ${message.roomId}, player: ${message.playerName}`);
+        console.log(`Join room request: ${message.roomId}, player: ${message.playerName}, uuid: ${message.uuid ? 'yes' : 'no'}`);
 
         // 檢查是否已經在某個房間中
         const existingPlayerInfo = gamePlayers.get(ws);
@@ -101,8 +111,20 @@ async function handleGameClientMessage(
           return;
         }
 
-        // 加入房間
-        joinGameRoom(ws, result.room.roomId, message.playerName, result.color);
+        // 加入房間（帶 UUID）
+        joinGameRoom(ws, result.room.roomId, message.playerName, result.color, message.uuid);
+
+        // 記錄玩家 UUID 到房間（用於遊戲結果處理）
+        if (message.uuid) {
+          const uuids = roomPlayerUuids.get(result.room.roomId) || {};
+          uuids[result.color] = message.uuid;
+          roomPlayerUuids.set(result.room.roomId, uuids);
+        }
+
+        // 初始化移動計數
+        if (!roomMoveCount.has(result.room.roomId)) {
+          roomMoveCount.set(result.room.roomId, 0);
+        }
 
         // 通知加入者
         const joinedMsg: GameServerMessage = {
@@ -184,6 +206,10 @@ async function handleGameClientMessage(
         // 更新房間狀態
         await roomManager.updateGameState(playerInfo.roomId, newGameState);
 
+        // 增加移動計數
+        const currentMoveCount = (roomMoveCount.get(playerInfo.roomId) || 0) + 1;
+        roomMoveCount.set(playerInfo.roomId, currentMoveCount);
+
         // 廣播移動給所有玩家
         const moveMadeMsg: GameServerMessage = {
           type: 'move_made',
@@ -205,6 +231,20 @@ async function handleGameClientMessage(
           };
           broadcastToRoom(playerInfo.roomId, gameOverMsg);
           console.log(`Game over: ${playerInfo.roomId}, winner: ${newGameState.winner}`);
+
+          // 處理遊戲結果（ELO 計算和持久化）
+          const uuids = roomPlayerUuids.get(playerInfo.roomId);
+          if (uuids?.red && uuids?.blue) {
+            processGameResult({
+              roomId: playerInfo.roomId,
+              redPlayerUuid: uuids.red,
+              bluePlayerUuid: uuids.blue,
+              winnerColor: newGameState.winner,
+              totalMoves: currentMoveCount,
+            }).catch((err) => {
+              console.error('處理遊戲結果失敗:', err);
+            });
+          }
         }
 
         console.log(`Move made: ${playerInfo.playerName} (${playerInfo.color})`);
@@ -357,14 +397,15 @@ function joinGameRoom(
   ws: WebSocket,
   roomId: string,
   playerName: string,
-  color: PieceColor
+  color: PieceColor,
+  uuid?: string
 ) {
   if (!gameRooms.has(roomId)) {
     gameRooms.set(roomId, new Map());
   }
 
   gameRooms.get(roomId)!.set(color, ws);
-  gamePlayers.set(ws, { playerName, roomId, color });
+  gamePlayers.set(ws, { playerName, roomId, color, uuid });
 }
 
 // 廣播訊息給房間內的所有人

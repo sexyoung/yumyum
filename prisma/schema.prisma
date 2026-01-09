@@ -1,4 +1,4 @@
-// YumYum Prisma Schema - MVP 版本
+// YumYum Prisma Schema
 // 使用 TypeScript + PostgreSQL
 
 generator client {
@@ -11,18 +11,54 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// 玩家表（MVP - 最小可行版本）
+// 玩家表
 model Player {
-  id          Int      @id @default(autoincrement())
-  username    String   @unique @db.VarChar(50)
-  email       String?  @db.VarChar(100)
-  avatarUrl   String?  @map("avatar_url")
-  eloRating   Int      @default(1200) @map("elo_rating")
-  gamesPlayed Int      @default(0) @map("games_played")
-  gamesWon    Int      @default(0) @map("games_won")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id                Int       @id @default(autoincrement())
+  uuid              String    @unique @db.Uuid              // 瀏覽器生成的 UUID
+  username          String    @db.VarChar(50)               // 暱稱（可重複）
+  email             String?   @db.VarChar(100)
+  avatarUrl         String?   @map("avatar_url")
+  eloRating         Int       @default(1200) @map("elo_rating")
+  gamesPlayed       Int       @default(0) @map("games_played")
+  gamesWon          Int       @default(0) @map("games_won")
+  gamesLost         Int       @default(0) @map("games_lost")
+  currentStreak     Int       @default(0) @map("current_streak")    // 正=連勝，負=連敗
+  maxWinStreak      Int       @default(0) @map("max_win_streak")    // 歷史最高連勝
+  lastPlayedAt      DateTime? @map("last_played_at")
+  usernameChangedAt DateTime? @map("username_changed_at")           // 限制改名頻率
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  // 關聯
+  gamesAsRed  GameRecord[] @relation("RedPlayer")
+  gamesAsBlue GameRecord[] @relation("BluePlayer")
 
   @@index([eloRating(sort: Desc)], name: "idx_players_elo")
+  @@index([uuid], name: "idx_players_uuid")
+  @@index([maxWinStreak(sort: Desc)], name: "idx_players_streak")
   @@map("players")
+}
+
+// 對局記錄表
+model GameRecord {
+  id            Int      @id @default(autoincrement())
+  roomId        String   @map("room_id") @db.VarChar(10)
+  redPlayerId   Int      @map("red_player_id")
+  bluePlayerId  Int      @map("blue_player_id")
+  winnerId      Int?     @map("winner_id")                  // null = 平局
+  winnerColor   String?  @map("winner_color") @db.VarChar(10)
+  redEloChange  Int      @map("red_elo_change")
+  blueEloChange Int      @map("blue_elo_change")
+  redEloBefore  Int      @map("red_elo_before")
+  blueEloBefore Int      @map("blue_elo_before")
+  totalMoves    Int      @default(0) @map("total_moves")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  redPlayer  Player @relation("RedPlayer", fields: [redPlayerId], references: [id])
+  bluePlayer Player @relation("BluePlayer", fields: [bluePlayerId], references: [id])
+
+  @@index([createdAt(sort: Desc)], name: "idx_games_created")
+  @@index([redPlayerId], name: "idx_games_red")
+  @@index([bluePlayerId], name: "idx_games_blue")
+  @@map("game_records")
 }

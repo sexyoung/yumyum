@@ -5,7 +5,11 @@
       "Bash(npm run typecheck:*)",
       "Bash(npm run type-check:*)",
       "Bash(npm run build:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(npx prisma migrate reset:*)",
+      "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"yes\" npx prisma migrate reset:*)",
+      "Bash(npx prisma:*)"
     ]
   }
 }

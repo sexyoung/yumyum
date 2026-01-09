@@ -1,14 +1,41 @@
 // 玩家類型（對應 Prisma Player model）
 export interface Player {
   id: number;
+  uuid: string;
   username: string;
   email: string | null;
   avatarUrl: string | null;
   eloRating: number;
   gamesPlayed: number;
   gamesWon: number;
+  gamesLost: number;
+  currentStreak: number;
+  maxWinStreak: number;
+  lastPlayedAt: string | null;
+  usernameChangedAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+// 玩家身份（前端 localStorage 儲存）
+export interface PlayerIdentity {
+  uuid: string;
+  username: string;
+  playerId?: number;
+}
+
+// 玩家資訊（API 回傳的簡化版）
+export interface PlayerInfo {
+  id: number;
+  uuid: string;
+  username: string;
+  eloRating: number;
+  gamesPlayed: number;
+  gamesWon: number;
+  gamesLost: number;
+  winRate: number;
+  currentStreak: number;
+  maxWinStreak: number;
 }
 
 export interface Room {
@@ -43,7 +70,7 @@ export type ChatServerMessage =
 
 // 遊戲房間 WebSocket 訊息類型（線上對戰專用）
 export type GameClientMessage =
-  | { type: 'join_room'; roomId: string; playerName: string }
+  | { type: 'join_room'; roomId: string; playerName: string; uuid?: string }
   | { type: 'make_move'; move: GameMove }
   | { type: 'leave_room' }
   | { type: 'rematch_request' }

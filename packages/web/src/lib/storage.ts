@@ -1,6 +1,6 @@
 // packages/web/src/lib/storage.ts
 
-import { GameState, PieceColor } from '@yumyum/types'; // 假設 GameState 和 PieceColor 來自 shared/types
+import { GameState, PieceColor, PlayerIdentity } from '@yumyum/types';
 
 const LOCAL_GAME_STATE_KEY = 'yumyum:local:gameState';
 const AI_GAME_STATE_KEY = 'yumyum:ai:gameState';
@@ -8,6 +8,11 @@ const AI_DIFFICULTY_KEY = 'yumyum:ai:difficulty';
 const ONLINE_ROOM_ID_KEY = 'yumyum:online:roomId';
 const ONLINE_PLAYER_ID_KEY = 'yumyum:online:playerId';
 const ONLINE_PLAYER_COLOR_KEY = 'yumyum:online:playerColor';
+
+// 玩家身份相關
+const PLAYER_UUID_KEY = 'yumyum:player:uuid';
+const PLAYER_USERNAME_KEY = 'yumyum:player:username';
+const PLAYER_DB_ID_KEY = 'yumyum:player:id';
 
 type AIDifficulty = 'easy' | 'medium' | 'hard';
 
@@ -112,5 +117,84 @@ export const clearOnlineRoomInfo = (): void => {
     localStorage.removeItem(ONLINE_PLAYER_COLOR_KEY);
   } catch (error) {
     console.error('清除線上房間資訊失敗:', error);
+  }
+};
+
+// --- 玩家身份管理 ---
+
+// 生成新的 UUID（支援舊版瀏覽器）
+export const generatePlayerUuid = (): string => {
+  // 優先使用原生 API
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // Fallback: 使用 crypto.getRandomValues 手動生成 UUID v4
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    // 設定 version (4) 和 variant (RFC4122)
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+  // 最後備案：使用 Math.random（不推薦但至少能用）
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
+// 獲取玩家身份
+export const getPlayerIdentity = (): PlayerIdentity | null => {
+  try {
+    const uuid = localStorage.getItem(PLAYER_UUID_KEY);
+    const username = localStorage.getItem(PLAYER_USERNAME_KEY);
+
+    if (!uuid || !username) {
+      return null;
+    }
+
+    const playerIdStr = localStorage.getItem(PLAYER_DB_ID_KEY);
+    const playerId = playerIdStr ? parseInt(playerIdStr, 10) : undefined;
+
+    return { uuid, username, playerId };
+  } catch (error) {
+    console.error('載入玩家身份失敗:', error);
+    return null;
+  }
+};
+
+// 儲存玩家身份
+export const setPlayerIdentity = (identity: PlayerIdentity): void => {
+  try {
+    localStorage.setItem(PLAYER_UUID_KEY, identity.uuid);
+    localStorage.setItem(PLAYER_USERNAME_KEY, identity.username);
+    if (identity.playerId !== undefined) {
+      localStorage.setItem(PLAYER_DB_ID_KEY, identity.playerId.toString());
+    }
+  } catch (error) {
+    console.error('儲存玩家身份失敗:', error);
+  }
+};
+
+// 更新玩家暱稱
+export const updatePlayerUsername = (username: string): void => {
+  try {
+    localStorage.setItem(PLAYER_USERNAME_KEY, username);
+  } catch (error) {
+    console.error('更新玩家暱稱失敗:', error);
+  }
+};
+
+// 清除玩家身份
+export const clearPlayerIdentity = (): void => {
+  try {
+    localStorage.removeItem(PLAYER_UUID_KEY);
+    localStorage.removeItem(PLAYER_USERNAME_KEY);
+    localStorage.removeItem(PLAYER_DB_ID_KEY);
+  } catch (error) {
+    console.error('清除玩家身份失敗:', error);
   }
 };

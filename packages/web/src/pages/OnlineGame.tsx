@@ -25,6 +25,7 @@ import {
   trackEmojiSend,
   trackError,
 } from '../lib/analytics';
+import { getPlayerIdentity } from '../lib/storage';
 
 // 初始遊戲狀態（用於回放第 0 步）
 const initialGameState: GameState = {
@@ -46,7 +47,10 @@ type GamePhase = 'connecting' | 'waiting' | 'playing' | 'finished' | 'opponent_l
 const OnlineGame: React.FC = () => {
   const navigate = useNavigate();
   const { roomId } = useParams<{ roomId: string }>();
-  const [playerName] = useState(() => `玩家${Math.floor(Math.random() * 1000)}`);
+
+  // 從 localStorage 取得玩家身份
+  const playerIdentity = getPlayerIdentity();
+  const [playerName] = useState(() => playerIdentity?.username || `玩家${Math.floor(Math.random() * 1000)}`);
 
   // 遊戲狀態
   const [phase, setPhase] = useState<GamePhase>('connecting');
@@ -292,9 +296,14 @@ const OnlineGame: React.FC = () => {
   useEffect(() => {
     if (!isConnected || !roomId) return;
 
-    // 發送 join_room 訊息
-    sendMessage({ type: 'join_room', roomId, playerName });
-  }, [isConnected, roomId, playerName, sendMessage]);
+    // 發送 join_room 訊息（帶上 UUID 以便記錄遊戲結果）
+    sendMessage({
+      type: 'join_room',
+      roomId,
+      playerName,
+      uuid: playerIdentity?.uuid,
+    });
+  }, [isConnected, roomId, playerName, playerIdentity?.uuid, sendMessage]);
 
   // 處理棋子選擇
   const handleReserveClick = useCallback((size: 'small' | 'medium' | 'large') => {
@@ -486,7 +495,7 @@ const OnlineGame: React.FC = () => {
   // 渲染不同階段的畫面
   if (phase === 'connecting') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600">
+      <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600">
         <div className="bg-white rounded-lg shadow-2xl p-8 text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
           <p className="text-xl font-semibold text-gray-800">連線中...</p>
@@ -497,7 +506,7 @@ const OnlineGame: React.FC = () => {
 
   if (phase === 'error') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-500 to-pink-600 p-4">
+      <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-red-500 to-pink-600 p-4">
         <div className="bg-white rounded-lg shadow-2xl p-8 text-center max-w-lg">
           <div className="text-6xl mb-4">:(</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-4">發生錯誤</h2>
@@ -532,7 +541,7 @@ const OnlineGame: React.FC = () => {
 
   if (phase === 'waiting') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500 p-4">
+      <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500 p-4">
         <div className="bg-white rounded-lg shadow-2xl p-8 text-center max-w-md">
           <div className="text-6xl mb-4 animate-bounce">...</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-4">等待對手加入</h2>
@@ -554,7 +563,7 @@ const OnlineGame: React.FC = () => {
 
   if (phase === 'opponent_left') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500 p-4">
+      <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500 p-4">
         <div className="bg-white rounded-lg shadow-2xl p-8 text-center max-w-md">
           <div className="text-6xl mb-4">...</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-4">對手已離開</h2>

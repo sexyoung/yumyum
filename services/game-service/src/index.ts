@@ -7,6 +7,8 @@ import { handleGameWebSocketConnection, getGameStats } from './websocket/gameHan
 import * as roomManager from './game/roomManager.js';
 import { prisma } from './lib/prisma.js';
 import { redis } from './redis/client.js';
+import { playerRoutes } from './api/playerRoutes.js';
+import { leaderboardRoutes } from './api/leaderboardRoutes.js';
 import type { Player } from '@yumyum/types';
 
 const app = new Hono();
@@ -72,7 +74,7 @@ app.get('/api/stats', async (c) => {
   }
 });
 
-// 玩家列表 API
+// 玩家列表 API（舊版，保留向下相容）
 app.get('/api/players', async (c) => {
   try {
     const players = await prisma.player.findMany({
@@ -83,6 +85,8 @@ app.get('/api/players', async (c) => {
       ...p,
       createdAt: p.createdAt.toISOString(),
       updatedAt: p.updatedAt.toISOString(),
+      lastPlayedAt: p.lastPlayedAt?.toISOString() ?? null,
+      usernameChangedAt: p.usernameChangedAt?.toISOString() ?? null,
     }));
     return c.json(playersResponse);
   } catch (error) {
@@ -90,6 +94,12 @@ app.get('/api/players', async (c) => {
     return c.json({ error: 'Failed to fetch players' }, 500);
   }
 });
+
+// 玩家認證 API
+app.route('/api/players', playerRoutes);
+
+// 排行榜 API
+app.route('/api/leaderboard', leaderboardRoutes);
 
 // 創建新房間 (HTTP API)
 app.post('/api/rooms', async (c) => {
