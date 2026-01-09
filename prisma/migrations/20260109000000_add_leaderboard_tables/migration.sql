@@ -14,8 +14,8 @@ UPDATE "players" SET "uuid" = gen_random_uuid() WHERE "uuid" IS NULL;
 -- 3. 將 uuid 設為 NOT NULL
 ALTER TABLE "players" ALTER COLUMN "uuid" SET NOT NULL;
 
--- 4. 移除 username 的 unique 約束（允許重複暱稱）
-ALTER TABLE "players" DROP CONSTRAINT IF EXISTS "players_username_key";
+-- 4. 移除 username 的 unique 索引（允許重複暱稱）
+DROP INDEX IF EXISTS "players_username_key";
 
 -- 5. 新增 uuid 索引
 CREATE UNIQUE INDEX "players_uuid_key" ON "players"("uuid");
