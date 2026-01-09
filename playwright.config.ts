@@ -28,9 +28,18 @@ export default defineConfig({
       },
     },
   ],
-  webServer: {
-    command: 'npm run dev -w @yumyum/web',
-    port: 5173,
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: 'npm run dev -w @yumyum/game-service',
+      port: 3000,
+      reuseExistingServer: !process.env.CI,
+      timeout: 30000,
+    },
+    {
+      command: 'npm run dev -w @yumyum/web',
+      port: 5173,
+      reuseExistingServer: !process.env.CI,
+      timeout: 30000,
+    },
+  ],
 });
