@@ -26,21 +26,8 @@ import {
   trackError,
 } from '../lib/analytics';
 import { getPlayerIdentity } from '../lib/storage';
-
-// 初始遊戲狀態（用於回放第 0 步）
-const initialGameState: GameState = {
-  board: [
-    [{ pieces: [] }, { pieces: [] }, { pieces: [] }],
-    [{ pieces: [] }, { pieces: [] }, { pieces: [] }],
-    [{ pieces: [] }, { pieces: [] }, { pieces: [] }],
-  ],
-  reserves: {
-    red: { small: 2, medium: 2, large: 2 },
-    blue: { small: 2, medium: 2, large: 2 },
-  },
-  currentPlayer: 'red',
-  winner: null,
-};
+import { initialGameState } from '../lib/gameConstants';
+import { getTopPiece } from '../lib/gameHelpers';
 
 type GamePhase = 'connecting' | 'waiting' | 'playing' | 'finished' | 'opponent_left' | 'error';
 
@@ -92,10 +79,9 @@ function OnlineGame() {
 
   // --- 輔助函數 ---
 
-  // 取得目標格的頂部棋子（如果有）
-  const getTopPiece = useCallback((state: GameState, row: number, col: number) => {
-    const cell = state.board[row][col];
-    return cell.pieces.length > 0 ? cell.pieces[cell.pieces.length - 1] : undefined;
+  // 取得目標格的頂部棋子（如果有）- 使用共用函數
+  const getTopPieceAt = useCallback((state: GameState, row: number, col: number) => {
+    return getTopPiece(state.board, row, col);
   }, []);
 
   // 播放適當的音效（根據遊戲結果或移動類型）
@@ -382,7 +368,7 @@ function OnlineGame() {
     }
 
     // 情況 2: 選擇棋盤上的棋子
-    const topPiece = getTopPiece(gameState, row, col);
+    const topPiece = getTopPieceAt(gameState, row, col);
     if (topPiece?.color === myColor) {
       const isSameCell = selectedBoardPos?.row === row && selectedBoardPos?.col === col;
       setSelectedBoardPos(isSameCell ? null : { row, col });

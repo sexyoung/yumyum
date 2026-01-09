@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GameState, PieceSize, PieceColor, MoveRecord } from '@yumyum/types';
 import Board from '../components/Board';
@@ -22,32 +22,8 @@ import {
   clearAIGameState,
 } from '../lib/storage';
 import { trackGameStart, trackGameEnd, trackGameRestart } from '../lib/analytics';
-
-// 選擇狀態類型
-type SelectedPiece = {
-  type: 'reserve';
-  color: PieceColor;
-  size: PieceSize;
-} | {
-  type: 'board';
-  row: number;
-  col: number;
-} | null;
-
-// 初始遊戲狀態
-const initialGameState: GameState = {
-  board: [
-    [{ pieces: [] }, { pieces: [] }, { pieces: [] }],
-    [{ pieces: [] }, { pieces: [] }, { pieces: [] }],
-    [{ pieces: [] }, { pieces: [] }, { pieces: [] }],
-  ],
-  reserves: {
-    red: { small: 2, medium: 2, large: 2 },
-    blue: { small: 2, medium: 2, large: 2 },
-  },
-  currentPlayer: 'red',
-  winner: null,
-};
+import { initialGameState, SelectedPiece } from '../lib/gameConstants';
+import { getTopPiece, getDisplayState, createShowError } from '../lib/gameHelpers';
 
 // 玩家顏色固定為紅色，AI 為藍色
 const playerColor: PieceColor = 'red';
@@ -70,10 +46,10 @@ export default function AIGame() {
   const [gameStartTime] = useState(() => Date.now());
 
   // 取得當前顯示的遊戲狀態（遊戲結束或回放模式時根據 replayStep 顯示歷史狀態）
-  const showReplay = isReplaying || gameState.winner;
-  const displayState = showReplay
-    ? (replayStep === 0 ? initialGameState : moveHistory[replayStep - 1]?.gameStateAfter || gameState)
-    : gameState;
+  const displayState = useMemo(
+    () => getDisplayState(gameState, moveHistory, replayStep, isReplaying),
+    [gameState, moveHistory, replayStep, isReplaying]
+  );
 
   // 遊戲開始時追蹤
   useEffect(() => {
@@ -138,16 +114,10 @@ export default function AIGame() {
   // --- 輔助函數 ---
 
   // 顯示錯誤訊息並在 2 秒後清除
-  const showError = (message: string): void => {
-    setErrorMessage(message);
-    setTimeout(() => setErrorMessage(null), 2000);
-  };
+  const showError = useMemo(() => createShowError(setErrorMessage), []);
 
   // 取得目標格的頂部棋子（如果有）
-  const getTopPiece = (row: number, col: number) => {
-    const cell = gameState.board[row][col];
-    return cell.pieces.length > 0 ? cell.pieces[cell.pieces.length - 1] : undefined;
-  };
+  const getTopPieceAt = (row: number, col: number) => getTopPiece(gameState.board, row, col);
 
   // 播放適當的音效（根據遊戲結果或移動類型）
   const playSoundForMove = (newGameState: GameState, isCapture: boolean): void => {
@@ -182,7 +152,7 @@ export default function AIGame() {
     // 根據移動類型取得目標格座標和被吃的棋子
     const targetRow = aiMove.type === 'place' ? aiMove.row : aiMove.toRow;
     const targetCol = aiMove.type === 'place' ? aiMove.col : aiMove.toCol;
-    const capturedPiece = getTopPiece(targetRow, targetCol);
+    const capturedPiece = getTopPieceAt(targetRow, targetCol);
     const isCapture = capturedPiece !== undefined;
 
     // 執行移動
@@ -193,7 +163,7 @@ export default function AIGame() {
     // 取得移動棋子的大小
     const pieceSize = aiMove.type === 'place'
       ? aiMove.size
-      : getTopPiece(aiMove.fromRow, aiMove.fromCol)!.size;
+      : getTopPieceAt(aiMove.fromRow, aiMove.fromCol)!.size;
 
     // 記錄 AI 移動
     const moveRecord: MoveRecord = {
@@ -248,7 +218,7 @@ export default function AIGame() {
 
     // 沒有選中棋子，嘗試選中格子上的棋子
     if (!selectedPiece) {
-      const topPiece = getTopPiece(row, col);
+      const topPiece = getTopPieceAt(row, col);
       // 只能選擇玩家的棋子
       if (topPiece?.color === playerColor) {
         setSelectedPiece({ type: 'board', row, col });
@@ -274,7 +244,7 @@ export default function AIGame() {
     }
 
     // 判斷是否為吃子（目標格有對手棋子）
-    const capturedPiece = getTopPiece(row, col);
+    const capturedPiece = getTopPieceAt(row, col);
     const isCapture = capturedPiece !== undefined;
 
     // 執行放置
@@ -302,10 +272,10 @@ export default function AIGame() {
     }
 
     // 取得移動的棋子資訊
-    const movingPiece = getTopPiece(fromRow, fromCol)!;
+    const movingPiece = getTopPieceAt(fromRow, fromCol)!;
 
     // 判斷是否為吃子（目標格有對手棋子）
-    const capturedPiece = getTopPiece(toRow, toCol);
+    const capturedPiece = getTopPieceAt(toRow, toCol);
     const isCapture = capturedPiece !== undefined;
 
     // 執行移動
