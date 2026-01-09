@@ -14,10 +14,7 @@ import {
   movePieceOnBoard as executeMovePiece,
   getWinningLine,
 } from '../lib/gameLogic';
-import {
-  getAIMove,
-  AIDifficulty,
-} from '../lib/ai';
+import { getAIMove, AIDifficulty } from '../lib/ai';
 import { playSound } from '../lib/sounds';
 import {
   saveAIGameState,
@@ -52,7 +49,11 @@ const initialGameState: GameState = {
   winner: null,
 };
 
-export default function AIGame() {
+// 玩家顏色固定為紅色，AI 為藍色
+const playerColor: PieceColor = 'red';
+const aiColor: PieceColor = 'blue';
+
+export default function AIGame(): JSX.Element {
   const navigate = useNavigate();
   const [difficulty] = useState<AIDifficulty>('hard');
   const [gameState, setGameState] = useState<GameState>(initialGameState);
@@ -64,10 +65,6 @@ export default function AIGame() {
   const [moveHistory, setMoveHistory] = useState<MoveRecord[]>([]);
   const [isReplaying, setIsReplaying] = useState(false);
   const [replayStep, setReplayStep] = useState(0);
-
-  // 玩家顏色固定為紅色，AI 為藍色
-  const playerColor: PieceColor = 'red';
-  const aiColor: PieceColor = 'blue';
 
   // 遊戲開始時間
   const [gameStartTime] = useState(() => Date.now());
@@ -96,7 +93,7 @@ export default function AIGame() {
         difficulty,
       });
     }
-  }, [gameState.winner, moveHistory.length, gameStartTime, difficulty, playerColor]);
+  }, [gameState.winner, moveHistory.length, gameStartTime, difficulty]);
 
   // 載入保存的遊戲
   useEffect(() => {
@@ -138,135 +135,128 @@ export default function AIGame() {
     };
   }, []);
 
+  // --- 輔助函數 ---
+
+  // 顯示錯誤訊息並在 2 秒後清除
+  const showError = (message: string): void => {
+    setErrorMessage(message);
+    setTimeout(() => setErrorMessage(null), 2000);
+  };
+
+  // 取得目標格的頂部棋子（如果有）
+  const getTopPiece = (row: number, col: number) => {
+    const cell = gameState.board[row][col];
+    return cell.pieces.length > 0 ? cell.pieces[cell.pieces.length - 1] : undefined;
+  };
+
+  // 播放適當的音效（根據遊戲結果或移動類型）
+  const playSoundForMove = (newGameState: GameState, isCapture: boolean): void => {
+    if (newGameState.winner) {
+      playSound(newGameState.winner === playerColor ? 'win' : 'lose');
+    } else {
+      playSound(isCapture ? 'capture' : 'place');
+    }
+  };
+
+  // 完成移動後的狀態更新
+  const finishMove = (newGameState: GameState, moveRecord: MoveRecord, isCapture: boolean): void => {
+    setMoveHistory(prev => [...prev, moveRecord]);
+    playSoundForMove(newGameState, isCapture);
+    setGameState(newGameState);
+    setSelectedPiece(null);
+    setErrorMessage(null);
+  };
+
+  // --- AI 自動下棋 ---
+
+  // 執行 AI 移動並更新狀態
+  const executeAIMove = useCallback(() => {
+    const aiMove = getAIMove(gameState, aiColor, difficulty);
+    if (!aiMove) {
+      setAiThinking(false);
+      return;
+    }
+
+    console.log('AI Move:', JSON.stringify(aiMove));
+
+    // 根據移動類型取得目標格座標和被吃的棋子
+    const targetRow = aiMove.type === 'place' ? aiMove.row : aiMove.toRow;
+    const targetCol = aiMove.type === 'place' ? aiMove.col : aiMove.toCol;
+    const capturedPiece = getTopPiece(targetRow, targetCol);
+    const isCapture = capturedPiece !== undefined;
+
+    // 執行移動
+    const newState = aiMove.type === 'place'
+      ? executePlacePiece(gameState, aiMove.row, aiMove.col, aiColor, aiMove.size)
+      : executeMovePiece(gameState, aiMove.fromRow, aiMove.fromCol, aiMove.toRow, aiMove.toCol);
+
+    // 取得移動棋子的大小
+    const pieceSize = aiMove.type === 'place'
+      ? aiMove.size
+      : getTopPiece(aiMove.fromRow, aiMove.fromCol)!.size;
+
+    // 記錄 AI 移動
+    const moveRecord: MoveRecord = {
+      step: moveHistory.length + 1,
+      player: aiColor,
+      move: { ...aiMove, color: aiColor, size: pieceSize },
+      capturedPiece,
+      gameStateAfter: newState,
+    };
+    setMoveHistory(prev => [...prev, moveRecord]);
+
+    // 播放音效（判斷勝負是誰）
+    playSoundForMove(newState, isCapture);
+    setGameState(newState);
+    setAiThinking(false);
+  }, [gameState, difficulty, moveHistory.length]);
+
   // AI 自動下棋
   useEffect(() => {
-    if (
-      difficulty &&
-      gameState.currentPlayer === aiColor &&
-      !gameState.winner &&
-      !aiThinking
-    ) {
-      // AI 的回合
-      setAiThinking(true);
+    // 檢查是否為 AI 回合且遊戲尚未結束
+    const isAITurn = difficulty && gameState.currentPlayer === aiColor && !gameState.winner && !aiThinking;
+    if (!isAITurn) return;
 
-      // 模擬思考時間（0.5-1 秒）
-      const thinkingTime = 500 + Math.random() * 500;
+    // AI 的回合
+    setAiThinking(true);
 
-      setTimeout(() => {
-        const aiMove = getAIMove(gameState, aiColor, difficulty);
+    // 模擬思考時間（0.5-1 秒）
+    const thinkingTime = 500 + Math.random() * 500;
+    setTimeout(executeAIMove, thinkingTime);
+  }, [gameState, difficulty, aiThinking, executeAIMove]);
 
-        if (aiMove) {
-          console.log('AI Move:', JSON.stringify(aiMove));
-          let newState: GameState;
-          let isCapture = false;
-          let capturedPiece;
-
-          if (aiMove.type === 'place') {
-            // 檢查是否為吃子
-            const targetCell = gameState.board[aiMove.row][aiMove.col];
-            isCapture = targetCell.pieces.length > 0;
-            if (isCapture) {
-              capturedPiece = targetCell.pieces[targetCell.pieces.length - 1];
-            }
-            newState = executePlacePiece(gameState, aiMove.row, aiMove.col, aiColor, aiMove.size);
-          } else {
-            // 檢查是否為吃子
-            const targetCell = gameState.board[aiMove.toRow][aiMove.toCol];
-            isCapture = targetCell.pieces.length > 0;
-            if (isCapture) {
-              capturedPiece = targetCell.pieces[targetCell.pieces.length - 1];
-            }
-            newState = executeMovePiece(gameState, aiMove.fromRow, aiMove.fromCol, aiMove.toRow, aiMove.toCol);
-          }
-
-          // 記錄 AI 移動
-          const fromCell = aiMove.type === 'move'
-            ? gameState.board[aiMove.fromRow][aiMove.fromCol]
-            : null;
-          const pieceSize = aiMove.type === 'place'
-            ? aiMove.size
-            : fromCell!.pieces[fromCell!.pieces.length - 1].size;
-
-          const moveRecord: MoveRecord = {
-            step: moveHistory.length + 1,
-            player: aiColor,
-            move: {
-              ...aiMove,
-              color: aiColor,
-              size: pieceSize,
-            },
-            capturedPiece,
-            gameStateAfter: newState,
-          };
-          setMoveHistory(prev => [...prev, moveRecord]);
-
-          // 播放音效（判斷勝負是誰）
-          if (newState.winner) {
-            playSound(newState.winner === playerColor ? 'win' : 'lose');
-          } else {
-            playSound(isCapture ? 'capture' : 'place');
-          }
-
-          setGameState(newState);
-        }
-
-        setAiThinking(false);
-      }, thinkingTime);
-    }
-  }, [gameState, difficulty, aiThinking, aiColor]);
+  // --- 事件處理 ---
 
   // 點擊儲備區棋子
-  const handlePieceClick = (color: PieceColor, size: PieceSize) => {
-    if (gameState.winner || aiThinking) {
+  const handlePieceClick = (color: PieceColor, size: PieceSize): void => {
+    // 遊戲已結束、AI 正在思考、不是玩家的棋子、或沒有剩餘棋子，不允許操作
+    if (gameState.winner || aiThinking || color !== playerColor || gameState.reserves[color][size] === 0) {
       return;
     }
 
-    // 只能選擇玩家的棋子
-    if (color !== playerColor) {
-      return;
-    }
-
-    if (gameState.reserves[color][size] === 0) {
-      return;
-    }
-
-    if (
-      selectedPiece?.type === 'reserve' &&
-      selectedPiece.color === color &&
-      selectedPiece.size === size
-    ) {
-      setSelectedPiece(null);
-      return;
-    }
-
-    setSelectedPiece({
-      type: 'reserve',
-      color,
-      size,
-    });
+    // 如果已經選中同一個棋子，則取消選擇；否則選中棋子
+    const isSamePiece = selectedPiece?.type === 'reserve' && selectedPiece.color === color && selectedPiece.size === size;
+    setSelectedPiece(isSamePiece ? null : { type: 'reserve', color, size });
   };
 
   // 點擊棋盤格子
-  const handleCellClick = (row: number, col: number) => {
+  const handleCellClick = (row: number, col: number): void => {
+    // 遊戲已結束或 AI 正在思考，不允許操作
     if (gameState.winner || aiThinking) {
       return;
     }
 
+    // 沒有選中棋子，嘗試選中格子上的棋子
     if (!selectedPiece) {
-      const cell = gameState.board[row][col];
-      if (cell.pieces.length > 0) {
-        const topPiece = cell.pieces[cell.pieces.length - 1];
-        if (topPiece.color === playerColor) {
-          setSelectedPiece({
-            type: 'board',
-            row,
-            col,
-          });
-        }
+      const topPiece = getTopPiece(row, col);
+      // 只能選擇玩家的棋子
+      if (topPiece?.color === playerColor) {
+        setSelectedPiece({ type: 'board', row, col });
       }
       return;
     }
 
+    // 有選中棋子，執行放置或移動
     if (selectedPiece.type === 'reserve') {
       placePieceFromReserve(row, col, selectedPiece.color, selectedPiece.size);
     } else {
@@ -275,116 +265,88 @@ export default function AIGame() {
   };
 
   // 從儲備區放置棋子到棋盤
-  const placePieceFromReserve = (row: number, col: number, color: PieceColor, size: PieceSize) => {
+  const placePieceFromReserve = (row: number, col: number, color: PieceColor, size: PieceSize): void => {
+    // 驗證移動是否合法
     const validation = canPlacePieceFromReserve(gameState, row, col, color, size);
-
     if (!validation.valid) {
-      setErrorMessage(validation.error || '無法放置');
-      setTimeout(() => setErrorMessage(null), 2000);
+      showError(validation.error || '無法放置');
       return;
     }
 
-    const move = { type: 'place' as const, row, col, color, size };
-    console.log('Player Move:', JSON.stringify(move));
+    // 判斷是否為吃子（目標格有對手棋子）
+    const capturedPiece = getTopPiece(row, col);
+    const isCapture = capturedPiece !== undefined;
 
-    // 判斷是否為吃子
-    const targetCell = gameState.board[row][col];
-    const isCapture = targetCell.pieces.length > 0;
-    const capturedPiece = isCapture ? targetCell.pieces[targetCell.pieces.length - 1] : undefined;
-
+    // 執行放置
     const newGameState = executePlacePiece(gameState, row, col, color, size);
 
     // 記錄移動
     const moveRecord: MoveRecord = {
       step: moveHistory.length + 1,
       player: color,
-      move: { ...move, color, size },
+      move: { type: 'place', row, col, size, color },
       capturedPiece,
       gameStateAfter: newGameState,
     };
-    setMoveHistory(prev => [...prev, moveRecord]);
 
-    // 播放音效（判斷是否為吃子，以及勝負）
-    if (newGameState.winner) {
-      playSound(newGameState.winner === playerColor ? 'win' : 'lose');
-    } else {
-      playSound(isCapture ? 'capture' : 'place');
-    }
-
-    setGameState(newGameState);
-    setSelectedPiece(null);
-    setErrorMessage(null);
+    finishMove(newGameState, moveRecord, isCapture);
   };
 
   // 在棋盤上移動棋子
-  const movePieceOnBoard = (fromRow: number, fromCol: number, toRow: number, toCol: number) => {
+  const movePieceOnBoard = (fromRow: number, fromCol: number, toRow: number, toCol: number): void => {
+    // 驗證移動是否合法
     const validation = canMovePieceOnBoard(gameState, fromRow, fromCol, toRow, toCol);
-
     if (!validation.valid) {
-      setErrorMessage(validation.error || '無法移動');
-      setTimeout(() => setErrorMessage(null), 2000);
+      showError(validation.error || '無法移動');
       return;
     }
 
-    // 取得移動棋子的資訊
-    const fromCell = gameState.board[fromRow][fromCol];
-    const movingPiece = fromCell.pieces[fromCell.pieces.length - 1];
+    // 取得移動的棋子資訊
+    const movingPiece = getTopPiece(fromRow, fromCol)!;
 
-    const move = { type: 'move' as const, fromRow, fromCol, toRow, toCol };
-    console.log('Player Move:', JSON.stringify(move));
+    // 判斷是否為吃子（目標格有對手棋子）
+    const capturedPiece = getTopPiece(toRow, toCol);
+    const isCapture = capturedPiece !== undefined;
 
-    // 判斷是否為吃子
-    const targetCell = gameState.board[toRow][toCol];
-    const isCapture = targetCell.pieces.length > 0;
-    const capturedPiece = isCapture ? targetCell.pieces[targetCell.pieces.length - 1] : undefined;
-
+    // 執行移動
     const newGameState = executeMovePiece(gameState, fromRow, fromCol, toRow, toCol);
 
     // 記錄移動
     const moveRecord: MoveRecord = {
       step: moveHistory.length + 1,
       player: playerColor,
-      move: { ...move, color: movingPiece.color, size: movingPiece.size },
+      move: {
+        type: 'move',
+        fromRow,
+        fromCol,
+        toRow,
+        toCol,
+        color: movingPiece.color,
+        size: movingPiece.size,
+      },
       capturedPiece,
       gameStateAfter: newGameState,
     };
-    setMoveHistory(prev => [...prev, moveRecord]);
 
-    // 播放音效（判斷是否為吃子，以及勝負）
-    if (newGameState.winner) {
-      playSound(newGameState.winner === playerColor ? 'win' : 'lose');
-    } else {
-      playSound(isCapture ? 'capture' : 'place');
-    }
-
-    setGameState(newGameState);
-    setSelectedPiece(null);
-    setErrorMessage(null);
+    finishMove(newGameState, moveRecord, isCapture);
   };
 
   // 處理拖曳放置
-  const handleDrop = (row: number, col: number, data: DragData) => {
-    // 遊戲已結束或 AI 正在思考，不允許操作
-    if (gameState.winner || aiThinking) {
-      return;
-    }
-
-    // 只能操作玩家的棋子
-    if (data.color !== playerColor) {
+  const handleDrop = (row: number, col: number, data: DragData): void => {
+    // 遊戲已結束、AI 正在思考、或不是玩家的棋子，不允許操作
+    if (gameState.winner || aiThinking || data.color !== playerColor) {
       return;
     }
 
     if (data.type === 'reserve') {
-      // 從儲備區放置
       placePieceFromReserve(row, col, data.color, data.size);
     } else if (data.fromRow !== undefined && data.fromCol !== undefined) {
-      // 從棋盤移動
       movePieceOnBoard(data.fromRow, data.fromCol, row, col);
     }
   };
 
-  // 重新開始
-  const handleRestart = () => {
+  // 重新開始遊戲
+  const handleRestart = (): void => {
     trackGameRestart('ai');
     setGameState(initialGameState);
     setSelectedPiece(null);
@@ -397,8 +359,49 @@ export default function AIGame() {
 
   // 回放步驟變更
   const handleReplayStepChange = useCallback((step: number) => {
-    setReplayStep(Math.max(0, Math.min(step, moveHistory.length)));
+    // 限制步驟範圍
+    const clampedStep = Math.max(0, Math.min(step, moveHistory.length));
+    setReplayStep(clampedStep);
   }, [moveHistory.length]);
+
+  // 渲染遊戲狀態文字
+  function renderGameStatus(): JSX.Element {
+    if (isReplaying) {
+      return (
+        <p className="text-base md:text-xl lg:text-2xl font-bold text-yellow-600">
+          回放模式 ({replayStep}/{moveHistory.length})
+        </p>
+      );
+    }
+
+    if (gameState.winner) {
+      const isPlayerWin = gameState.winner === playerColor;
+      const colorClass = isPlayerWin ? 'text-red-600' : 'text-blue-600';
+      const winnerText = isPlayerWin ? '你獲勝了！' : 'AI 獲勝了';
+      return (
+        <p className={`text-base md:text-xl lg:text-2xl font-bold ${colorClass}`}>
+          {winnerText}
+        </p>
+      );
+    }
+
+    if (aiThinking) {
+      return (
+        <p className="text-base md:text-xl lg:text-2xl font-bold text-blue-600">
+          AI 思考中...
+        </p>
+      );
+    }
+
+    const isPlayerTurn = gameState.currentPlayer === playerColor;
+    const colorClass = isPlayerTurn ? 'text-red-600' : 'text-blue-600';
+    const turnText = isPlayerTurn ? '你的回合' : 'AI 的回合';
+    return (
+      <p className={`text-base md:text-xl lg:text-2xl font-bold ${colorClass}`}>
+        {turnText}
+      </p>
+    );
+  }
 
   // 遊戲界面
   return (
@@ -417,23 +420,7 @@ export default function AIGame() {
                 </button>
                 <SoundToggle />
               </div>
-              {isReplaying ? (
-                <p className="text-base md:text-xl lg:text-2xl font-bold text-yellow-600">
-                  回放模式 ({replayStep}/{moveHistory.length})
-                </p>
-              ) : gameState.winner ? (
-                <p className={`text-base md:text-xl lg:text-2xl font-bold ${gameState.winner === playerColor ? 'text-red-600' : 'text-blue-600'}`}>
-                  {gameState.winner === playerColor ? '你獲勝了！' : 'AI 獲勝了'}
-                </p>
-              ) : aiThinking ? (
-                <p className="text-base md:text-xl lg:text-2xl font-bold text-blue-600">
-                  AI 思考中...
-                </p>
-              ) : (
-                <p className={`text-base md:text-xl lg:text-2xl font-bold ${gameState.currentPlayer === playerColor ? 'text-red-600' : 'text-blue-600'}`}>
-                  {gameState.currentPlayer === playerColor ? '你的回合' : 'AI 的回合'}
-                </p>
-              )}
+              {renderGameStatus()}
               <button
                 onClick={handleRestart}
                 className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"

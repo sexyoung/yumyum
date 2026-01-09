@@ -1,4 +1,30 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+
+// 輔助函數：玩家放置棋子並等待 AI 回應
+async function placePieceAndWaitForAI(
+  page: Page,
+  size: 'small' | 'medium' | 'large',
+  row: number,
+  col: number
+): Promise<void> {
+  await page.click(`[data-testid="reserve-red-${size}"]`);
+  await page.click(`[data-testid="cell-${row}-${col}"]`);
+  // 等待 AI 思考並輪到玩家
+  await expect(page.locator('text=你的回合')).toBeVisible({ timeout: 5000 });
+}
+
+// 輔助函數：計算 AI 剩餘棋子總數
+async function getAIRemainingPieces(page: Page): Promise<number> {
+  const blueSmall = page.locator('[data-testid="reserve-blue-small"]');
+  const blueMedium = page.locator('[data-testid="reserve-blue-medium"]');
+  const blueLarge = page.locator('[data-testid="reserve-blue-large"]');
+
+  const smallText = await blueSmall.innerText();
+  const mediumText = await blueMedium.innerText();
+  const largeText = await blueLarge.innerText();
+
+  return parseInt(smallText) + parseInt(mediumText) + parseInt(largeText);
+}
 
 test.describe('AI 對戰', () => {
   test.beforeEach(async ({ page }) => {
@@ -19,22 +45,10 @@ test.describe('AI 對戰', () => {
     await page.goto('/ai');
 
     // 玩家下棋：放置 medium 到中央
-    await page.click('[data-testid="reserve-red-medium"]');
-    await page.click('[data-testid="cell-1-1"]');
-
-    // 等待 AI 思考並輪到玩家
-    await expect(page.locator('text=你的回合')).toBeVisible({ timeout: 5000 });
+    await placePieceAndWaitForAI(page, 'medium', 1, 1);
 
     // 驗證 AI 已下棋（藍方棋子數量應該減少）
-    const blueSmall = page.locator('[data-testid="reserve-blue-small"]');
-    const blueMedium = page.locator('[data-testid="reserve-blue-medium"]');
-    const blueLarge = page.locator('[data-testid="reserve-blue-large"]');
-
-    const smallText = await blueSmall.innerText();
-    const mediumText = await blueMedium.innerText();
-    const largeText = await blueLarge.innerText();
-
-    const totalRemaining = parseInt(smallText) + parseInt(mediumText) + parseInt(largeText);
+    const totalRemaining = await getAIRemainingPieces(page);
     // AI 應該用掉一個棋子，所以總數應該是 5
     expect(totalRemaining).toBe(5);
   });
@@ -43,11 +57,7 @@ test.describe('AI 對戰', () => {
     await page.goto('/ai');
 
     // 玩家下棋
-    await page.click('[data-testid="reserve-red-small"]');
-    await page.click('[data-testid="cell-0-0"]');
-
-    // 等待 AI 回應
-    await expect(page.locator('text=你的回合')).toBeVisible({ timeout: 5000 });
+    await placePieceAndWaitForAI(page, 'small', 0, 0);
 
     // 重新整理頁面
     await page.reload();
@@ -64,11 +74,7 @@ test.describe('AI 對戰', () => {
     await page.goto('/ai');
 
     // 玩家下棋
-    await page.click('[data-testid="reserve-red-small"]');
-    await page.click('[data-testid="cell-0-0"]');
-
-    // 等待 AI 回應
-    await expect(page.locator('text=你的回合')).toBeVisible({ timeout: 5000 });
+    await placePieceAndWaitForAI(page, 'small', 0, 0);
 
     // 點擊重新開始
     await page.click('[data-testid="restart-button"]');
@@ -85,14 +91,10 @@ test.describe('AI 對戰', () => {
     await page.goto('/ai');
 
     // 第一回合
-    await page.click('[data-testid="reserve-red-small"]');
-    await page.click('[data-testid="cell-0-0"]');
-    await expect(page.locator('text=你的回合')).toBeVisible({ timeout: 5000 });
+    await placePieceAndWaitForAI(page, 'small', 0, 0);
 
     // 第二回合
-    await page.click('[data-testid="reserve-red-small"]');
-    await page.click('[data-testid="cell-2-2"]');
-    await expect(page.locator('text=你的回合')).toBeVisible({ timeout: 5000 });
+    await placePieceAndWaitForAI(page, 'small', 2, 2);
 
     // 驗證玩家棋子數量減少
     const redSmallPiece = page.locator('[data-testid="reserve-red-small"]');
