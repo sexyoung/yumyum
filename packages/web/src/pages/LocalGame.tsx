@@ -219,9 +219,10 @@ export default function LocalGame() {
     };
     setMoveHistory(prev => [...prev, moveRecord]);
 
-    // 播放音效
+    // 播放音效（判斷是否為吃子，以及勝負）
+    // 移動前的 currentPlayer 是下棋的人
     if (newGameState.winner) {
-      playSound('win');
+      playSound(newGameState.winner === gameState.currentPlayer ? 'win' : 'lose');
     } else {
       playSound(isCapture ? 'capture' : 'place');
     }
@@ -273,9 +274,10 @@ export default function LocalGame() {
     };
     setMoveHistory(prev => [...prev, moveRecord]);
 
-    // 播放音效
+    // 播放音效（判斷是否為吃子，以及勝負）
+    // 移動前的 currentPlayer 是下棋的人
     if (newGameState.winner) {
-      playSound('win');
+      playSound(newGameState.winner === gameState.currentPlayer ? 'win' : 'lose');
     } else {
       playSound(isCapture ? 'capture' : 'place');
     }

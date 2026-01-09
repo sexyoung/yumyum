@@ -200,10 +200,9 @@ export default function AIGame() {
           };
           setMoveHistory(prev => [...prev, moveRecord]);
 
-          // 播放音效
+          // 播放音效（判斷勝負是誰）
           if (newState.winner) {
-            // AI 贏了，玩家聯到失敗音效
-            playSound('lose');
+            playSound(newState.winner === playerColor ? 'win' : 'lose');
           } else {
             playSound(isCapture ? 'capture' : 'place');
           }
@@ -305,9 +304,9 @@ export default function AIGame() {
     };
     setMoveHistory(prev => [...prev, moveRecord]);
 
-    // 播放音效
+    // 播放音效（判斷是否為吃子，以及勝負）
     if (newGameState.winner) {
-      playSound('win');
+      playSound(newGameState.winner === playerColor ? 'win' : 'lose');
     } else {
       playSound(isCapture ? 'capture' : 'place');
     }
@@ -351,9 +350,9 @@ export default function AIGame() {
     };
     setMoveHistory(prev => [...prev, moveRecord]);
 
-    // 播放音效
+    // 播放音效（判斷是否為吃子，以及勝負）
     if (newGameState.winner) {
-      playSound('win');
+      playSound(newGameState.winner === playerColor ? 'win' : 'lose');
     } else {
       playSound(isCapture ? 'capture' : 'place');
     }

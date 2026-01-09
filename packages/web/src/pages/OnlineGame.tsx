@@ -320,10 +320,10 @@ const OnlineGame: React.FC = () => {
         return;
       }
 
-      // 播放音效（判斷是否為吃子）
+      // 播放音效（判斷是否為吃子，以及勝負）
       const isCapture = gameState.board[row][col].pieces.length > 0;
       const newState = placePieceFromReserve(gameState, row, col, myColor, selectedReserveSize);
-      playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
+      playSound(newState.winner ? (newState.winner === myColor ? 'win' : 'lose') : (isCapture ? 'capture' : 'place'));
 
       // 樂觀更新：立即更新本地狀態
       setGameState(newState);
@@ -365,7 +365,7 @@ const OnlineGame: React.FC = () => {
         return;
       }
 
-      // 播放音效（判斷是否為吃子）
+      // 播放音效（判斷是否為吃子，以及勝負）
       const isCapture = gameState.board[row][col].pieces.length > 0;
       const newState = movePieceOnBoard(
         gameState,
@@ -374,7 +374,7 @@ const OnlineGame: React.FC = () => {
         row,
         col
       );
-      playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
+      playSound(newState.winner ? (newState.winner === myColor ? 'win' : 'lose') : (isCapture ? 'capture' : 'place'));
 
       // 樂觀更新：立即更新本地狀態
       setGameState(newState);
@@ -408,10 +408,10 @@ const OnlineGame: React.FC = () => {
         return;
       }
 
-      // 播放音效
+      // 播放音效（判斷是否為吃子，以及勝負）
       const isCapture = gameState.board[row][col].pieces.length > 0;
       const newState = placePieceFromReserve(gameState, row, col, myColor, data.size);
-      playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
+      playSound(newState.winner ? (newState.winner === myColor ? 'win' : 'lose') : (isCapture ? 'capture' : 'place'));
 
       // 樂觀更新：立即更新本地狀態
       setGameState(newState);
@@ -431,10 +431,10 @@ const OnlineGame: React.FC = () => {
         return;
       }
 
-      // 播放音效
+      // 播放音效（判斷是否為吃子，以及勝負）
       const isCapture = gameState.board[row][col].pieces.length > 0;
       const newState = movePieceOnBoard(gameState, data.fromRow, data.fromCol, row, col);
-      playSound(newState.winner ? 'win' : (isCapture ? 'capture' : 'place'));
+      playSound(newState.winner ? (newState.winner === myColor ? 'win' : 'lose') : (isCapture ? 'capture' : 'place'));
 
       // 樂觀更新：立即更新本地狀態
       setGameState(newState);
