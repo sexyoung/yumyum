@@ -30,14 +30,14 @@ function About() {
 
         {/* 標題 */}
         <h1 className="text-3xl sm:text-4xl font-bold mb-8 text-center">
-          關於 YumYum 好吃棋
+          關於 啊呣啊呣
         </h1>
 
         {/* 遊戲簡介 */}
         <section className="bg-white/10 rounded-lg p-6 mb-6">
           <h2 className="text-xl font-semibold mb-3">遊戲簡介</h2>
           <p className="text-white/80 leading-relaxed mb-4">
-            YumYum 好吃棋是一款受經典桌遊
+            啊呣啊呣是一款受經典桌遊
             <a
               href="https://www.google.com/search?q=奇雞連連"
               target="_blank"
@@ -122,7 +122,7 @@ function About() {
 
         {/* 版權聲明 */}
         <footer className="text-center text-white/60 text-sm py-6 border-t border-white/10">
-          <p>© 2026 YumYum 好吃棋. All rights reserved.</p>
+          <p>© 2026 啊呣啊呣. All rights reserved.</p>
           <p className="mt-1">Made with ❤️ by sexyoung</p>
         </footer>
       </div>

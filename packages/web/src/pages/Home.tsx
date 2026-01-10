@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { trackButtonClick } from '../lib/analytics';
+import Logo from '../components/Logo';
 
 interface MenuLinkProps {
   to: string;
@@ -33,8 +34,10 @@ const menuItems = [
 function Home() {
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center bg-gradient-to-br from-purple-600 to-blue-500 text-white p-4 relative">
+      {/* logo */}
+      <Logo size={160} className="mb-4 sm:mb-6" />
       <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 md:mb-8 lg:mb-10">
-        YumYum 好吃棋
+        啊呣啊呣
       </h1>
       <div className="flex flex-col space-y-3 sm:space-y-4 w-full max-w-xs sm:max-w-sm md:max-w-md">
         {menuItems.map((item) => (
@@ -69,7 +72,7 @@ function Home() {
         </Link>
       </div>
       <footer className="absolute bottom-4 text-white/50 text-sm">
-        © 2026 YumYum 好吃棋. All rights reserved.
+        © 2026 啊呣啊呣. All rights reserved.
       </footer>
     </div>
   );

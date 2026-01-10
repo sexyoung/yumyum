@@ -32,7 +32,7 @@ describe('App 路由測試', () => {
   it('應該在根路徑渲染首頁', () => {
     renderWithProviders(<AppRoutes />);
 
-    expect(screen.getByText('YumYum 好吃棋')).toBeInTheDocument();
+    expect(screen.getByText('啊呣啊呣')).toBeInTheDocument();
 
     const expectedLinks = ['對戰電腦', '本機雙人', '線上雙人'];
     expectedLinks.forEach((linkName) => {

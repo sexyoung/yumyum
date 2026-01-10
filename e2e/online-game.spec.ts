@@ -66,7 +66,7 @@ test.describe('線上對戰 - 暱稱設定', () => {
 
   test('設定暱稱後應該能看到玩家資訊', async ({ page }) => {
     await page.goto('/online');
-    await page.fill('#nickname', '好吃棋大師');
+    await page.fill('#nickname', '啊呣啊呣大師');
     await page.click('button:has-text("確定")');
 
     await expect(page.locator('text=設定暱稱')).not.toBeVisible({ timeout: 5000 });

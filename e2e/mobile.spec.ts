@@ -12,7 +12,7 @@ test.describe('手機版測試', () => {
     await page.goto('/');
 
     // 標題應該可見
-    await expect(page.getByRole('heading', { name: 'YumYum 好吃棋' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '啊呣啊呣' })).toBeVisible();
 
     // 三個按鈕應該可見
     const menuLinks = ['link-ai', 'link-local', 'link-online'];

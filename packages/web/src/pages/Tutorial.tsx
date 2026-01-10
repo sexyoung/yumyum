@@ -56,7 +56,7 @@ export default function Tutorial() {
   const tutorialSteps = useMemo(() => [
     {
       id: 'welcome',
-      text: '歡迎來到好吃棋！讓我們來學習怎麼玩 🎮',
+      text: '歡迎來到啊呣啊呣！讓我們來學習怎麼玩 🎮',
     },
     {
       id: 'board',
