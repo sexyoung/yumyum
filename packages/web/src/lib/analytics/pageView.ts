@@ -8,6 +8,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/ai': 'AI 對戰',
   '/online': '線上大廳',
   '/tutorial': '遊戲教學',
+  '/leaderboard': '排行榜',
+  '/about': '關於',
   '/dev': '開發測試',
 };
 

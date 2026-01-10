@@ -7,6 +7,7 @@ import OnlineLobby from './pages/OnlineLobby';
 import OnlineGame from './pages/OnlineGame';
 import Tutorial from './pages/Tutorial';
 import Leaderboard from './pages/Leaderboard';
+import About from './pages/About';
 
 /**
  * AppRoutes 組件包含主要遊戲路由
@@ -22,6 +23,7 @@ function AppRoutes() {
       <Route path="/online/game/:roomId" element={<OnlineGame />} />
       <Route path="/tutorial" element={<Tutorial />} />
       <Route path="/leaderboard" element={<Leaderboard />} />
+      <Route path="/about" element={<About />} />
     </Routes>
   );
 }

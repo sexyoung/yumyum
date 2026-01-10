@@ -32,7 +32,7 @@ const menuItems = [
 
 function Home() {
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center bg-gradient-to-br from-purple-600 to-blue-500 text-white p-4">
+    <div className="min-h-dvh flex flex-col items-center justify-center bg-gradient-to-br from-purple-600 to-blue-500 text-white p-4 relative">
       <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 md:mb-8 lg:mb-10">
         YumYum 好吃棋
       </h1>
@@ -49,14 +49,28 @@ function Home() {
           </MenuLink>
         ))}
       </div>
-      <Link
-        to="/tutorial"
-        data-testid="link-tutorial"
-        onClick={() => trackButtonClick({ button_name: 'tutorial', page_location: '/' })}
-        className="mt-6 text-white/80 hover:text-white hover:underline text-lg transition duration-300"
-      >
-        遊戲教學
-      </Link>
+      <div className="mt-6 flex gap-4">
+        <Link
+          to="/tutorial"
+          data-testid="link-tutorial"
+          onClick={() => trackButtonClick({ button_name: 'tutorial', page_location: '/' })}
+          className="text-white/80 hover:text-white hover:underline text-lg transition duration-300"
+        >
+          遊戲教學
+        </Link>
+        <span className="text-white/40">|</span>
+        <Link
+          to="/about"
+          data-testid="link-about"
+          onClick={() => trackButtonClick({ button_name: 'about', page_location: '/' })}
+          className="text-white/80 hover:text-white hover:underline text-lg transition duration-300"
+        >
+          關於製作
+        </Link>
+      </div>
+      <footer className="absolute bottom-4 text-white/50 text-sm">
+        © 2026 YumYum 好吃棋. All rights reserved.
+      </footer>
     </div>
   );
 }
