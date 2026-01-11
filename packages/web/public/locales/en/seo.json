@@ -1,0 +1,35 @@
+{
+  "siteName": "YumYum",
+  "home": {
+    "title": "YumYum - Online Two-Player Strategy Board Game",
+    "description": "YumYum is a free online two-player strategy game inspired by Gobblet Gobblers. Play local, vs AI, or online matches anytime, anywhere!"
+  },
+  "local": {
+    "title": "Local 2P Game - YumYum",
+    "description": "Play against a friend on the same device! Experience classic board game strategy - gobble smaller pieces and get three in a row to win."
+  },
+  "ai": {
+    "title": "VS Computer - YumYum",
+    "description": "Challenge the AI opponent! Test your strategic skills and beat the computer in this classic board game."
+  },
+  "online": {
+    "title": "Online Lobby - YumYum",
+    "description": "Create or join a room to play against players worldwide in real-time! Features ELO rating and leaderboard system."
+  },
+  "onlineGame": {
+    "title": "Online Game - YumYum",
+    "description": "Online match in progress - compete with your opponent in real-time strategy!"
+  },
+  "tutorial": {
+    "title": "Tutorial - YumYum",
+    "description": "Interactive tutorial to learn the game rules! Understand board setup, piece movement, and gobbling mechanics."
+  },
+  "leaderboard": {
+    "title": "Leaderboard - YumYum",
+    "description": "View global player rankings! Daily, weekly, monthly, and all-time charts - see who's the top player."
+  },
+  "about": {
+    "title": "About - YumYum",
+    "description": "Learn about YumYum's story, technical architecture, and creator information."
+  }
+}

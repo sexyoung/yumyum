@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import AppRoutes from './AppRoutes';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -10,17 +11,19 @@ const queryClient = new QueryClient();
 // 建立一個渲染輔助函數，自動包含所有 providers
 const renderWithProviders = (ui: React.ReactElement, { route = '/' } = {}) => {
   return render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter
-        initialEntries={[route]}
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      >
-        {ui}
-      </MemoryRouter>
-    </QueryClientProvider>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter
+          initialEntries={[route]}
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
+          {ui}
+        </MemoryRouter>
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 };
 

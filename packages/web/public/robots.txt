@@ -1,0 +1,10 @@
+# robots.txt for https://yumyum.sexyoung.tw
+
+User-agent: *
+Allow: /
+
+# Disallow dynamic game rooms (prevent indexing of temporary game sessions)
+Disallow: /online/game/
+
+# Sitemap location
+Sitemap: https://yumyum.sexyoung.tw/sitemap.xml

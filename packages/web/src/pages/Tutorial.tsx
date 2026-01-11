@@ -7,6 +7,7 @@ import type { Tour } from 'shepherd.js';
 import 'shepherd.js/dist/css/shepherd.css';
 import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
+import SEO from '../components/SEO';
 import { trackTutorialProgress } from '../lib/analytics';
 
 // 選擇狀態類型
@@ -328,7 +329,9 @@ export default function Tutorial() {
   };
 
   return (
-    <div className="h-[100dvh] bg-gradient-to-br from-purple-400 to-indigo-500 flex flex-col overflow-hidden">
+    <>
+      <SEO titleKey="tutorial.title" descriptionKey="tutorial.description" />
+      <div className="h-[100dvh] bg-gradient-to-br from-purple-400 to-indigo-500 flex flex-col overflow-hidden">
       {/* 頂部資訊 */}
       <div className="flex-none px-3 pt-3">
         <div className="bg-white rounded-lg shadow-lg p-3">
@@ -407,8 +410,9 @@ export default function Tutorial() {
             />
           </div>
         </div>
-      </div>
+        </div>
 
-    </div>
+      </div>
+    </>
   );
 }

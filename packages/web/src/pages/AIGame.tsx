@@ -25,6 +25,7 @@ import {
 import { trackGameStart, trackGameEnd, trackGameRestart } from '../lib/analytics';
 import { initialGameState, SelectedPiece } from '../lib/gameConstants';
 import { getTopPiece, getDisplayState, createShowError } from '../lib/gameHelpers';
+import SEO from '../components/SEO';
 
 // 玩家顏色固定為紅色，AI 為藍色
 const playerColor: PieceColor = 'red';
@@ -377,8 +378,10 @@ export default function AIGame() {
 
   // 遊戲界面
   return (
-    <GameDndContext onDrop={handleDrop}>
-      <div className="h-[100dvh] bg-gradient-to-br from-green-400 to-emerald-600 flex flex-col">
+    <>
+      <SEO titleKey="ai.title" descriptionKey="ai.description" />
+      <GameDndContext onDrop={handleDrop}>
+        <div className="h-[100dvh] bg-gradient-to-br from-green-400 to-emerald-600 flex flex-col">
         {/* 頂部資訊 */}
         <div className="flex-none px-3 pt-3">
           <div className="bg-white rounded-lg shadow-lg p-3">
@@ -465,17 +468,18 @@ export default function AIGame() {
           )}
         </div>
 
-        {/* 遊戲結束或回放時顯示歷史記錄 - 底部 */}
-        {(isReplaying || gameState.winner) && (
-          <div className="flex-none p-3 flex justify-center">
-            <MoveHistory
-              history={moveHistory}
-              currentStep={replayStep}
-              onStepChange={handleReplayStepChange}
-            />
-          </div>
-        )}
-      </div>
-    </GameDndContext>
+          {/* 遊戲結束或回放時顯示歷史記錄 - 底部 */}
+          {(isReplaying || gameState.winner) && (
+            <div className="flex-none p-3 flex justify-center">
+              <MoveHistory
+                history={moveHistory}
+                currentStep={replayStep}
+                onStepChange={handleReplayStepChange}
+              />
+            </div>
+          )}
+        </div>
+      </GameDndContext>
+    </>
   );
 }

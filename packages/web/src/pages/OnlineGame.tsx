@@ -29,6 +29,7 @@ import {
 import { getPlayerIdentity } from '../lib/storage';
 import { initialGameState } from '../lib/gameConstants';
 import { getTopPiece } from '../lib/gameHelpers';
+import SEO from '../components/SEO';
 
 type GamePhase = 'connecting' | 'waiting' | 'playing' | 'finished' | 'opponent_left' | 'error';
 
@@ -674,8 +675,10 @@ function OnlineGame() {
     }
 
     return (
-      <GameDndContext onDrop={handleDrop}>
-        <div className="h-[100dvh] bg-gradient-to-br from-red-400 to-rose-600 flex flex-col">
+      <>
+        <SEO titleKey="onlineGame.title" descriptionKey="onlineGame.description" noindex={true} />
+        <GameDndContext onDrop={handleDrop}>
+          <div className="h-[100dvh] bg-gradient-to-br from-red-400 to-rose-600 flex flex-col">
           {/* 重連提示浮層 */}
           {isReconnecting && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -766,8 +769,9 @@ function OnlineGame() {
               </div>
             </div>
           )}
-        </div>
-      </GameDndContext>
+          </div>
+        </GameDndContext>
+      </>
     );
   }
 

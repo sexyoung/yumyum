@@ -24,6 +24,7 @@ import {
 import { trackGameStart, trackGameEnd, trackGameRestart } from '../lib/analytics';
 import { initialGameState, SelectedPiece } from '../lib/gameConstants';
 import { getTopPiece, getDisplayState, createShowError } from '../lib/gameHelpers';
+import SEO from '../components/SEO';
 
 export default function LocalGame() {
   const navigate = useNavigate();
@@ -293,8 +294,10 @@ export default function LocalGame() {
   }
 
   return (
-    <GameDndContext onDrop={handleDrop}>
-      <div className="h-[100dvh] bg-gradient-to-br from-orange-400 to-red-500 flex flex-col">
+    <>
+      <SEO titleKey="local.title" descriptionKey="local.description" />
+      <GameDndContext onDrop={handleDrop}>
+        <div className="h-[100dvh] bg-gradient-to-br from-orange-400 to-red-500 flex flex-col">
         {/* 頂部資訊 */}
         <div className="flex-none px-3 pt-3">
           <div className="bg-white rounded-lg shadow-lg p-3">
@@ -387,17 +390,18 @@ export default function LocalGame() {
           )}
         </div>
 
-        {/* 遊戲結束或回放時顯示歷史記錄 - 底部 */}
-        {(isReplaying || gameState.winner) && (
-          <div className="flex-none p-3 flex justify-center">
-            <MoveHistory
-              history={moveHistory}
-              currentStep={replayStep}
-              onStepChange={handleReplayStepChange}
-            />
-          </div>
-        )}
-      </div>
-    </GameDndContext>
+          {/* 遊戲結束或回放時顯示歷史記錄 - 底部 */}
+          {(isReplaying || gameState.winner) && (
+            <div className="flex-none p-3 flex justify-center">
+              <MoveHistory
+                history={moveHistory}
+                currentStep={replayStep}
+                onStepChange={handleReplayStepChange}
+              />
+            </div>
+          )}
+        </div>
+      </GameDndContext>
+    </>
   );
 }

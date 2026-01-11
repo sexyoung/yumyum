@@ -12,6 +12,7 @@ import {
   updatePlayerUsername,
 } from '../lib/storage';
 import NicknameModal from '../components/NicknameModal';
+import SEO from '../components/SEO';
 import type { PlayerInfo } from '@yumyum/types';
 
 function OnlineLobby() {
@@ -133,14 +134,19 @@ function OnlineLobby() {
   // 載入中
   if (isLoading) {
     return (
-      <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-red-400 to-rose-600">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
-      </div>
+      <>
+        <SEO titleKey="online.title" descriptionKey="online.description" />
+        <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-red-400 to-rose-600">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-red-400 to-rose-600 p-4">
+    <>
+      <SEO titleKey="online.title" descriptionKey="online.description" />
+      <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-red-400 to-rose-600 p-4">
       {/* 首次設定暱稱 Modal */}
       <NicknameModal
         isOpen={showNicknameModal}
@@ -285,6 +291,7 @@ function OnlineLobby() {
         )}
       </div>
     </div>
+    </>
   );
 }
 

@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { api, LeaderboardEntry } from '../lib/api';
 import { getPlayerIdentity } from '../lib/storage';
+import SEO from '../components/SEO';
 
 type LeaderboardPeriod = 'daily' | 'weekly' | 'monthly' | 'all_time';
 
@@ -126,7 +127,9 @@ function Leaderboard() {
   };
 
   return (
-    <div className="min-h-dvh bg-gradient-to-br from-yellow-400 to-orange-500 p-4">
+    <>
+      <SEO titleKey="leaderboard.title" descriptionKey="leaderboard.description" />
+      <div className="min-h-dvh bg-gradient-to-br from-yellow-400 to-orange-500 p-4">
       <div className="max-w-2xl mx-auto">
         {/* 標題 */}
         <h1 className="text-3xl font-bold text-white text-center mb-6 drop-shadow-lg">
@@ -211,7 +214,8 @@ function Leaderboard() {
           {t('common:buttons.backLobby')}
         </button>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

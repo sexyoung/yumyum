@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { trackButtonClick } from '../lib/analytics';
+import SEO from '../components/SEO';
 
 // 技術棧資訊
 const techStack = [
@@ -20,7 +21,9 @@ function About() {
   };
 
   return (
-    <div className="min-h-dvh bg-gradient-to-br from-slate-700 to-slate-900 text-white p-4">
+    <>
+      <SEO titleKey="about.title" descriptionKey="about.description" />
+      <div className="min-h-dvh bg-gradient-to-br from-slate-700 to-slate-900 text-white p-4">
       <div className="max-w-2xl mx-auto">
         {/* 返回按鈕 */}
         <button
@@ -132,7 +135,8 @@ function About() {
           <p className="mt-1">{t('about:footer')}</p>
         </footer>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

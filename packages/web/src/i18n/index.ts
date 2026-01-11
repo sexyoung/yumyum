@@ -19,7 +19,7 @@ i18n
   .init({
     fallbackLng: 'zh-TW',
     supportedLngs: [...supportedLanguages],
-    ns: ['common', 'home', 'game', 'online', 'tutorial', 'about', 'errors'],
+    ns: ['common', 'home', 'game', 'online', 'tutorial', 'about', 'errors', 'seo'],
     defaultNS: 'common',
     backend: {
       loadPath: '/locales/{{lng}}/{{ns}}.json',

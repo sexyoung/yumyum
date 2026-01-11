@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { trackButtonClick } from '../lib/analytics';
 import Logo from '../components/Logo';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import SEO from '../components/SEO';
 
 interface MenuLinkProps {
   to: string;
@@ -37,53 +38,56 @@ function Home() {
   ] as const;
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center bg-gradient-to-br from-purple-600 to-blue-500 text-white p-4 relative">
-      {/* 語言切換器 */}
-      <div className="absolute top-4 right-4">
-        <LanguageSwitcher variant="dropdown" />
-      </div>
+    <>
+      <SEO titleKey="home.title" descriptionKey="home.description" />
+      <div className="min-h-dvh flex flex-col items-center justify-center bg-gradient-to-br from-purple-600 to-blue-500 text-white p-4 relative">
+        {/* 語言切換器 */}
+        <div className="absolute top-4 right-4">
+          <LanguageSwitcher variant="dropdown" />
+        </div>
 
-      {/* logo */}
-      <Logo size={160} className="mb-4 sm:mb-6" />
-      <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 md:mb-8 lg:mb-10">
-        {t('home:title')}
-      </h1>
-      <div className="flex flex-col space-y-3 sm:space-y-4 w-full max-w-xs sm:max-w-sm md:max-w-md">
-        {menuItems.map((item) => (
-          <MenuLink
-            key={item.to}
-            to={item.to}
-            testId={item.testId}
-            buttonName={item.buttonName}
-            colorClass={item.colorClass}
+        {/* logo */}
+        <Logo size={160} className="mb-4 sm:mb-6" />
+        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 md:mb-8 lg:mb-10">
+          {t('home:title')}
+        </h1>
+        <div className="flex flex-col space-y-3 sm:space-y-4 w-full max-w-xs sm:max-w-sm md:max-w-md">
+          {menuItems.map((item) => (
+            <MenuLink
+              key={item.to}
+              to={item.to}
+              testId={item.testId}
+              buttonName={item.buttonName}
+              colorClass={item.colorClass}
+            >
+              {t(`home:${item.labelKey}`)}
+            </MenuLink>
+          ))}
+        </div>
+        <div className="mt-6 flex gap-4">
+          <Link
+            to="/tutorial"
+            data-testid="link-tutorial"
+            onClick={() => trackButtonClick({ button_name: 'tutorial', page_location: '/' })}
+            className="text-white/80 hover:text-white hover:underline text-lg transition duration-300"
           >
-            {t(`home:${item.labelKey}`)}
-          </MenuLink>
-        ))}
+            {t('home:links.tutorial')}
+          </Link>
+          <span className="text-white/40">|</span>
+          <Link
+            to="/about"
+            data-testid="link-about"
+            onClick={() => trackButtonClick({ button_name: 'about', page_location: '/' })}
+            className="text-white/80 hover:text-white hover:underline text-lg transition duration-300"
+          >
+            {t('home:links.about')}
+          </Link>
+        </div>
+        <footer className="absolute bottom-4 text-white/50 text-sm">
+          {t('common:copyright')}
+        </footer>
       </div>
-      <div className="mt-6 flex gap-4">
-        <Link
-          to="/tutorial"
-          data-testid="link-tutorial"
-          onClick={() => trackButtonClick({ button_name: 'tutorial', page_location: '/' })}
-          className="text-white/80 hover:text-white hover:underline text-lg transition duration-300"
-        >
-          {t('home:links.tutorial')}
-        </Link>
-        <span className="text-white/40">|</span>
-        <Link
-          to="/about"
-          data-testid="link-about"
-          onClick={() => trackButtonClick({ button_name: 'about', page_location: '/' })}
-          className="text-white/80 hover:text-white hover:underline text-lg transition duration-300"
-        >
-          {t('home:links.about')}
-        </Link>
-      </div>
-      <footer className="absolute bottom-4 text-white/50 text-sm">
-        {t('common:copyright')}
-      </footer>
-    </div>
+    </>
   );
 }
 
