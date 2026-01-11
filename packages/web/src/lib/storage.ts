@@ -2,6 +2,7 @@
 
 import { GameState, PieceColor, PlayerIdentity } from '@yumyum/types';
 
+const LANGUAGE_KEY = 'yumyum:language';
 const LOCAL_GAME_STATE_KEY = 'yumyum:local:gameState';
 const AI_GAME_STATE_KEY = 'yumyum:ai:gameState';
 const AI_DIFFICULTY_KEY = 'yumyum:ai:difficulty';
@@ -196,5 +197,23 @@ export const clearPlayerIdentity = (): void => {
     localStorage.removeItem(PLAYER_DB_ID_KEY);
   } catch (error) {
     console.error('清除玩家身份失敗:', error);
+  }
+};
+
+// --- 語言偏好設定 ---
+export const getLanguagePreference = (): string | null => {
+  try {
+    return localStorage.getItem(LANGUAGE_KEY);
+  } catch (error) {
+    console.error('讀取語言偏好失敗:', error);
+    return null;
+  }
+};
+
+export const setLanguagePreference = (lang: string): void => {
+  try {
+    localStorage.setItem(LANGUAGE_KEY, lang);
+  } catch (error) {
+    console.error('儲存語言偏好失敗:', error);
   }
 };

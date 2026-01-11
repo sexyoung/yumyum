@@ -1,0 +1,30 @@
+{
+  "status": {
+    "yourTurn": "你的回合",
+    "opponentTurn": "對手回合",
+    "aiTurn": "AI 的回合",
+    "aiThinking": "AI 思考中...",
+    "redTurn": "紅方回合",
+    "blueTurn": "藍方回合",
+    "youWin": "你獲勝了！",
+    "youLose": "你輸了",
+    "redWins": "紅方獲勝！",
+    "blueWins": "藍方獲勝！",
+    "aiWins": "AI 獲勝了",
+    "waiting": "等待對手加入...",
+    "opponentLeft": "對手已離開"
+  },
+  "replay": {
+    "mode": "回放模式",
+    "step": "{{current}}/{{total}}"
+  },
+  "pieces": {
+    "small": "小",
+    "medium": "中",
+    "large": "大"
+  },
+  "player": {
+    "red": "紅方",
+    "blue": "藍方"
+  }
+}

@@ -2,17 +2,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { api, LeaderboardEntry } from '../lib/api';
 import { getPlayerIdentity } from '../lib/storage';
 
 type LeaderboardPeriod = 'daily' | 'weekly' | 'monthly' | 'all_time';
-
-const periodLabels: Record<LeaderboardPeriod, string> = {
-  daily: '日榜',
-  weekly: '週榜',
-  monthly: '月榜',
-  all_time: '總榜',
-};
 
 // 獎牌圖示
 function RankBadge({ rank }: { rank: number }) {
@@ -27,10 +21,12 @@ function LeaderboardRow({
   entry,
   isCurrentUser,
   showPeriodStats,
+  t,
 }: {
   entry: LeaderboardEntry;
   isCurrentUser: boolean;
   showPeriodStats: boolean;
+  t: (key: string) => string;
 }) {
   return (
     <div
@@ -55,7 +51,7 @@ function LeaderboardRow({
           )}
           {isCurrentUser && (
             <span className="text-xs bg-yellow-400 text-yellow-800 px-2 py-0.5 rounded-full">
-              你
+              {t('online:leaderboard.you')}
             </span>
           )}
         </div>
@@ -66,7 +62,7 @@ function LeaderboardRow({
         {/* ELO */}
         <div className="text-center min-w-[50px]">
           <div className="font-bold text-gray-800">{entry.eloRating}</div>
-          <div className="text-xs text-gray-400">ELO</div>
+          <div className="text-xs text-gray-400">{t('online:leaderboard.elo')}</div>
         </div>
 
         {/* 勝率 */}
@@ -74,7 +70,7 @@ function LeaderboardRow({
           <div className="font-bold text-gray-800">
             {Math.round(entry.winRate * 100)}%
           </div>
-          <div className="text-xs text-gray-400">勝率</div>
+          <div className="text-xs text-gray-400">{t('online:leaderboard.winRate')}</div>
         </div>
 
         {/* 時段統計或總場次 */}
@@ -83,12 +79,12 @@ function LeaderboardRow({
             <div className="font-bold text-green-600">
               {entry.periodWins}/{entry.periodGames}
             </div>
-            <div className="text-xs text-gray-400">勝/場</div>
+            <div className="text-xs text-gray-400">{t('online:leaderboard.winsGames')}</div>
           </div>
         ) : (
           <div className="text-center min-w-[45px]">
             <div className="font-bold text-gray-800">{entry.gamesPlayed}</div>
-            <div className="text-xs text-gray-400">場次</div>
+            <div className="text-xs text-gray-400">{t('online:leaderboard.gamesPlayed')}</div>
           </div>
         )}
 
@@ -98,7 +94,7 @@ function LeaderboardRow({
             <div className={`font-bold ${entry.eloChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {entry.eloChange >= 0 ? '+' : ''}{entry.eloChange}
             </div>
-            <div className="text-xs text-gray-400">變化</div>
+            <div className="text-xs text-gray-400">{t('online:leaderboard.change')}</div>
           </div>
         )}
       </div>
@@ -108,7 +104,15 @@ function LeaderboardRow({
 
 function Leaderboard() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['online', 'common', 'errors']);
   const [period, setPeriod] = useState<LeaderboardPeriod>('all_time');
+
+  const periodLabels: Record<LeaderboardPeriod, string> = {
+    daily: t('online:leaderboard.period.daily'),
+    weekly: t('online:leaderboard.period.weekly'),
+    monthly: t('online:leaderboard.period.monthly'),
+    all_time: t('online:leaderboard.period.allTime'),
+  };
 
   const playerIdentity = getPlayerIdentity();
 
@@ -126,7 +130,7 @@ function Leaderboard() {
       <div className="max-w-2xl mx-auto">
         {/* 標題 */}
         <h1 className="text-3xl font-bold text-white text-center mb-6 drop-shadow-lg">
-          排行榜
+          {t('online:leaderboard.title')}
         </h1>
 
         {/* 時段切換 */}
@@ -151,12 +155,12 @@ function Leaderboard() {
         {/* 我的排名（如果有） */}
         {data?.myRank && (
           <div className="bg-white/90 rounded-lg p-4 mb-4 text-center">
-            <span className="text-gray-600">你的排名：</span>
+            <span className="text-gray-600">{t('online:leaderboard.yourRank')}</span>
             <span className="text-2xl font-bold text-orange-600 ml-2">
-              第 {data.myRank} 名
+              {t('online:leaderboard.rank', { rank: data.myRank })}
             </span>
             <span className="text-gray-500 text-sm ml-2">
-              / {data.totalCount} 人
+              {t('online:leaderboard.totalPlayers', { total: data.totalCount })}
             </span>
           </div>
         )}
@@ -165,14 +169,14 @@ function Leaderboard() {
         {isLoading && (
           <div className="bg-white rounded-lg p-8 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent mx-auto mb-4"></div>
-            <p className="text-gray-600">載入中...</p>
+            <p className="text-gray-600">{t('common:loading')}</p>
           </div>
         )}
 
         {/* 錯誤 */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-            <p className="text-red-600">載入排行榜失敗，請稍後再試</p>
+            <p className="text-red-600">{t('errors:leaderboard.loadFailed')}</p>
           </div>
         )}
 
@@ -182,8 +186,8 @@ function Leaderboard() {
             {data.entries.length === 0 ? (
               <p className="text-center text-gray-500 py-8">
                 {period === 'all_time'
-                  ? '還沒有任何玩家上榜，快來成為第一個！'
-                  : '這個時段還沒有對局記錄'}
+                  ? t('online:leaderboard.empty.allTime')
+                  : t('online:leaderboard.empty.period')}
               </p>
             ) : (
               data.entries.map((entry) => (
@@ -192,6 +196,7 @@ function Leaderboard() {
                   entry={entry}
                   isCurrentUser={playerIdentity?.playerId === entry.playerId}
                   showPeriodStats={period !== 'all_time'}
+                  t={t}
                 />
               ))
             )}
@@ -203,7 +208,7 @@ function Leaderboard() {
           onClick={handleBackToLobby}
           className="w-full mt-6 px-4 py-3 bg-white/90 hover:bg-white text-gray-700 rounded-lg font-semibold transition"
         >
-          返回大廳
+          {t('common:buttons.backLobby')}
         </button>
       </div>
     </div>

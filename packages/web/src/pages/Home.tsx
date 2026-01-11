@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { trackButtonClick } from '../lib/analytics';
 import Logo from '../components/Logo';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 interface MenuLinkProps {
   to: string;
@@ -25,19 +27,26 @@ function MenuLink({ to, testId, buttonName, colorClass, children }: MenuLinkProp
   );
 }
 
-const menuItems = [
-  { to: '/ai', testId: 'link-ai', buttonName: 'ai_mode', colorClass: 'bg-green-500 hover:bg-green-600', label: '對戰電腦' },
-  { to: '/local', testId: 'link-local', buttonName: 'local_mode', colorClass: 'bg-yellow-500 hover:bg-yellow-600', label: '本機雙人' },
-  { to: '/online', testId: 'link-online', buttonName: 'online_mode', colorClass: 'bg-red-500 hover:bg-red-600', label: '線上雙人' },
-] as const;
-
 function Home() {
+  const { t } = useTranslation(['home', 'common']);
+
+  const menuItems = [
+    { to: '/ai', testId: 'link-ai', buttonName: 'ai_mode', colorClass: 'bg-green-500 hover:bg-green-600', labelKey: 'menu.vsAI' },
+    { to: '/local', testId: 'link-local', buttonName: 'local_mode', colorClass: 'bg-yellow-500 hover:bg-yellow-600', labelKey: 'menu.local' },
+    { to: '/online', testId: 'link-online', buttonName: 'online_mode', colorClass: 'bg-red-500 hover:bg-red-600', labelKey: 'menu.online' },
+  ] as const;
+
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center bg-gradient-to-br from-purple-600 to-blue-500 text-white p-4 relative">
+      {/* 語言切換器 */}
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher variant="dropdown" />
+      </div>
+
       {/* logo */}
       <Logo size={160} className="mb-4 sm:mb-6" />
       <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 md:mb-8 lg:mb-10">
-        啊呣啊呣
+        {t('home:title')}
       </h1>
       <div className="flex flex-col space-y-3 sm:space-y-4 w-full max-w-xs sm:max-w-sm md:max-w-md">
         {menuItems.map((item) => (
@@ -48,7 +57,7 @@ function Home() {
             buttonName={item.buttonName}
             colorClass={item.colorClass}
           >
-            {item.label}
+            {t(`home:${item.labelKey}`)}
           </MenuLink>
         ))}
       </div>
@@ -59,7 +68,7 @@ function Home() {
           onClick={() => trackButtonClick({ button_name: 'tutorial', page_location: '/' })}
           className="text-white/80 hover:text-white hover:underline text-lg transition duration-300"
         >
-          遊戲教學
+          {t('home:links.tutorial')}
         </Link>
         <span className="text-white/40">|</span>
         <Link
@@ -68,11 +77,11 @@ function Home() {
           onClick={() => trackButtonClick({ button_name: 'about', page_location: '/' })}
           className="text-white/80 hover:text-white hover:underline text-lg transition duration-300"
         >
-          關於製作
+          {t('home:links.about')}
         </Link>
       </div>
       <footer className="absolute bottom-4 text-white/50 text-sm">
-        © 2026 啊呣啊呣. All rights reserved.
+        {t('common:copyright')}
       </footer>
     </div>
   );

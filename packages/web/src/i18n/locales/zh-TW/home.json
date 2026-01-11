@@ -1,0 +1,12 @@
+{
+  "title": "啊呣啊呣",
+  "menu": {
+    "vsAI": "對戰電腦",
+    "local": "本機雙人",
+    "online": "線上雙人"
+  },
+  "links": {
+    "tutorial": "遊戲教學",
+    "about": "關於製作"
+  }
+}

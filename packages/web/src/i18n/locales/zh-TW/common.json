@@ -1,0 +1,21 @@
+{
+  "buttons": {
+    "back": "返回",
+    "backHome": "返回首頁",
+    "backLobby": "返回大廳",
+    "leave": "離開",
+    "restart": "重新開始",
+    "confirm": "確定",
+    "cancel": "取消",
+    "close": "關閉",
+    "create": "創建",
+    "join": "加入",
+    "send": "發送",
+    "connect": "連線",
+    "disconnect": "斷線",
+    "refresh": "重新整理"
+  },
+  "loading": "載入中...",
+  "copyright": "© 2026 啊呣啊呣. All rights reserved.",
+  "or": "或"
+}

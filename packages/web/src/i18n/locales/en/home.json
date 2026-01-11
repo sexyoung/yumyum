@@ -1,0 +1,12 @@
+{
+  "title": "YumYum",
+  "menu": {
+    "vsAI": "VS Computer",
+    "local": "Local 2P",
+    "online": "Online 2P"
+  },
+  "links": {
+    "tutorial": "Tutorial",
+    "about": "About"
+  }
+}

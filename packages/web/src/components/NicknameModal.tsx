@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface NicknameModalProps {
   isOpen: boolean;
@@ -18,9 +19,10 @@ export default function NicknameModal({
   onSubmit,
   onClose,
   initialUsername = '',
-  title = '設定暱稱',
+  title,
   canClose = false,
 }: NicknameModalProps) {
+  const { t } = useTranslation(['online', 'common', 'errors']);
   const [username, setUsername] = useState(initialUsername);
   const [error, setError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -41,15 +43,15 @@ export default function NicknameModal({
   const validateUsername = (value: string): string | null => {
     const trimmed = value.trim();
     if (trimmed.length < 2) {
-      return '暱稱至少需要 2 個字元';
+      return t('errors:nickname.tooShort');
     }
     if (trimmed.length > 20) {
-      return '暱稱不能超過 20 個字元';
+      return t('errors:nickname.tooLong');
     }
     // 簡單的敏感詞過濾（可擴充）
     const badWords = ['admin', 'administrator', '管理員'];
     if (badWords.some(word => trimmed.toLowerCase().includes(word))) {
-      return '暱稱包含不當內容';
+      return t('errors:nickname.badContent');
     }
     return null;
   };
@@ -76,17 +78,19 @@ export default function NicknameModal({
 
   if (!isOpen) return null;
 
+  const displayTitle = title || t('online:nickname.setTitle');
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4 animate-fade-in">
         {/* 標題 */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+          <h2 className="text-xl font-bold text-gray-800">{displayTitle}</h2>
           {canClose && onClose && (
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 transition"
-              aria-label="關閉"
+              aria-label={t('common:buttons.close')}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -110,7 +114,7 @@ export default function NicknameModal({
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="nickname" className="block text-sm font-medium text-gray-600 mb-2">
-              請輸入你的暱稱
+              {t('online:nickname.inputLabel')}
             </label>
             <input
               ref={inputRef}
@@ -118,7 +122,7 @@ export default function NicknameModal({
               type="text"
               value={username}
               onChange={handleChange}
-              placeholder="2-20 個字元"
+              placeholder={t('online:nickname.placeholder')}
               className={`
                 w-full px-4 py-3 rounded-lg border-2 text-lg
                 focus:outline-none focus:ring-2 focus:ring-orange-400
@@ -146,13 +150,13 @@ export default function NicknameModal({
             "
             disabled={username.trim().length < 2}
           >
-            確定
+            {t('common:buttons.confirm')}
           </button>
         </form>
 
         {/* 提示文字 */}
         <p className="mt-4 text-xs text-gray-400 text-center">
-          暱稱設定後每週可修改一次
+          {t('online:nickname.hint')}
         </p>
       </div>
     </div>

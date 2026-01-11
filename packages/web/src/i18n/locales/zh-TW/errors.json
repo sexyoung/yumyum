@@ -1,0 +1,27 @@
+{
+  "game": {
+    "cannotPlace": "無法放置",
+    "cannotMove": "無法移動",
+    "invalidMove": "非法移動"
+  },
+  "room": {
+    "notFound": "房間不存在",
+    "full": "房間已滿",
+    "expired": "房間已過期",
+    "createFailed": "創建房間失敗，請稍後再試"
+  },
+  "connection": {
+    "failed": "連線失敗",
+    "lost": "連線中斷"
+  },
+  "nickname": {
+    "tooShort": "暱稱至少需要 2 個字元",
+    "tooLong": "暱稱不能超過 20 個字元",
+    "badContent": "暱稱包含不當內容",
+    "updateFailed": "修改暱稱失敗"
+  },
+  "leaderboard": {
+    "loadFailed": "載入排行榜失敗，請稍後再試"
+  },
+  "unknown": "發生未知錯誤，請稍後再試"
+}

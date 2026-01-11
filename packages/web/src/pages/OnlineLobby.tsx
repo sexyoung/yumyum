@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { api } from '../lib/api';
 import { trackRoomCreate } from '../lib/analytics';
 import {
@@ -15,6 +16,7 @@ import type { PlayerInfo } from '@yumyum/types';
 
 function OnlineLobby() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['online', 'common', 'errors']);
   const [joinRoomId, setJoinRoomId] = useState('');
   const [showNicknameModal, setShowNicknameModal] = useState(false);
   const [showEditNicknameModal, setShowEditNicknameModal] = useState(false);
@@ -143,7 +145,7 @@ function OnlineLobby() {
       <NicknameModal
         isOpen={showNicknameModal}
         onSubmit={handleSetNickname}
-        title="設定暱稱"
+        title={t('online:nickname.setTitle')}
         canClose={false}
       />
 
@@ -153,35 +155,35 @@ function OnlineLobby() {
         onSubmit={handleEditNickname}
         onClose={() => setShowEditNicknameModal(false)}
         initialUsername={playerInfo?.username || ''}
-        title="修改暱稱"
+        title={t('online:nickname.editTitle')}
         canClose={true}
       />
 
       <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full">
         <h1 className="text-3xl font-bold text-gray-800 mb-4 text-center">
-          線上雙人對戰
+          {t('online:lobby.title')}
         </h1>
 
         {/* 玩家資訊 */}
         {playerInfo && (
           <div className="mb-4 flex justify-center gap-4 text-sm text-gray-600">
-            <span>ELO: <strong>{playerInfo.eloRating}</strong></span>
-            <span>勝率: <strong>{playerInfo.gamesPlayed > 0 ? Math.round(playerInfo.winRate * 100) : 0}%</strong></span>
-            <span>場次: <strong>{playerInfo.gamesPlayed}</strong></span>
+            <span>{t('online:lobby.elo')}: <strong>{playerInfo.eloRating}</strong></span>
+            <span>{t('online:lobby.winRate')}: <strong>{playerInfo.gamesPlayed > 0 ? Math.round(playerInfo.winRate * 100) : 0}%</strong></span>
+            <span>{t('online:lobby.gamesPlayed')}: <strong>{playerInfo.gamesPlayed}</strong></span>
           </div>
         )}
 
         {/* 錯誤提示 */}
         {createRoomMutation.isError && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">創建房間失敗，請稍後再試</p>
+            <p className="text-sm text-red-600">{t('errors:room.createFailed')}</p>
           </div>
         )}
 
         {updateUsernameMutation.isError && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-600">
-              {(updateUsernameMutation.error as any)?.response?.data?.error || '修改暱稱失敗'}
+              {(updateUsernameMutation.error as any)?.response?.data?.error || t('errors:nickname.updateFailed')}
             </p>
           </div>
         )}
@@ -196,35 +198,35 @@ function OnlineLobby() {
             {createRoomMutation.isPending ? (
               <>
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                創建中...
+                {t('online:lobby.creating')}
               </>
             ) : (
-              '創建新房間'
+              t('online:lobby.createRoom')
             )}
           </button>
           <p className="text-xs text-gray-500 mt-2 text-center">
-            創建房間後，分享房間 ID 給朋友加入
+            {t('online:lobby.createRoomHint')}
           </p>
         </div>
 
         {/* 分隔線 */}
         <div className="flex items-center my-6">
           <div className="flex-1 border-t border-gray-300"></div>
-          <span className="px-4 text-sm text-gray-500">或</span>
+          <span className="px-4 text-sm text-gray-500">{t('common:or')}</span>
           <div className="flex-1 border-t border-gray-300"></div>
         </div>
 
         {/* 加入房間 */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            輸入房間 ID
+            {t('online:lobby.inputRoomId')}
           </label>
           <input
             type="text"
             value={joinRoomId}
             onChange={(e) => setJoinRoomId(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === 'Enter' && handleJoinRoom()}
-            placeholder="例如：ABCD"
+            placeholder={t('online:lobby.roomIdPlaceholder')}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-3"
           />
           <button
@@ -232,7 +234,7 @@ function OnlineLobby() {
             disabled={!joinRoomId.trim() || !playerInfo}
             className="w-full px-6 py-3 bg-indigo-500 hover:bg-indigo-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-semibold text-lg transition"
           >
-            加入房間
+            {t('online:lobby.joinRoom')}
           </button>
         </div>
 
@@ -255,7 +257,7 @@ function OnlineLobby() {
               d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-2.927 0"
             />
           </svg>
-          排行榜
+          {t('online:lobby.leaderboard')}
         </button>
 
         {/* 返回首頁 */}
@@ -263,7 +265,7 @@ function OnlineLobby() {
           onClick={handleBackHome}
           className="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition"
         >
-          返回首頁
+          {t('common:buttons.backHome')}
         </button>
 
         {/* 修改暱稱連結 */}
@@ -273,7 +275,7 @@ function OnlineLobby() {
               onClick={() => setShowEditNicknameModal(true)}
               className="text-sm text-gray-500 hover:text-gray-700"
             >
-              修改暱稱 <span className="underline">{playerInfo.username}</span>
+              {t('online:lobby.editNickname')} <span className="underline">{playerInfo.username}</span>
             </button>
           </div>
         )}

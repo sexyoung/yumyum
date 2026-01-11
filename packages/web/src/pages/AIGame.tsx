@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { GameState, PieceSize, PieceColor, MoveRecord } from '@yumyum/types';
 import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
@@ -31,6 +32,7 @@ const aiColor: PieceColor = 'blue';
 
 export default function AIGame() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['game', 'common', 'errors']);
   const [difficulty] = useState<AIDifficulty>('hard');
   const [gameState, setGameState] = useState<GameState>(initialGameState);
   const [selectedPiece, setSelectedPiece] = useState<SelectedPiece>(null);
@@ -239,7 +241,7 @@ export default function AIGame() {
     // 驗證移動是否合法
     const validation = canPlacePieceFromReserve(gameState, row, col, color, size);
     if (!validation.valid) {
-      showError(validation.error || '無法放置');
+      showError(t('errors:game.cannotPlace'));
       return;
     }
 
@@ -267,7 +269,7 @@ export default function AIGame() {
     // 驗證移動是否合法
     const validation = canMovePieceOnBoard(gameState, fromRow, fromCol, toRow, toCol);
     if (!validation.valid) {
-      showError(validation.error || '無法移動');
+      showError(t('errors:game.cannotMove'));
       return;
     }
 
@@ -339,7 +341,7 @@ export default function AIGame() {
     if (isReplaying) {
       return (
         <p className="text-base md:text-xl lg:text-2xl font-bold text-yellow-600">
-          回放模式 ({replayStep}/{moveHistory.length})
+          {t('game:replay.mode')} ({t('game:replay.step', { current: replayStep, total: moveHistory.length })})
         </p>
       );
     }
@@ -347,7 +349,7 @@ export default function AIGame() {
     if (gameState.winner) {
       const isPlayerWin = gameState.winner === playerColor;
       const colorClass = isPlayerWin ? 'text-red-600' : 'text-blue-600';
-      const winnerText = isPlayerWin ? '你獲勝了！' : 'AI 獲勝了';
+      const winnerText = isPlayerWin ? t('game:status.youWin') : t('game:status.aiWins');
       return (
         <p className={`text-base md:text-xl lg:text-2xl font-bold ${colorClass}`}>
           {winnerText}
@@ -358,14 +360,14 @@ export default function AIGame() {
     if (aiThinking) {
       return (
         <p className="text-base md:text-xl lg:text-2xl font-bold text-blue-600">
-          AI 思考中...
+          {t('game:status.aiThinking')}
         </p>
       );
     }
 
     const isPlayerTurn = gameState.currentPlayer === playerColor;
     const colorClass = isPlayerTurn ? 'text-red-600' : 'text-blue-600';
-    const turnText = isPlayerTurn ? '你的回合' : 'AI 的回合';
+    const turnText = isPlayerTurn ? t('game:status.yourTurn') : t('game:status.aiTurn');
     return (
       <p className={`text-base md:text-xl lg:text-2xl font-bold ${colorClass}`}>
         {turnText}
@@ -386,7 +388,7 @@ export default function AIGame() {
                   onClick={() => navigate('/')}
                   className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
                 >
-                  離開
+                  {t('common:buttons.leave')}
                 </button>
                 <SoundToggle />
               </div>
@@ -396,7 +398,7 @@ export default function AIGame() {
                 className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
                 data-testid="restart-button"
               >
-                重新開始
+                {t('common:buttons.restart')}
               </button>
             </div>
             {/* 錯誤訊息 */}

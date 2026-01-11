@@ -1,0 +1,21 @@
+{
+  "buttons": {
+    "back": "Back",
+    "backHome": "Back to Home",
+    "backLobby": "Back to Lobby",
+    "leave": "Leave",
+    "restart": "Restart",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "close": "Close",
+    "create": "Create",
+    "join": "Join",
+    "send": "Send",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "refresh": "Refresh"
+  },
+  "loading": "Loading...",
+  "copyright": "© 2026 YumYum. All rights reserved.",
+  "or": "or"
+}

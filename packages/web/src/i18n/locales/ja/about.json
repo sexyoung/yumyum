@@ -1,0 +1,28 @@
+{
+  "title": "ヤムヤムについて",
+  "sections": {
+    "intro": {
+      "title": "ゲーム紹介",
+      "content": "ヤムヤムは、クラシックボードゲーム",
+      "linkText": "ゴブレット・ゴブラーズ",
+      "contentAfterLink": "にインスパイアされたウェブベースの2人対戦ゲームです。プレイヤーは3つのサイズ（小、中、大）のコマを使い、相手の小さいコマを食べながら、先に一列を完成させることを目指します。",
+      "supportOriginal": "オリジナルを応援しよう",
+      "supportOriginalContent": "ゴブレット・ゴブラーズはBlue Orange Gamesが発売している素晴らしいボードゲームです。このゲームを楽しんでいただけたら、ぜひ実物版を購入してオリジナルのデザイナーを応援してください！"
+    },
+    "creator": {
+      "title": "製作者",
+      "description": "DDRから太鼓の達人まで、リズムゲーム中毒のプレイヤー。夜にYouTubeでマニアックな知識を学ぶのが好きで、寝る前には必ず猫を満足するまで撫でます。"
+    },
+    "tech": {
+      "title": "技術スタック",
+      "frontend": "フロントエンド",
+      "backend": "バックエンド",
+      "deploy": "デプロイ",
+      "testing": "テスト"
+    },
+    "contact": {
+      "title": "連絡先"
+    }
+  },
+  "footer": "Made with ❤️ by sexyoung"
+}

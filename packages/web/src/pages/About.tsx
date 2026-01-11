@@ -1,16 +1,18 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { trackButtonClick } from '../lib/analytics';
 
 // 技術棧資訊
 const techStack = [
-  { category: '前端', items: ['React', 'TypeScript', 'Vite', 'Tailwind CSS', 'React Router'] },
-  { category: '後端', items: ['Hono.js', 'Node.js', 'WebSocket'] },
-  { category: '部署', items: ['Vercel', 'Railway'] },
-  { category: '測試', items: ['Vitest', 'Playwright'] },
+  { categoryKey: 'frontend', items: ['React', 'TypeScript', 'Vite', 'Tailwind CSS', 'React Router'] },
+  { categoryKey: 'backend', items: ['Hono.js', 'Node.js', 'WebSocket'] },
+  { categoryKey: 'deploy', items: ['Vercel', 'Railway'] },
+  { categoryKey: 'testing', items: ['Vitest', 'Playwright'] },
 ] as const;
 
 function About() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['about', 'common']);
 
   const handleBack = () => {
     trackButtonClick({ button_name: 'back_home', page_location: '/about' });
@@ -25,41 +27,39 @@ function About() {
           onClick={handleBack}
           className="mb-6 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition"
         >
-          ← 返回首頁
+          ← {t('common:buttons.backHome')}
         </button>
 
         {/* 標題 */}
         <h1 className="text-3xl sm:text-4xl font-bold mb-8 text-center">
-          關於 啊呣啊呣
+          {t('about:title')}
         </h1>
 
         {/* 遊戲簡介 */}
         <section className="bg-white/10 rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-3">遊戲簡介</h2>
+          <h2 className="text-xl font-semibold mb-3">{t('about:sections.intro.title')}</h2>
           <p className="text-white/80 leading-relaxed mb-4">
-            啊呣啊呣是一款受經典桌遊
+            {t('about:sections.intro.content')}
             <a
               href="https://www.google.com/search?q=奇雞連連"
               target="_blank"
               rel="noopener noreferrer"
               className="text-yellow-300 hover:text-yellow-200 underline mx-1"
             >
-              Gobblet Gobblers（奇雞連連）
+              {t('about:sections.intro.linkText')}
             </a>
-            啟發而製作的網頁版雙人對戰遊戲。玩家運用大、中、小三種尺寸的棋子，
-            透過「吃掉」對方較小的棋子來佔領格子，率先連成一線即可獲勝。
+            {t('about:sections.intro.contentAfterLink')}
           </p>
           <div className="bg-yellow-500/20 border border-yellow-400/30 rounded-lg p-4">
             <p className="text-yellow-200 text-sm">
-              <span className="font-semibold">支持正版</span>：Gobblet Gobblers 是由 Blue Orange Games
-              出版的優質桌遊，如果你喜歡這個遊戲，請購買實體版支持原創設計師！
+              <span className="font-semibold">{t('about:sections.intro.supportOriginal')}</span>：{t('about:sections.intro.supportOriginalContent')}
             </p>
           </div>
         </section>
 
         {/* 製作者 */}
         <section className="bg-white/10 rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-3">製作者</h2>
+          <h2 className="text-xl font-semibold mb-3">{t('about:sections.creator.title')}</h2>
           <div className="flex items-center gap-4">
             <img
               src="https://sheepht.com/sexyoung.jpeg"
@@ -69,7 +69,7 @@ function About() {
             <div>
               <p className="text-lg font-medium">sexyoung</p>
               <p className="text-white/70 text-sm leading-relaxed">
-                音遊中毒玩家，不管是跳舞機到太鼓達人，喜歡在晚上學習 YT 偏門冷知識，睡前一定要擼貓擼到開心再睡覺
+                {t('about:sections.creator.description')}
               </p>
             </div>
           </div>
@@ -77,11 +77,13 @@ function About() {
 
         {/* 技術說明 */}
         <section className="bg-white/10 rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">技術說明</h2>
+          <h2 className="text-xl font-semibold mb-4">{t('about:sections.tech.title')}</h2>
           <div className="grid grid-cols-2 gap-4">
             {techStack.map((tech) => (
-              <div key={tech.category}>
-                <h3 className="text-sm font-medium text-white/60 mb-2">{tech.category}</h3>
+              <div key={tech.categoryKey}>
+                <h3 className="text-sm font-medium text-white/60 mb-2">
+                  {t(`about:sections.tech.${tech.categoryKey}`)}
+                </h3>
                 <div className="flex flex-wrap gap-2">
                   {tech.items.map((item) => (
                     <span
@@ -99,7 +101,7 @@ function About() {
 
         {/* 聯絡方式 */}
         <section className="bg-white/10 rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-3">聯絡方式</h2>
+          <h2 className="text-xl font-semibold mb-3">{t('about:sections.contact.title')}</h2>
           <div className="space-y-3">
             <a
               href="mailto:Habuche@gmail.com"
@@ -122,8 +124,8 @@ function About() {
 
         {/* 版權聲明 */}
         <footer className="text-center text-white/60 text-sm py-6 border-t border-white/10">
-          <p>© 2026 啊呣啊呣. All rights reserved.</p>
-          <p className="mt-1">Made with ❤️ by sexyoung</p>
+          <p>{t('common:copyright')}</p>
+          <p className="mt-1">{t('about:footer')}</p>
         </footer>
       </div>
     </div>

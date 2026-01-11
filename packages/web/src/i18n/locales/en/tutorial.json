@@ -1,0 +1,23 @@
+{
+  "title": "Tutorial",
+  "buttons": {
+    "prev": "Previous",
+    "next": "Next",
+    "restart": "Restart Tutorial"
+  },
+  "steps": {
+    "welcome": "Welcome to YumYum! Let's learn how to play",
+    "board": "This is a 3×3 board. Your goal is to get three in a row!",
+    "reserves": "Each player has 6 pieces: 2 Small(S), 2 Medium(M), 2 Large(L)",
+    "selectPiece": "Red goes first! Select a medium piece...",
+    "placePiece": "After selecting, click on the board to place it. Put it in the center!",
+    "blueTurn": "Now it's Blue's turn. Select a small piece...",
+    "bluePlace": "Blue places the small piece in the top-left corner",
+    "captureIntro": "Key rule! Large pieces can 'gobble' smaller pieces!",
+    "captureDemo": "Look! The large piece covers the small one. Covered pieces don't count!",
+    "movePiece": "Pieces on the board can also move to other cells!",
+    "moveDemo": "The large piece moved from top-left to bottom-right!",
+    "winning": "Get three in a row to win! Look at the diagonal ↗ Red wins!",
+    "complete": "Tutorial complete! Ready to play?"
+  }
+}

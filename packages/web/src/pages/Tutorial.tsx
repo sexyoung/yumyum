@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { GameState, PieceSize, PieceColor } from '@yumyum/types';
 import Shepherd from 'shepherd.js';
 import type { Tour } from 'shepherd.js';
@@ -47,6 +48,7 @@ const winningGameState: GameState = {
 
 export default function Tutorial() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['tutorial', 'common']);
   const [gameState, setGameState] = useState<GameState>(initialGameState);
   const [selectedPiece, setSelectedPiece] = useState<SelectedPiece>(null);
   const tourRef = useRef<Tour | null>(null);
@@ -56,68 +58,68 @@ export default function Tutorial() {
   const tutorialSteps = useMemo(() => [
     {
       id: 'welcome',
-      text: '歡迎來到啊呣啊呣！讓我們來學習怎麼玩 🎮',
+      text: t('tutorial:steps.welcome'),
     },
     {
       id: 'board',
       attachTo: { element: '[data-testid="cell-1-1"]', on: 'bottom' as const },
-      text: '這是 3×3 的棋盤，目標是讓自己的棋子連成一線！',
+      text: t('tutorial:steps.board'),
     },
     {
       id: 'reserves',
       attachTo: { element: '[data-testid="reserve-red-medium"]', on: 'top' as const },
-      text: '每位玩家有 6 顆棋子：小(S)、中(M)、大(L) 各 2 顆',
+      text: t('tutorial:steps.reserves'),
     },
     {
       id: 'select-piece',
       attachTo: { element: '[data-testid="reserve-red-medium"]', on: 'top' as const },
-      text: '紅方先手！選擇一顆中棋子...',
+      text: t('tutorial:steps.selectPiece'),
     },
     {
       id: 'place-piece',
       attachTo: { element: '[data-testid="cell-1-1"]', on: 'bottom' as const },
-      text: '選好後，點擊棋盤放置。放到中央！',
+      text: t('tutorial:steps.placePiece'),
     },
     {
       id: 'blue-turn',
       attachTo: { element: '[data-testid="reserve-blue-small"]', on: 'bottom' as const },
-      text: '現在輪到藍方，選擇一顆小棋子...',
+      text: t('tutorial:steps.blueTurn'),
     },
     {
       id: 'blue-place',
       attachTo: { element: '[data-testid="cell-0-0"]', on: 'bottom' as const },
-      text: '藍方把小棋子放到左上角',
+      text: t('tutorial:steps.bluePlace'),
     },
     {
       id: 'capture-intro',
       attachTo: { element: '[data-testid="reserve-red-large"]', on: 'top' as const },
-      text: '重點！大棋子可以「吃掉」小棋子！',
+      text: t('tutorial:steps.captureIntro'),
     },
     {
       id: 'capture-demo',
       attachTo: { element: '[data-testid="cell-0-0"]', on: 'bottom' as const },
-      text: '看！大棋子蓋住了小棋子，被蓋住的不算數！',
+      text: t('tutorial:steps.captureDemo'),
     },
     {
       id: 'move-piece',
       attachTo: { element: '[data-testid="cell-0-0"]', on: 'bottom' as const },
-      text: '棋盤上的棋子也可以移動到其他格子！',
+      text: t('tutorial:steps.movePiece'),
     },
     {
       id: 'move-demo',
       attachTo: { element: '[data-testid="cell-2-2"]', on: 'top' as const },
-      text: '大棋子從左上移到右下了！',
+      text: t('tutorial:steps.moveDemo'),
     },
     {
       id: 'winning',
       classes: 'shepherd-top',
-      text: '連成一線就獲勝！看棋盤對角線 ↗ 紅方勝！',
+      text: t('tutorial:steps.winning'),
     },
     {
       id: 'complete',
-      text: '教學完成！準備好開始了嗎？ 🎉',
+      text: t('tutorial:steps.complete'),
     },
-  ], []);
+  ], [t]);
 
   // 步驟對應的遊戲狀態更新
   const updateGameStateForStep = (stepId: string) => {
@@ -249,7 +251,7 @@ export default function Tutorial() {
         buttons: isLastStep
           ? [
               {
-                text: '上一步',
+                text: t('tutorial:buttons.prev'),
                 action: () => {
                   trackTutorialProgress({ step_id: step.id, step_number: index, action: 'back' });
                   tour.back();
@@ -257,7 +259,7 @@ export default function Tutorial() {
                 classes: 'shepherd-button-secondary',
               },
               {
-                text: '返回首頁',
+                text: t('common:buttons.backHome'),
                 action: () => {
                   trackTutorialProgress({ step_id: step.id, step_number: index, action: 'complete' });
                   tour.cancel();
@@ -269,7 +271,7 @@ export default function Tutorial() {
           : [
               ...(index > 0
                 ? [{
-                    text: '上一步',
+                    text: t('tutorial:buttons.prev'),
                     action: () => {
                       trackTutorialProgress({ step_id: step.id, step_number: index, action: 'back' });
                       tour.back();
@@ -278,7 +280,7 @@ export default function Tutorial() {
                   }]
                 : []),
               {
-                text: '下一步',
+                text: t('tutorial:buttons.next'),
                 action: () => {
                   trackTutorialProgress({ step_id: step.id, step_number: index, action: 'next' });
                   tour.next();
@@ -316,7 +318,7 @@ export default function Tutorial() {
       tour.hide();
       isInitialized.current = false;
     };
-  }, [navigate, tutorialSteps]);
+  }, [navigate, tutorialSteps, t]);
 
   // 重新開始教學
   const handleRestart = () => {
@@ -335,16 +337,16 @@ export default function Tutorial() {
               onClick={() => navigate('/')}
               className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
             >
-              離開
+              {t('common:buttons.leave')}
             </button>
             <p className="text-base md:text-xl lg:text-2xl font-bold text-purple-600">
-              遊戲教學
+              {t('tutorial:title')}
             </p>
             <button
               onClick={handleRestart}
               className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
             >
-              重新教學
+              {t('tutorial:buttons.restart')}
             </button>
           </div>
         </div>

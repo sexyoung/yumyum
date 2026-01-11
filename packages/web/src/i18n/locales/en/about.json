@@ -1,0 +1,28 @@
+{
+  "title": "About YumYum",
+  "sections": {
+    "intro": {
+      "title": "About the Game",
+      "content": "YumYum is a web-based two-player strategy game inspired by the classic board game",
+      "linkText": "Gobblet Gobblers",
+      "contentAfterLink": ". Players use pieces of three sizes (Small, Medium, Large) to capture opponent's smaller pieces and race to get three in a row.",
+      "supportOriginal": "Support the Original",
+      "supportOriginalContent": "Gobblet Gobblers is a quality board game published by Blue Orange Games. If you enjoy this game, please consider purchasing the physical version to support the original designers!"
+    },
+    "creator": {
+      "title": "Creator",
+      "description": "A rhythm game enthusiast who enjoys everything from DDR to Taiko no Tatsujin. Loves learning obscure facts on YouTube at night and must pet the cats until satisfied before going to sleep."
+    },
+    "tech": {
+      "title": "Tech Stack",
+      "frontend": "Frontend",
+      "backend": "Backend",
+      "deploy": "Deploy",
+      "testing": "Testing"
+    },
+    "contact": {
+      "title": "Contact"
+    }
+  },
+  "footer": "Made with ❤️ by sexyoung"
+}

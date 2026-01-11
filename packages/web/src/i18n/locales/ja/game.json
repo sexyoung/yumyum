@@ -1,0 +1,30 @@
+{
+  "status": {
+    "yourTurn": "あなたのターン",
+    "opponentTurn": "相手のターン",
+    "aiTurn": "AIのターン",
+    "aiThinking": "AI思考中...",
+    "redTurn": "赤のターン",
+    "blueTurn": "青のターン",
+    "youWin": "あなたの勝ち！",
+    "youLose": "あなたの負け",
+    "redWins": "赤の勝ち！",
+    "blueWins": "青の勝ち！",
+    "aiWins": "AIの勝ち",
+    "waiting": "相手を待っています...",
+    "opponentLeft": "相手が退出しました"
+  },
+  "replay": {
+    "mode": "リプレイモード",
+    "step": "{{current}}/{{total}}"
+  },
+  "pieces": {
+    "small": "小",
+    "medium": "中",
+    "large": "大"
+  },
+  "player": {
+    "red": "赤",
+    "blue": "青"
+  }
+}

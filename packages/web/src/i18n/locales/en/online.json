@@ -1,0 +1,93 @@
+{
+  "lobby": {
+    "title": "Online Match",
+    "elo": "ELO",
+    "winRate": "Win Rate",
+    "gamesPlayed": "Games",
+    "createRoom": "Create Room",
+    "creating": "Creating...",
+    "createRoomHint": "Share the room ID with your friend to join",
+    "inputRoomId": "Enter Room ID",
+    "roomIdPlaceholder": "e.g. ABCD",
+    "joinRoom": "Join Room",
+    "leaderboard": "Leaderboard",
+    "editNickname": "Edit Nickname"
+  },
+  "game": {
+    "connecting": "Connecting...",
+    "waiting": {
+      "title": "Waiting for Opponent",
+      "roomId": "Room ID:",
+      "hint": "Share this ID or URL with your friend to join",
+      "cancel": "Cancel & Return"
+    },
+    "opponentLeft": {
+      "title": "Opponent Left",
+      "description": "You can wait here for your opponent to rejoin, or return to the lobby to start a new game.",
+      "roomId": "Room ID"
+    },
+    "error": {
+      "title": "Error",
+      "missingRoomId": "Missing Room ID",
+      "missingRoomIdDetail": "Please create or join a room from the lobby.",
+      "roomNotFound": "This room may have expired or is full. Please try creating a new room or joining another.",
+      "connectionFailed": "Unable to connect to game server. Please check your connection and try again.",
+      "unexpected": "An unexpected error occurred. Please return to the lobby."
+    },
+    "status": {
+      "yourTurn": "Your Turn",
+      "opponentTurn": "Opponent's Turn",
+      "youWin": "You Win!",
+      "youLose": "You Lose"
+    },
+    "rematch": {
+      "request": "Rematch",
+      "accept": "Accept",
+      "decline": "Decline",
+      "waiting": "Waiting...",
+      "opponentRequested": "Opponent wants a rematch!",
+      "requestSent": "Rematch request sent, waiting for response...",
+      "youDeclined": "Rematch declined",
+      "opponentDeclined": "Opponent declined rematch",
+      "loserStarts": "({{color}} starts)"
+    },
+    "reconnecting": {
+      "title": "Reconnecting...",
+      "attempts": "Attempt: {{current}} / {{max}}",
+      "hint": "Please wait while we reconnect to the game server"
+    },
+    "color": {
+      "red": "Red",
+      "blue": "Blue"
+    }
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "period": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "allTime": "All Time"
+    },
+    "yourRank": "Your Rank:",
+    "rank": "#{{rank}}",
+    "totalPlayers": "/ {{total}}",
+    "you": "You",
+    "elo": "ELO",
+    "winRate": "Win%",
+    "winsGames": "W/G",
+    "gamesPlayed": "Games",
+    "change": "Change",
+    "empty": {
+      "allTime": "No players yet. Be the first!",
+      "period": "No games in this period"
+    }
+  },
+  "nickname": {
+    "setTitle": "Set Nickname",
+    "editTitle": "Edit Nickname",
+    "inputLabel": "Enter your nickname",
+    "placeholder": "2-20 characters",
+    "hint": "Nickname can be changed once per week"
+  }
+}

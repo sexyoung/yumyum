@@ -1,0 +1,93 @@
+{
+  "lobby": {
+    "title": "線上雙人對戰",
+    "elo": "ELO",
+    "winRate": "勝率",
+    "gamesPlayed": "場次",
+    "createRoom": "創建新房間",
+    "creating": "創建中...",
+    "createRoomHint": "創建房間後，分享房間 ID 給朋友加入",
+    "inputRoomId": "輸入房間 ID",
+    "roomIdPlaceholder": "例如：ABCD",
+    "joinRoom": "加入房間",
+    "leaderboard": "排行榜",
+    "editNickname": "修改暱稱"
+  },
+  "game": {
+    "connecting": "連線中...",
+    "waiting": {
+      "title": "等待對手加入",
+      "roomId": "房間 ID:",
+      "hint": "分享這個 ID 或網址給朋友加入遊戲",
+      "cancel": "取消並返回"
+    },
+    "opponentLeft": {
+      "title": "對手已離開",
+      "description": "你可以在這裡等待對手重新加入，或是返回大廳開始新遊戲。",
+      "roomId": "房間 ID"
+    },
+    "error": {
+      "title": "發生錯誤",
+      "missingRoomId": "缺少房間 ID",
+      "missingRoomIdDetail": "請從大廳創建或加入房間。",
+      "roomNotFound": "這個房間可能已經過期或已滿。請嘗試創建新房間或加入其他房間。",
+      "connectionFailed": "無法連接到遊戲伺服器，請檢查網路連線後重試。",
+      "unexpected": "發生了一個未預期的錯誤。請返回大廳重試。"
+    },
+    "status": {
+      "yourTurn": "你的回合",
+      "opponentTurn": "對手回合",
+      "youWin": "你獲勝了！",
+      "youLose": "你輸了"
+    },
+    "rematch": {
+      "request": "再一場",
+      "accept": "接受",
+      "decline": "拒絕",
+      "waiting": "等待中...",
+      "opponentRequested": "對方想要再來一局！",
+      "requestSent": "已發送再戰請求，等待對方回應...",
+      "youDeclined": "已拒絕再戰",
+      "opponentDeclined": "對方拒絕了再戰",
+      "loserStarts": "（{{color}}先手）"
+    },
+    "reconnecting": {
+      "title": "正在重連...",
+      "attempts": "嘗試次數: {{current}} / {{max}}",
+      "hint": "請稍候，我們正在嘗試重新連線到遊戲伺服器"
+    },
+    "color": {
+      "red": "紅方",
+      "blue": "藍方"
+    }
+  },
+  "leaderboard": {
+    "title": "排行榜",
+    "period": {
+      "daily": "日榜",
+      "weekly": "週榜",
+      "monthly": "月榜",
+      "allTime": "總榜"
+    },
+    "yourRank": "你的排名：",
+    "rank": "第 {{rank}} 名",
+    "totalPlayers": "/ {{total}} 人",
+    "you": "你",
+    "elo": "ELO",
+    "winRate": "勝率",
+    "winsGames": "勝/場",
+    "gamesPlayed": "場次",
+    "change": "變化",
+    "empty": {
+      "allTime": "還沒有任何玩家上榜，快來成為第一個！",
+      "period": "這個時段還沒有對局記錄"
+    }
+  },
+  "nickname": {
+    "setTitle": "設定暱稱",
+    "editTitle": "修改暱稱",
+    "inputLabel": "請輸入你的暱稱",
+    "placeholder": "2-20 個字元",
+    "hint": "暱稱設定後每週可修改一次"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "title": "關於 啊呣啊呣",
+  "sections": {
+    "intro": {
+      "title": "遊戲簡介",
+      "content": "啊呣啊呣是一款受經典桌遊",
+      "linkText": "Gobblet Gobblers（奇雞連連）",
+      "contentAfterLink": "啟發而製作的網頁版雙人對戰遊戲。玩家運用大、中、小三種尺寸的棋子，透過「吃掉」對方較小的棋子來佔領格子，率先連成一線即可獲勝。",
+      "supportOriginal": "支持正版",
+      "supportOriginalContent": "Gobblet Gobblers 是由 Blue Orange Games 出版的優質桌遊，如果你喜歡這個遊戲，請購買實體版支持原創設計師！"
+    },
+    "creator": {
+      "title": "製作者",
+      "description": "音遊中毒玩家，不管是跳舞機到太鼓達人，喜歡在晚上學習 YT 偏門冷知識，睡前一定要擼貓擼到開心再睡覺"
+    },
+    "tech": {
+      "title": "技術說明",
+      "frontend": "前端",
+      "backend": "後端",
+      "deploy": "部署",
+      "testing": "測試"
+    },
+    "contact": {
+      "title": "聯絡方式"
+    }
+  },
+  "footer": "Made with ❤️ by sexyoung"
+}

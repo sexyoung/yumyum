@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { GameState, PieceSize, PieceColor, MoveRecord } from '@yumyum/types';
 import Board from '../components/Board';
 import PlayerReserve from '../components/PlayerReserve';
@@ -26,6 +27,7 @@ import { getTopPiece, getDisplayState, createShowError } from '../lib/gameHelper
 
 export default function LocalGame() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['game', 'common', 'errors']);
   const [gameState, setGameState] = useState<GameState>(() => {
     // 初始化時嘗試載入保存的狀態
     return loadLocalGameState() || initialGameState;
@@ -167,7 +169,7 @@ export default function LocalGame() {
     // 驗證移動是否合法
     const validation = canPlacePieceFromReserve(gameState, row, col, color, size);
     if (!validation.valid) {
-      showError(validation.error || '無法放置');
+      showError(t('errors:game.cannotPlace'));
       return;
     }
 
@@ -195,7 +197,7 @@ export default function LocalGame() {
     // 驗證移動是否合法
     const validation = canMovePieceOnBoard(gameState, fromRow, fromCol, toRow, toCol);
     if (!validation.valid) {
-      showError(validation.error || '無法移動');
+      showError(t('errors:game.cannotMove'));
       return;
     }
 
@@ -266,14 +268,14 @@ export default function LocalGame() {
     if (isReplaying) {
       return (
         <p className="text-base md:text-xl lg:text-2xl font-bold text-purple-600">
-          回放模式 ({replayStep}/{moveHistory.length})
+          {t('game:replay.mode')} ({t('game:replay.step', { current: replayStep, total: moveHistory.length })})
         </p>
       );
     }
 
     if (displayState.winner) {
       const colorClass = displayState.winner === 'red' ? 'text-red-600' : 'text-blue-600';
-      const winnerText = displayState.winner === 'red' ? '紅方獲勝！' : '藍方獲勝！';
+      const winnerText = displayState.winner === 'red' ? t('game:status.redWins') : t('game:status.blueWins');
       return (
         <p className={`text-base md:text-xl lg:text-2xl font-bold ${colorClass}`}>
           {winnerText}
@@ -282,10 +284,10 @@ export default function LocalGame() {
     }
 
     const colorClass = displayState.currentPlayer === 'red' ? 'text-red-600' : 'text-blue-600';
-    const playerText = displayState.currentPlayer === 'red' ? '紅方' : '藍方';
+    const playerText = displayState.currentPlayer === 'red' ? t('game:status.redTurn') : t('game:status.blueTurn');
     return (
       <p className={`text-base md:text-xl lg:text-2xl font-bold ${colorClass}`}>
-        {playerText}回合
+        {playerText}
       </p>
     );
   }
@@ -302,7 +304,7 @@ export default function LocalGame() {
                   onClick={() => navigate('/')}
                   className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
                 >
-                  離開
+                  {t('common:buttons.leave')}
                 </button>
                 <SoundToggle />
               </div>
@@ -312,7 +314,7 @@ export default function LocalGame() {
                 className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
                 data-testid="restart-button"
               >
-                重新開始
+                {t('common:buttons.restart')}
               </button>
             </div>
             {/* 錯誤訊息 */}

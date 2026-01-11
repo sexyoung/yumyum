@@ -1,0 +1,27 @@
+{
+  "game": {
+    "cannotPlace": "Cannot place here",
+    "cannotMove": "Cannot move",
+    "invalidMove": "Invalid move"
+  },
+  "room": {
+    "notFound": "Room not found",
+    "full": "Room is full",
+    "expired": "Room has expired",
+    "createFailed": "Failed to create room. Please try again."
+  },
+  "connection": {
+    "failed": "Connection failed",
+    "lost": "Connection lost"
+  },
+  "nickname": {
+    "tooShort": "Nickname must be at least 2 characters",
+    "tooLong": "Nickname cannot exceed 20 characters",
+    "badContent": "Nickname contains inappropriate content",
+    "updateFailed": "Failed to update nickname"
+  },
+  "leaderboard": {
+    "loadFailed": "Failed to load leaderboard. Please try again."
+  },
+  "unknown": "An unknown error occurred. Please try again."
+}

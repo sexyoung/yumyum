@@ -1,6 +1,7 @@
 // packages/web/src/pages/OnlineGame.tsx
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import type { GameState, PieceColor, GameMove, MoveRecord, PieceSize } from '@yumyum/types';
 import Board from '../components/Board';
@@ -37,10 +38,11 @@ type EmojiState = { emoji: string; key: number; x: number } | null;
 function OnlineGame() {
   const navigate = useNavigate();
   const { roomId } = useParams<{ roomId: string }>();
+  const { t } = useTranslation(['online', 'common', 'errors']);
 
   // 從 localStorage 取得玩家身份
   const playerIdentity = getPlayerIdentity();
-  const [playerName] = useState(() => playerIdentity?.username || `玩家${Math.floor(Math.random() * 1000)}`);
+  const [playerName] = useState(() => playerIdentity?.username || `Player${Math.floor(Math.random() * 1000)}`);
 
   // 遊戲狀態
   const [phase, setPhase] = useState<GamePhase>('connecting');
@@ -236,12 +238,13 @@ function OnlineGame() {
 
       // 根據錯誤訊息提供更詳細的說明
       let details = '';
-      if (message.includes('房間不存在') || message.includes('房間已滿') || message.includes('過期')) {
-        details = '這個房間可能已經過期或已滿。請嘗試創建新房間或加入其他房間。';
-      } else if (message.includes('連線')) {
-        details = '無法連接到遊戲伺服器，請檢查網路連線後重試。';
+      if (message.includes('房間不存在') || message.includes('房間已滿') || message.includes('過期') ||
+          message.includes('ROOM_NOT_FOUND') || message.includes('ROOM_FULL') || message.includes('EXPIRED')) {
+        details = t('online:game.error.roomNotFound');
+      } else if (message.includes('連線') || message.includes('CONNECTION')) {
+        details = t('online:game.error.connectionFailed');
       } else {
-        details = '發生了一個未預期的錯誤。請返回大廳重試。';
+        details = t('online:game.error.unexpected');
       }
 
       showError(message, details);
@@ -277,7 +280,7 @@ function OnlineGame() {
   // 初始化連線
   useEffect(() => {
     if (!roomId) {
-      showError('缺少房間 ID', '請從大廳創建或加入房間。');
+      showError(t('online:game.error.missingRoomId'), t('online:game.error.missingRoomIdDetail'));
       return;
     }
 
@@ -449,7 +452,7 @@ function OnlineGame() {
       <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600">
         <div className="bg-white rounded-lg shadow-2xl p-8 text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-xl font-semibold text-gray-800">連線中...</p>
+          <p className="text-xl font-semibold text-gray-800">{t('online:game.connecting')}</p>
         </div>
       </div>
     );
@@ -461,7 +464,7 @@ function OnlineGame() {
       <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-red-500 to-pink-600 p-4">
         <div className="bg-white rounded-lg shadow-2xl p-8 text-center max-w-lg">
           <div className="text-6xl mb-4">:(</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">發生錯誤</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">{t('online:game.error.title')}</h2>
 
           {/* 錯誤訊息 */}
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
@@ -477,13 +480,13 @@ function OnlineGame() {
               onClick={handleBackToLobby}
               className="px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-semibold transition"
             >
-              返回大廳
+              {t('common:buttons.backLobby')}
             </button>
             <button
               onClick={() => window.location.reload()}
               className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition"
             >
-              重新整理
+              {t('common:buttons.refresh')}
             </button>
           </div>
         </div>
@@ -497,17 +500,17 @@ function OnlineGame() {
       <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500 p-4">
         <div className="bg-white rounded-lg shadow-2xl p-8 text-center max-w-md">
           <div className="text-6xl mb-4 animate-bounce">...</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">等待對手加入</h2>
-          <p className="text-gray-600 mb-2">房間 ID:</p>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">{t('online:game.waiting.title')}</h2>
+          <p className="text-gray-600 mb-2">{t('online:game.waiting.roomId')}</p>
           <div className="bg-gray-100 rounded-lg p-4 mb-6">
             <p className="text-3xl font-mono font-bold text-indigo-600">{roomId}</p>
           </div>
-          <p className="text-sm text-gray-500 mb-6">分享這個 ID 或網址給朋友加入遊戲</p>
+          <p className="text-sm text-gray-500 mb-6">{t('online:game.waiting.hint')}</p>
           <button
             onClick={handleBackToLobby}
             className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition"
           >
-            取消並返回
+            {t('online:game.waiting.cancel')}
           </button>
         </div>
       </div>
@@ -520,19 +523,19 @@ function OnlineGame() {
       <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500 p-4">
         <div className="bg-white rounded-lg shadow-2xl p-8 text-center max-w-md">
           <div className="text-6xl mb-4">...</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">對手已離開</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">{t('online:game.opponentLeft.title')}</h2>
           <p className="text-gray-600 mb-6">
-            你可以在這裡等待對手重新加入，或是返回大廳開始新遊戲。
+            {t('online:game.opponentLeft.description')}
           </p>
           <div className="bg-gray-100 rounded-lg p-4 mb-6">
-            <p className="text-sm text-gray-500 mb-1">房間 ID</p>
+            <p className="text-sm text-gray-500 mb-1">{t('online:game.opponentLeft.roomId')}</p>
             <p className="text-2xl font-mono font-bold text-indigo-600">{roomId}</p>
           </div>
           <button
             onClick={handleBackToLobby}
             className="px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-semibold transition w-full"
           >
-            返回大廳
+            {t('common:buttons.backLobby')}
           </button>
         </div>
       </div>
@@ -572,7 +575,7 @@ function OnlineGame() {
     function renderGameStatus() {
       if (isGameOver) {
         const colorClass = isWinner ? 'text-green-600' : 'text-red-600';
-        const statusText = isWinner ? '你獲勝了！' : '你輸了';
+        const statusText = isWinner ? t('online:game.status.youWin') : t('online:game.status.youLose');
         return (
           <p className={`text-base md:text-xl lg:text-2xl font-bold ${colorClass}`}>
             {statusText}
@@ -580,7 +583,7 @@ function OnlineGame() {
         );
       }
       const colorClass = isMyTurn ? 'text-green-600' : 'text-gray-400';
-      const statusText = isMyTurn ? '你的回合' : '對手回合';
+      const statusText = isMyTurn ? t('online:game.status.yourTurn') : t('online:game.status.opponentTurn');
       return (
         <p className={`text-base md:text-xl lg:text-2xl font-bold ${colorClass}`}>
           {statusText}
@@ -603,13 +606,13 @@ function OnlineGame() {
               onClick={handleRematchAccept}
               className="px-2 py-1.5 md:px-3 md:py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium text-sm transition"
             >
-              接受
+              {t('online:game.rematch.accept')}
             </button>
             <button
               onClick={handleRematchDecline}
               className="px-2 py-1.5 md:px-3 md:py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-lg font-medium text-sm transition"
             >
-              拒絕
+              {t('online:game.rematch.decline')}
             </button>
           </div>
         );
@@ -617,7 +620,7 @@ function OnlineGame() {
 
       if (rematchRequested && !rematchDeclined) {
         return (
-          <span className="text-sm text-blue-600 font-medium">等待中...</span>
+          <span className="text-sm text-blue-600 font-medium">{t('online:game.rematch.waiting')}</span>
         );
       }
 
@@ -630,7 +633,7 @@ function OnlineGame() {
           onClick={handleRematchRequest}
           className="px-3 py-1.5 md:px-4 md:py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition"
         >
-          再一場
+          {t('online:game.rematch.request')}
         </button>
       );
     }
@@ -639,12 +642,14 @@ function OnlineGame() {
     function renderRematchStatus() {
       if (!isGameOver) return null;
 
-      const loserText = loserStartsColor ? `（${loserStartsColor === 'red' ? '紅方' : '藍方'}先手）` : '';
+      const loserText = loserStartsColor ? t('online:game.rematch.loserStarts', {
+        color: t(`online:game.color.${loserStartsColor}`)
+      }) : '';
 
       if (opponentRequestedRematch && !rematchDeclined) {
         return (
           <p className="text-center text-sm text-yellow-600 mt-2 font-semibold">
-            對方想要再來一局！{loserText}
+            {t('online:game.rematch.opponentRequested')}{loserText}
           </p>
         );
       }
@@ -652,7 +657,7 @@ function OnlineGame() {
       if (rematchRequested && !rematchDeclined) {
         return (
           <p className="text-center text-sm text-blue-600 mt-2 font-semibold">
-            已發送再戰請求，等待對方回應...{loserText}
+            {t('online:game.rematch.requestSent')}{loserText}
           </p>
         );
       }
@@ -660,7 +665,7 @@ function OnlineGame() {
       if (iDeclinedRematch || rematchDeclined) {
         return (
           <p className="text-center text-sm text-gray-500 mt-2">
-            {iDeclinedRematch ? '已拒絕再戰' : '對方拒絕了再戰'}
+            {iDeclinedRematch ? t('online:game.rematch.youDeclined') : t('online:game.rematch.opponentDeclined')}
           </p>
         );
       }
@@ -676,11 +681,11 @@ function OnlineGame() {
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg shadow-2xl p-8 text-center max-w-md">
                 <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">正在重連...</h3>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">{t('online:game.reconnecting.title')}</h3>
                 <p className="text-gray-600">
-                  嘗試次數: {reconnectAttempt} / 5
+                  {t('online:game.reconnecting.attempts', { current: reconnectAttempt, max: 5 })}
                 </p>
-                <p className="text-sm text-gray-500 mt-2">請稍候，我們正在嘗試重新連線到遊戲伺服器</p>
+                <p className="text-sm text-gray-500 mt-2">{t('online:game.reconnecting.hint')}</p>
               </div>
             </div>
           )}
@@ -698,7 +703,7 @@ function OnlineGame() {
                     onClick={handleBackToLobby}
                     className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
                   >
-                    離開
+                    {t('common:buttons.leave')}
                   </button>
                   <SoundToggle />
                 </div>

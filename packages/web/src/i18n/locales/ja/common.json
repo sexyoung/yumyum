@@ -1,0 +1,21 @@
+{
+  "buttons": {
+    "back": "戻る",
+    "backHome": "ホームに戻る",
+    "backLobby": "ロビーに戻る",
+    "leave": "退出",
+    "restart": "やり直す",
+    "confirm": "確定",
+    "cancel": "キャンセル",
+    "close": "閉じる",
+    "create": "作成",
+    "join": "参加",
+    "send": "送信",
+    "connect": "接続",
+    "disconnect": "切断",
+    "refresh": "更新"
+  },
+  "loading": "読み込み中...",
+  "copyright": "© 2026 YumYum. All rights reserved.",
+  "or": "または"
+}

@@ -1,0 +1,30 @@
+{
+  "status": {
+    "yourTurn": "Your Turn",
+    "opponentTurn": "Opponent's Turn",
+    "aiTurn": "AI's Turn",
+    "aiThinking": "AI Thinking...",
+    "redTurn": "Red's Turn",
+    "blueTurn": "Blue's Turn",
+    "youWin": "You Win!",
+    "youLose": "You Lose",
+    "redWins": "Red Wins!",
+    "blueWins": "Blue Wins!",
+    "aiWins": "AI Wins",
+    "waiting": "Waiting for opponent...",
+    "opponentLeft": "Opponent has left"
+  },
+  "replay": {
+    "mode": "Replay Mode",
+    "step": "{{current}}/{{total}}"
+  },
+  "pieces": {
+    "small": "S",
+    "medium": "M",
+    "large": "L"
+  },
+  "player": {
+    "red": "Red",
+    "blue": "Blue"
+  }
+}

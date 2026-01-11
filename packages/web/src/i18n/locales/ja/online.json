@@ -1,0 +1,93 @@
+{
+  "lobby": {
+    "title": "オンライン対戦",
+    "elo": "ELO",
+    "winRate": "勝率",
+    "gamesPlayed": "対局数",
+    "createRoom": "ルームを作成",
+    "creating": "作成中...",
+    "createRoomHint": "ルームIDを友達に共有して招待しましょう",
+    "inputRoomId": "ルームIDを入力",
+    "roomIdPlaceholder": "例：ABCD",
+    "joinRoom": "ルームに参加",
+    "leaderboard": "ランキング",
+    "editNickname": "ニックネームを変更"
+  },
+  "game": {
+    "connecting": "接続中...",
+    "waiting": {
+      "title": "対戦相手を待っています",
+      "roomId": "ルームID：",
+      "hint": "このIDまたはURLを友達に共有してください",
+      "cancel": "キャンセルして戻る"
+    },
+    "opponentLeft": {
+      "title": "対戦相手が退出しました",
+      "description": "ここで対戦相手の再参加を待つか、ロビーに戻って新しいゲームを始めることができます。",
+      "roomId": "ルームID"
+    },
+    "error": {
+      "title": "エラーが発生しました",
+      "missingRoomId": "ルームIDがありません",
+      "missingRoomIdDetail": "ロビーからルームを作成または参加してください。",
+      "roomNotFound": "このルームは期限切れか満員の可能性があります。新しいルームを作成するか、他のルームに参加してください。",
+      "connectionFailed": "ゲームサーバーに接続できません。接続を確認して再試行してください。",
+      "unexpected": "予期しないエラーが発生しました。ロビーに戻ってください。"
+    },
+    "status": {
+      "yourTurn": "あなたのターン",
+      "opponentTurn": "相手のターン",
+      "youWin": "勝利！",
+      "youLose": "敗北"
+    },
+    "rematch": {
+      "request": "もう一戦",
+      "accept": "承諾",
+      "decline": "拒否",
+      "waiting": "待機中...",
+      "opponentRequested": "相手が再戦を希望しています！",
+      "requestSent": "再戦リクエストを送信しました。返答を待っています...",
+      "youDeclined": "再戦を拒否しました",
+      "opponentDeclined": "相手が再戦を拒否しました",
+      "loserStarts": "（{{color}}先攻）"
+    },
+    "reconnecting": {
+      "title": "再接続中...",
+      "attempts": "試行回数: {{current}} / {{max}}",
+      "hint": "ゲームサーバーへの再接続を試みています。しばらくお待ちください"
+    },
+    "color": {
+      "red": "赤",
+      "blue": "青"
+    }
+  },
+  "leaderboard": {
+    "title": "ランキング",
+    "period": {
+      "daily": "日間",
+      "weekly": "週間",
+      "monthly": "月間",
+      "allTime": "全期間"
+    },
+    "yourRank": "あなたの順位：",
+    "rank": "{{rank}}位",
+    "totalPlayers": "/ {{total}}人",
+    "you": "あなた",
+    "elo": "ELO",
+    "winRate": "勝率",
+    "winsGames": "勝/局",
+    "gamesPlayed": "対局数",
+    "change": "変動",
+    "empty": {
+      "allTime": "まだプレイヤーがいません。最初のプレイヤーになりましょう！",
+      "period": "この期間の対局記録はありません"
+    }
+  },
+  "nickname": {
+    "setTitle": "ニックネーム設定",
+    "editTitle": "ニックネーム変更",
+    "inputLabel": "ニックネームを入力してください",
+    "placeholder": "2〜20文字",
+    "hint": "ニックネームは週に1回変更できます"
+  }
+}
