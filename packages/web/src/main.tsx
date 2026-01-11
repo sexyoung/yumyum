@@ -6,8 +6,14 @@ import './index.css';
 import './i18n';
 import { initializeGA } from './lib/analytics';
 
-// 初始化 Google Analytics
-initializeGA();
+// 延遲初始化 Google Analytics，避免阻擋首屏渲染
+if (typeof window !== 'undefined') {
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(() => initializeGA());
+  } else {
+    setTimeout(() => initializeGA(), 0);
+  }
+}
 
 // 建立 QueryClient
 const queryClient = new QueryClient({

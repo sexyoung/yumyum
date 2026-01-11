@@ -10,6 +10,21 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // 大型依賴分割
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-router': ['react-router-dom'],
+          'vendor-query': ['@tanstack/react-query'],
+          'vendor-i18n': ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
+          'vendor-dnd': ['@dnd-kit/core'],
+          'vendor-shepherd': ['shepherd.js'],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     host: true, // 重要！允許 devcontainer 訪問

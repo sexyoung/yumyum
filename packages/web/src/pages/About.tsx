@@ -64,6 +64,10 @@ function About() {
             <img
               src="https://sheepht.com/sexyoung.jpeg"
               alt="sexyoung"
+              width={64}
+              height={64}
+              loading="lazy"
+              decoding="async"
               className="w-16 h-16 rounded-full object-cover"
             />
             <div>
