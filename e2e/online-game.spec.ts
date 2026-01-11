@@ -10,21 +10,37 @@ async function clearLocalStorage(page: Page): Promise<void> {
 
 // 設定玩家暱稱
 async function setNickname(page: Page, nickname: string = '測試玩家'): Promise<void> {
-  // 等待暱稱 Modal 出現
-  const nicknameModal = page.locator('text=設定暱稱');
-  const isVisible = await nicknameModal.isVisible({ timeout: 3000 }).catch(() => false);
+  // 使用 nickname input 作為更穩定的 selector
+  const nicknameInput = page.locator('#nickname');
+
+  // 等待 input 出現並可互動
+  await nicknameInput.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+  const isVisible = await nicknameInput.isVisible();
   if (!isVisible) return;
 
-  await page.fill('#nickname', nickname);
-  await page.click('button:has-text("確定")');
-  // 等待 Modal 消失
-  await expect(nicknameModal).not.toBeVisible({ timeout: 5000 });
+  // 先清空再輸入（使用 type 模擬真實輸入，確保觸發 React onChange）
+  await nicknameInput.click();
+  await nicknameInput.clear();
+  await nicknameInput.type(nickname, { delay: 50 });
+
+  // 等待確定按鈕變成 enabled
+  const confirmBtn = page.locator('[data-testid="nickname-confirm-btn"]');
+  await expect(confirmBtn).toBeEnabled({ timeout: 5000 });
+
+  // 點擊確定按鈕
+  await confirmBtn.click();
+
+  // 等待 modal 關閉
+  await expect(nicknameInput).not.toBeVisible({ timeout: 5000 });
 }
 
 // 進入線上大廳並設定暱稱
 async function goToOnlineLobby(page: Page, nickname?: string): Promise<void> {
   await page.goto('/online');
   await setNickname(page, nickname);
+  // 確保沒有 modal overlay 擋住頁面
+  const modalOverlay = page.locator('.fixed.inset-0.z-50');
+  await expect(modalOverlay).not.toBeVisible({ timeout: 5000 }).catch(() => {});
 }
 
 // 檢查回合指示器是否顯示
@@ -94,9 +110,9 @@ test.describe('線上對戰大廳', () => {
     // 創建房間按鈕
     await expect(page.locator('text=創建新房間')).toBeVisible();
     await expect(page.locator('input[placeholder="例如：ABCD"]')).toBeVisible();
-    await expect(page.locator('text=加入房間')).toBeVisible();
-    await expect(page.locator('text=排行榜')).toBeVisible();
-    await expect(page.locator('text=返回首頁')).toBeVisible();
+    await expect(page.locator('[data-testid="join-room-btn"]')).toBeVisible();
+    await expect(page.locator('[data-testid="leaderboard-btn"]')).toBeVisible();
+    await expect(page.locator('[data-testid="back-home-btn"]')).toBeVisible();
   });
 
   test('輸入房間 ID 後應該能點擊加入房間', async ({ page }) => {
@@ -119,7 +135,7 @@ test.describe('線上對戰大廳', () => {
     // 先設定暱稱
     await goToOnlineLobby(page);
 
-    await page.click('text=返回首頁');
+    await page.click('[data-testid="back-home-btn"]');
     await expect(page).toHaveURL('/');
   });
 
@@ -127,7 +143,7 @@ test.describe('線上對戰大廳', () => {
     // 先設定暱稱
     await goToOnlineLobby(page);
 
-    await page.click('text=排行榜');
+    await page.click('[data-testid="leaderboard-btn"]');
     await expect(page).toHaveURL('/leaderboard');
     await expect(page.locator('h1:has-text("排行榜")')).toBeVisible();
   });
@@ -136,9 +152,11 @@ test.describe('線上對戰大廳', () => {
     // 先設定暱稱
     await goToOnlineLobby(page, '原本的名字');
 
-    // 點擊修改暱稱
-    await page.click('text=修改暱稱');
-    await expect(page.locator('text=修改暱稱').first()).toBeVisible();
+    // 點擊修改暱稱（使用 data-testid 避免依賴翻譯文字）
+    await page.click('[data-testid="edit-nickname-btn"]');
+    // 確認 modal 打開
+    const modalOverlay = page.locator('.fixed.inset-0.z-50');
+    await expect(modalOverlay).toBeVisible();
   });
 });
 
@@ -208,7 +226,7 @@ test.describe('線上對戰（需要後端服務）', () => {
       // 玩家二加入房間
       await goToOnlineLobby(player2, '玩家二');
       await player2.fill('input[placeholder="例如：ABCD"]', roomId!);
-      await player2.click('text=加入房間');
+      await player2.click('[data-testid="join-room-btn"]');
 
       // 兩個玩家都應該看到回合指示器
       await expectTurnIndicator(player1);

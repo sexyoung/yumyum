@@ -233,6 +233,7 @@ function OnlineLobby() {
             onClick={handleJoinRoom}
             disabled={!joinRoomId.trim() || !playerInfo}
             className="w-full px-6 py-3 bg-indigo-500 hover:bg-indigo-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-semibold text-lg transition"
+            data-testid="join-room-btn"
           >
             {t('online:lobby.joinRoom')}
           </button>
@@ -242,6 +243,7 @@ function OnlineLobby() {
         <button
           onClick={handleGoToLeaderboard}
           className="w-full px-4 py-3 mb-3 bg-gradient-to-r from-yellow-400 to-orange-400 hover:from-yellow-500 hover:to-orange-500 text-white rounded-lg font-semibold transition flex items-center justify-center gap-2"
+          data-testid="leaderboard-btn"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -264,6 +266,7 @@ function OnlineLobby() {
         <button
           onClick={handleBackHome}
           className="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition"
+          data-testid="back-home-btn"
         >
           {t('common:buttons.backHome')}
         </button>
@@ -274,6 +277,7 @@ function OnlineLobby() {
             <button
               onClick={() => setShowEditNicknameModal(true)}
               className="text-sm text-gray-500 hover:text-gray-700"
+              data-testid="edit-nickname-btn"
             >
               {t('online:lobby.editNickname')} <span className="underline">{playerInfo.username}</span>
             </button>

@@ -9,9 +9,6 @@ const queryClient = new QueryClient();
 
 // 建立一個渲染輔助函數，自動包含所有 providers
 const renderWithProviders = (ui: React.ReactElement, { route = '/' } = {}) => {
-  // 注意: 在 JSDOM 環境中，window.history.pushState 並不直接影響路由，
-  // 而是由 MemoryRouter 的 initialEntries 屬性控制。
-  // 但 QueryClientProvider 仍然需要被正確提供。
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter
@@ -29,21 +26,24 @@ const renderWithProviders = (ui: React.ReactElement, { route = '/' } = {}) => {
 
 describe('App 路由測試', () => {
 
-  it('應該在根路徑渲染首頁', () => {
+  it('應該在根路徑渲染首頁', async () => {
     renderWithProviders(<AppRoutes />);
 
-    expect(screen.getByText('啊呣啊呣')).toBeInTheDocument();
+    // 使用 findByText 等待 lazy loading 完成
+    expect(await screen.findByText('啊呣啊呣')).toBeInTheDocument();
 
     const expectedLinks = ['對戰電腦', '本機雙人', '線上雙人'];
-    expectedLinks.forEach((linkName) => {
-      expect(screen.getByRole('link', { name: new RegExp(linkName, 'i') })).toBeInTheDocument();
-    });
+    for (const linkName of expectedLinks) {
+      expect(await screen.findByRole('link', { name: new RegExp(linkName, 'i') })).toBeInTheDocument();
+    }
   });
 
   it('點擊對戰電腦連結應該導航到 AI 遊戲頁面', async () => {
     renderWithProviders(<AppRoutes />);
 
-    fireEvent.click(screen.getByRole('link', { name: /對戰電腦/i }));
+    // 等待首頁載入完成
+    const aiLink = await screen.findByRole('link', { name: /對戰電腦/i });
+    fireEvent.click(aiLink);
 
     // AI 遊戲頁面顯示「你的回合」（玩家先手）
     expect(await screen.findByText('你的回合')).toBeInTheDocument();
@@ -52,7 +52,9 @@ describe('App 路由測試', () => {
   it('點擊本機雙人連結應該導航到本機雙人遊戲頁面', async () => {
     renderWithProviders(<AppRoutes />);
 
-    fireEvent.click(screen.getByRole('link', { name: /本機雙人/i }));
+    // 等待首頁載入完成
+    const localLink = await screen.findByRole('link', { name: /本機雙人/i });
+    fireEvent.click(localLink);
 
     // 新的 UI 不顯示標題，改為檢查回合提示
     expect(await screen.findByText(/紅方.*回合|藍方.*回合/)).toBeInTheDocument();
@@ -61,7 +63,9 @@ describe('App 路由測試', () => {
   it('點擊線上雙人連結應該導航到線上雙人對戰頁面', async () => {
     renderWithProviders(<AppRoutes />);
 
-    fireEvent.click(screen.getByRole('link', { name: /線上雙人/i }));
+    // 等待首頁載入完成
+    const onlineLink = await screen.findByRole('link', { name: /線上雙人/i });
+    fireEvent.click(onlineLink);
 
     expect(await screen.findByText('線上雙人對戰')).toBeInTheDocument();
   });

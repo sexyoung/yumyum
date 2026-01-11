@@ -149,6 +149,7 @@ export default function NicknameModal({
               disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
             "
             disabled={username.trim().length < 2}
+            data-testid="nickname-confirm-btn"
           >
             {t('common:buttons.confirm')}
           </button>
