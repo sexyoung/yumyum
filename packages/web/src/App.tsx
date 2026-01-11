@@ -157,6 +157,8 @@ const HomePageContent: React.FC = () => {
                           <img
                             src={player.avatarUrl}
                             alt={player.username}
+                            width={32}
+                            height={32}
                             className="w-8 h-8 rounded-full"
                           />
                         )}
